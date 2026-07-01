@@ -186,39 +186,72 @@ select {
   color: var(--muted);
 }
 
-.watchlist-scroll {
-  display: flex;
-  gap: 0.5rem;
-  overflow-x: auto;
-  padding-bottom: 0.15rem;
-  scroll-snap-type: none;
-  scrollbar-width: none;
-  touch-action: pan-x;
+.watchlist-drag-banner {
+  margin: 0 0 0.5rem;
+  padding: 0.45rem 0.65rem;
+  border-radius: 10px;
+  background: #0c4a6e;
+  border: 1px solid #38bdf8;
+  color: #bae6fd;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-align: center;
+  animation: drag-banner-pulse 1s ease-in-out infinite;
 }
 
-.watchlist-scroll.is-dragging {
-  scroll-snap-type: none;
+@keyframes drag-banner-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.75;
+  }
+}
+
+body.watchlist-dragging {
+  overflow: hidden;
   touch-action: none;
 }
 
-.watchlist-scroll::-webkit-scrollbar {
-  display: none;
+.watchlist-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  width: 100%;
 }
 
-.watchlist-chip-wrap {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.15rem;
-  flex-shrink: 0;
-  scroll-snap-align: center;
-  border-radius: 999px;
-  transition: transform 0.15s ease;
+.watchlist-grid.is-dragging .watchlist-chip:not(.dragging):not(.drop-target) {
+  opacity: 0.45;
+}
+
+.watchlist-grid.is-dragging {
+  touch-action: none;
 }
 
 .watchlist-chip.dragging {
-  opacity: 0.55;
-  transform: scale(0.97);
-  cursor: grabbing;
+  opacity: 1;
+  border: 2px dashed #38bdf8;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  box-shadow: none;
+  transform: none;
+  pointer-events: none;
+}
+
+.watchlist-chip.dragging .chip-symbol,
+.watchlist-chip.dragging .chip-market,
+.watchlist-chip.dragging .chip-remove {
+  visibility: hidden;
+}
+
+.chip-placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 0.72rem;
+  color: #38bdf8;
+  font-weight: 600;
 }
 
 .watchlist-chip.pressing {
@@ -226,25 +259,97 @@ select {
   border-color: var(--accent);
 }
 
+.watchlist-chip.pressing::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 14px;
+  border: 2px solid #38bdf8;
+  animation: press-hold-ring 0.5s linear forwards;
+  pointer-events: none;
+}
+
+@keyframes press-hold-ring {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.12);
+    opacity: 0;
+  }
+}
+
 .watchlist-chip.drop-target {
-  box-shadow: 0 0 0 2px #38bdf8;
+  transform: scale(1.06);
+  border: 2px solid #38bdf8;
+  background: #0c4a6e;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.35);
+  z-index: 2;
+}
+
+.chip-drop-label {
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.58rem;
+  font-weight: 700;
+  color: #bae6fd;
+  letter-spacing: 0.04em;
+}
+
+.watchlist-drag-ghost {
+  position: fixed;
+  z-index: 100;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(1.12);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  min-width: 72px;
+  min-height: 58px;
+  padding: 0.55rem 0.65rem;
+  border-radius: 12px;
+  border: 2px solid #38bdf8;
+  background: #0c4a6e;
+  color: #f8fafc;
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.45),
+    0 0 0 4px rgba(56, 189, 248, 0.25);
+}
+
+.watchlist-drag-ghost .chip-symbol {
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+
+.watchlist-drag-ghost .chip-market {
+  font-size: 0.65rem;
+  color: #bae6fd;
 }
 
 .watchlist-chip {
-  display: inline-flex;
+  position: relative;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.35rem;
-  min-height: 44px;
-  padding: 0.5rem 0.75rem;
-  border-radius: 999px;
+  justify-content: center;
+  gap: 0.15rem;
+  width: 100%;
+  min-height: 58px;
+  padding: 0.55rem 0.35rem 0.45rem;
+  border-radius: 12px;
   border: 1px solid var(--border);
   background: var(--surface-2);
   color: var(--text);
-  white-space: nowrap;
   cursor: pointer;
-  flex-shrink: 0;
-  touch-action: pan-x;
   user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
   transition: transform 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -255,24 +360,35 @@ select {
 }
 
 .chip-symbol {
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 0.82rem;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 0.15rem;
 }
 
 .chip-market {
-  font-size: 0.65rem;
+  font-size: 0.62rem;
   color: var(--muted);
+  font-weight: 600;
 }
 
 .chip-remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   border-radius: 999px;
   color: var(--muted);
-  font-size: 1rem;
+  font-size: 0.9rem;
   line-height: 1;
+  z-index: 2;
 }
 
 .watchlist-empty {
