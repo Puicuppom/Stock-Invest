@@ -18,6 +18,7 @@ export default function StockApp() {
     setSelected,
     addStock,
     removeStock,
+    reorderStock,
     loaded,
   } = useWatchlist();
 
@@ -129,6 +130,7 @@ export default function StockApp() {
           selected={selected}
           onSelect={setSelected}
           onRemove={removeStock}
+          onReorder={reorderStock}
           onAddClick={() => setAddOpen(true)}
         />
       </section>

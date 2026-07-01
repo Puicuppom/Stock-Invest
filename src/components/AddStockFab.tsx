@@ -1,7 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
-import { isDualMarketSymbol } from "@/lib/dual-market";
+import { useEffect, useState } from "react";
 
 interface AddStockFabProps {
   open: boolean;
@@ -9,41 +8,25 @@ interface AddStockFabProps {
   onAdd: (symbol: string, market: "TH" | "US") => boolean;
 }
 
-type Step = "symbol" | "market";
-
 export default function AddStockFab({ open, onOpenChange, onAdd }: AddStockFabProps) {
-  const [step, setStep] = useState<Step>("symbol");
   const [symbol, setSymbol] = useState("");
-  const [market, setMarket] = useState<"TH" | "US">("TH");
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (!open) {
-      setStep("symbol");
       setSymbol("");
-      setMarket("TH");
       setError("");
     }
   }, [open]);
 
   const normalized = symbol.trim().toUpperCase();
-  const dualMarket = isDualMarketSymbol(normalized);
 
-  const goToMarketStep = () => {
+  const handleAdd = (market: "TH" | "US") => {
     if (!normalized) {
       setError("กรุณากรอกชื่อหุ้น");
       return;
     }
-    setError("");
-    setStep("market");
-  };
 
-  const handleSymbolSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    goToMarketStep();
-  };
-
-  const handleAdd = () => {
     const ok = onAdd(normalized, market);
     if (ok) {
       onOpenChange(false);
@@ -72,134 +55,73 @@ export default function AddStockFab({ open, onOpenChange, onAdd }: AddStockFabPr
             aria-modal="true"
             aria-labelledby="add-stock-title"
           >
-            {step === "symbol" ? (
-              <>
-                <p className="modal-step">ขั้นที่ 1/2</p>
-                <h2 id="add-stock-title" className="modal-title">
-                  ใส่ชื่อหุ้น
-                </h2>
-                <form onSubmit={handleSymbolSubmit} className="add-form">
-                  <label className="field-label" htmlFor="symbol-input">
-                    สัญลักษณ์หุ้น
-                  </label>
-                  <input
-                    id="symbol-input"
-                    className="text-input"
-                    placeholder="เช่น PTT, KBANK, META, AAPL"
-                    value={symbol}
-                    onChange={(e) => {
-                      setSymbol(e.target.value);
-                      setError("");
-                    }}
-                    autoFocus
-                    autoComplete="off"
-                    autoCapitalize="characters"
-                  />
+            <h2 id="add-stock-title" className="modal-title">
+              เพิ่มหุ้น
+            </h2>
 
-                  {dualMarket && normalized && (
-                    <p className="market-hint">
-                      {normalized} มีทั้งตลาด <strong>BKK</strong> และ{" "}
-                      <strong>US</strong> — ขั้นถัดไปให้เลือกตลาด
-                    </p>
+            <div className="add-form">
+              <label className="field-label" htmlFor="symbol-input">
+                สัญลักษณ์หุ้น
+              </label>
+              <input
+                id="symbol-input"
+                className="text-input"
+                placeholder="เช่น META, AAPL, PTT, KBANK"
+                value={symbol}
+                onChange={(e) => {
+                  setSymbol(e.target.value);
+                  setError("");
+                }}
+                autoFocus
+                autoComplete="off"
+                autoCapitalize="characters"
+              />
+
+              <p className="field-label">เลือกตลาดแล้วเพิ่มเลย</p>
+              <div className="market-quick-add">
+                <button
+                  type="button"
+                  className="market-quick-btn market-quick-us"
+                  onClick={() => handleAdd("US")}
+                >
+                  <span className="market-quick-title">US</span>
+                  <span className="market-quick-sub">NASDAQ / NYSE</span>
+                  {normalized && (
+                    <span className="market-quick-code">{normalized}</span>
                   )}
-
-                  {error && <p className="error-text">{error}</p>}
-
-                  <div className="modal-actions">
-                    <button
-                      type="button"
-                      className="btn-secondary"
-                      onClick={() => onOpenChange(false)}
-                    >
-                      ยกเลิก
-                    </button>
-                    <button type="submit" className="btn-primary">
-                      ถัดไป →
-                    </button>
-                  </div>
-                </form>
-              </>
-            ) : (
-              <>
-                <p className="modal-step">ขั้นที่ 2/2</p>
-                <h2 id="add-stock-title" className="modal-title">
-                  เลือกตลาดสำหรับ {normalized}
-                </h2>
-
-                {dualMarket && (
-                  <p className="market-hint market-hint-strong">
-                    หุ้น {normalized} มีทั้งไทยและอเมริกา — กดเลือก 1 ตลาด
-                  </p>
-                )}
-
-                <div className="add-form">
-                  <p className="field-label">กดเลือกตลาด</p>
-
-                  <div className="market-options">
-                    <label className="market-option">
-                      <input
-                        type="radio"
-                        name="stock-market"
-                        value="TH"
-                        checked={market === "TH"}
-                        onChange={() => setMarket("TH")}
-                      />
-                      <span className="market-option-card">
-                        <span className="market-option-head">
-                          <span className="market-option-title">BKK</span>
-                          <span className="market-option-badge">SET</span>
-                        </span>
-                        <span className="market-option-desc">ตลาดหลักทรัพย์แห่งประเทศไทย</span>
-                        <span className="market-option-code">{normalized}.BK</span>
-                      </span>
-                    </label>
-
-                    <label className="market-option">
-                      <input
-                        type="radio"
-                        name="stock-market"
-                        value="US"
-                        checked={market === "US"}
-                        onChange={() => setMarket("US")}
-                      />
-                      <span className="market-option-card">
-                        <span className="market-option-head">
-                          <span className="market-option-title">US</span>
-                          <span className="market-option-badge">NASDAQ/NYSE</span>
-                        </span>
-                        <span className="market-option-desc">ตลาดหุ้นอเมริกา</span>
-                        <span className="market-option-code">{normalized}</span>
-                      </span>
-                    </label>
-                  </div>
-
-                  {normalized === "META" && (
-                    <p className="market-hint">
-                      Meta/Facebook → กด <strong>US</strong> · Meta หุ้นไทย → กด{" "}
-                      <strong>BKK</strong>
-                    </p>
+                </button>
+                <button
+                  type="button"
+                  className="market-quick-btn market-quick-bkk"
+                  onClick={() => handleAdd("TH")}
+                >
+                  <span className="market-quick-title">BKK</span>
+                  <span className="market-quick-sub">SET</span>
+                  {normalized && (
+                    <span className="market-quick-code">
+                      {normalized.includes(".") ? normalized : `${normalized}.BK`}
+                    </span>
                   )}
+                </button>
+              </div>
 
-                  {error && <p className="error-text">{error}</p>}
+              {normalized === "META" && (
+                <p className="market-hint">
+                  Meta/Facebook → กด <strong>US</strong> · Meta หุ้นไทย → กด{" "}
+                  <strong>BKK</strong>
+                </p>
+              )}
 
-                  <div className="modal-actions">
-                    <button
-                      type="button"
-                      className="btn-secondary"
-                      onClick={() => {
-                        setError("");
-                        setStep("symbol");
-                      }}
-                    >
-                      ← กลับ
-                    </button>
-                    <button type="button" className="btn-primary" onClick={handleAdd}>
-                      เพิ่ม {normalized} ({market === "TH" ? "BKK" : "US"})
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
+              {error && <p className="error-text">{error}</p>}
+
+              <button
+                type="button"
+                className="btn-secondary btn-full"
+                onClick={() => onOpenChange(false)}
+              >
+                ยกเลิก
+              </button>
+            </div>
           </div>
         </div>
       )}

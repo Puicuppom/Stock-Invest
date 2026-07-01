@@ -79,6 +79,21 @@ export function useWatchlist() {
     [selected]
   );
 
+  const reorderStock = useCallback((fromId: string, toId: string) => {
+    if (fromId === toId) return;
+
+    setItems((prev) => {
+      const fromIndex = prev.findIndex((item) => watchlistId(item) === fromId);
+      const toIndex = prev.findIndex((item) => watchlistId(item) === toId);
+      if (fromIndex < 0 || toIndex < 0) return prev;
+
+      const next = [...prev];
+      const [moved] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, moved);
+      return next;
+    });
+  }, []);
+
   const selectedItem =
     items.find((item) => watchlistId(item) === selected) ?? items[0];
 
@@ -89,6 +104,7 @@ export function useWatchlist() {
     setSelected,
     addStock,
     removeStock,
+    reorderStock,
     loaded,
   };
 }

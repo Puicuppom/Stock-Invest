@@ -109,7 +109,7 @@ function buildStockData(
 
 export async function getStockData(
   input: string,
-  market: "TH" | "US" = "TH"
+  market: "TH" | "US" = "US"
 ): Promise<StockData> {
   const resolvedSymbol = resolveSymbol(input, market);
   if (!resolvedSymbol) {

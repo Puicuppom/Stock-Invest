@@ -180,17 +180,69 @@ select {
   white-space: nowrap;
 }
 
+.watchlist-hint {
+  margin: 0 0 0.5rem;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
 .watchlist-scroll {
   display: flex;
   gap: 0.5rem;
   overflow-x: auto;
   padding-bottom: 0.15rem;
-  scroll-snap-type: x proximity;
+  scroll-snap-type: none;
   scrollbar-width: none;
+  touch-action: pan-x;
+}
+
+.watchlist-scroll.is-dragging {
+  scroll-snap-type: none;
+  touch-action: none;
 }
 
 .watchlist-scroll::-webkit-scrollbar {
   display: none;
+}
+
+.watchlist-chip-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  flex-shrink: 0;
+  scroll-snap-align: center;
+  border-radius: 999px;
+  transition: transform 0.15s ease;
+}
+
+.watchlist-chip-wrap.dragging {
+  opacity: 0.55;
+  transform: scale(0.97);
+}
+
+.watchlist-chip-wrap.drop-target {
+  box-shadow: 0 0 0 2px #38bdf8;
+  border-radius: 999px;
+}
+
+.chip-drag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  min-height: 44px;
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 0.95rem;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.chip-drag:active {
+  cursor: grabbing;
+  color: var(--accent);
 }
 
 .watchlist-chip {
@@ -205,7 +257,6 @@ select {
   color: var(--text);
   white-space: nowrap;
   cursor: pointer;
-  scroll-snap-align: center;
   flex-shrink: 0;
 }
 
@@ -559,6 +610,63 @@ select {
   color: #38bdf8;
 }
 
+.market-quick-add {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+  width: 100%;
+}
+
+.market-quick-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  min-height: 88px;
+  padding: 0.75rem 0.5rem;
+  border-radius: 14px;
+  border: 2px solid #334155;
+  background: #1e293b;
+  color: #f8fafc;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.market-quick-us {
+  border-color: #38bdf8;
+  background: #0c4a6e;
+  box-shadow: 0 0 0 1px #38bdf8;
+}
+
+.market-quick-bkk {
+  border-color: #334155;
+  background: #1e293b;
+}
+
+.market-quick-title {
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+.market-quick-sub {
+  font-size: 0.68rem;
+  color: #94a3b8;
+}
+
+.market-quick-us .market-quick-sub {
+  color: #bae6fd;
+}
+
+.market-quick-code {
+  margin-top: 0.15rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  color: #38bdf8;
+}
+
 .field-label {
   font-size: 0.85rem;
   color: var(--muted);
@@ -610,6 +718,11 @@ select {
   background: var(--surface-2);
   color: var(--text);
   border: 1px solid var(--border);
+}
+
+.btn-full {
+  width: 100%;
+  margin-top: 0.25rem;
 }
 
 .app-footer {

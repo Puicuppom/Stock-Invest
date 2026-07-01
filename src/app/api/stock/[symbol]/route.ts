@@ -11,7 +11,7 @@ export async function GET(
   try {
     const data = await getStockData(
       decodeURIComponent(symbol),
-      market ?? "TH"
+      market ?? "US"
     );
     return NextResponse.json(data);
   } catch (error) {
