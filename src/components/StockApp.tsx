@@ -7,6 +7,7 @@ import StockChart from "@/components/StockChart";
 import Watchlist from "@/components/Watchlist";
 import { useWatchlist } from "@/hooks/useWatchlist";
 import { displaySymbol } from "@/lib/symbol";
+import { marketLabel, watchlistId } from "@/lib/watchlist-id";
 import type { StockData } from "@/lib/types";
 
 export default function StockApp() {
@@ -23,6 +24,36 @@ export default function StockApp() {
   const [data, setData] = useState<StockData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [addOpen, setAddOpen] = useState(false);
+  const [toast, setToast] = useState("");
+
+  const handleAddStock = useCallback(
+    (symbol: string, market: "TH" | "US") => {
+      const normalized = symbol.trim().toUpperCase();
+      if (!normalized) return false;
+
+      const exists = items.some(
+        (item) => watchlistId(item) === watchlistId({ symbol: normalized, market })
+      );
+      const ok = addStock(symbol, market);
+      if (!ok) return false;
+
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      setToast(
+        exists
+          ? `เลือก ${normalized} (${marketLabel(market)}) แล้ว`
+          : `เพิ่ม ${normalized} (${marketLabel(market)}) แล้ว`
+      );
+      return true;
+    },
+    [addStock, items]
+  );
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = window.setTimeout(() => setToast(""), 2200);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
 
   const fetchStock = useCallback(async () => {
     if (!selectedItem) return;
@@ -75,7 +106,9 @@ export default function StockApp() {
                 {changePositive ? "+" : ""}
                 {data.change.toFixed(2)} ({data.changePercent.toFixed(2)}%)
               </span>
-              <span className="market-badge">{data.market}</span>
+              <span className="market-badge">
+                {data.market === "TH" ? "BKK" : "US"}
+              </span>
             </div>
           )}
         </div>
@@ -96,8 +129,11 @@ export default function StockApp() {
           selected={selected}
           onSelect={setSelected}
           onRemove={removeStock}
+          onAddClick={() => setAddOpen(true)}
         />
       </section>
+
+      {toast && <div className="toast-banner">{toast}</div>}
 
       <section className="chart-section">
         {loading && <div className="state-banner">กำลังโหลด...</div>}
@@ -140,7 +176,11 @@ export default function StockApp() {
         </>
       )}
 
-      <AddStockFab onAdd={addStock} />
+      <AddStockFab
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        onAdd={handleAddStock}
+      />
 
       <footer className="app-footer">
         <p>เครื่องมือวิเคราะห์ — ไม่ใช่คำแนะนำการลงทุน</p>

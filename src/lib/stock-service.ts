@@ -79,45 +79,47 @@ async function fetchHistorical(resolvedSymbol: string): Promise<Candle[]> {
   return candles.sort((a, b) => a.date.localeCompare(b.date));
 }
 
+function buildStockData(
+  input: string,
+  resolvedSymbol: string,
+  candles: Candle[]
+): StockData {
+  const prev = candles[candles.length - 2];
+  const last = candles[candles.length - 1];
+  const pivot = calculatePivot(prev);
+  const swings = findSwingPoints(candles, 5);
+  const zones = topZones(clusterZones(swings), last.close, 4);
+  const detectedMarket = detectMarket(resolvedSymbol);
+  const change = last.close - prev.close;
+  const changePercent = (change / prev.close) * 100;
+
+  return {
+    symbol: input.toUpperCase(),
+    resolvedSymbol,
+    market: detectedMarket,
+    candles,
+    pivot,
+    swings,
+    zones,
+    lastClose: last.close,
+    change,
+    changePercent,
+  };
+}
+
 export async function getStockData(
   input: string,
-  market: "TH" | "US" | "auto" = "auto"
+  market: "TH" | "US" = "TH"
 ): Promise<StockData> {
-  const candidates = resolveSymbol(input, market);
-  let lastError: unknown;
-
-  for (const resolvedSymbol of candidates) {
-    try {
-      const candles = await fetchHistorical(resolvedSymbol);
-      if (candles.length < 10) {
-        throw new Error("Not enough data");
-      }
-
-      const prev = candles[candles.length - 2];
-      const last = candles[candles.length - 1];
-      const pivot = calculatePivot(prev);
-      const swings = findSwingPoints(candles, 5);
-      const zones = topZones(clusterZones(swings), last.close, 4);
-      const detectedMarket = detectMarket(resolvedSymbol);
-      const change = last.close - prev.close;
-      const changePercent = (change / prev.close) * 100;
-
-      return {
-        symbol: input.toUpperCase(),
-        resolvedSymbol,
-        market: detectedMarket,
-        candles,
-        pivot,
-        swings,
-        zones,
-        lastClose: last.close,
-        change,
-        changePercent,
-      };
-    } catch (error) {
-      lastError = error;
-    }
+  const resolvedSymbol = resolveSymbol(input, market);
+  if (!resolvedSymbol) {
+    throw new Error("Stock not found");
   }
 
-  throw lastError ?? new Error("Stock not found");
+  const candles = await fetchHistorical(resolvedSymbol);
+  if (candles.length < 10) {
+    throw new Error("Stock not found");
+  }
+
+  return buildStockData(input, resolvedSymbol, candles);
 }

@@ -31,10 +31,10 @@ npm run dev
 
 | ตลาด | ตัวอย่าง | หมายเหตุ |
 |------|----------|----------|
-| ไทย | `PTT`, `KBANK` | Auto จะลอง `PTT.BK` |
-| US | `AAPL`, `TSLA` | ใช้ symbol ตรง |
+| **BKK** | `PTT`, `KBANK`, `META` | หุ้น SET |
+| **US** | `AAPL`, `META`, `TSLA` | NASDAQ/NYSE |
 
-เลือกตลาดตอนเพิ่มหุ้น: **Auto / TH / US**
+**ต้องเลือกตลาด BKK หรือ US ตอนเพิ่มหุ้น** — ชื่อซ้ำกันได้ เช่น META (BKK) กับ META (US) คนละตัว
 
 ## โครงสร้าง
 

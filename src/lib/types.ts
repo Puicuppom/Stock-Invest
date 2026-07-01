@@ -44,7 +44,7 @@ export interface StockData {
 
 export interface WatchlistItem {
   symbol: string;
-  market: "TH" | "US" | "auto";
+  market: "TH" | "US";
 }
 
 export const WATCHLIST_KEY = "stock-sr-watchlist";

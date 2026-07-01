@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { watchlistId } from "@/lib/watchlist-id";
 import type { WatchlistItem } from "@/lib/types";
 import { WATCHLIST_KEY } from "@/lib/types";
 
@@ -9,19 +10,28 @@ const DEFAULT_WATCHLIST: WatchlistItem[] = [
   { symbol: "AAPL", market: "US" },
 ];
 
+function normalizeItem(item: WatchlistItem & { market?: string }): WatchlistItem {
+  return {
+    symbol: item.symbol.trim().toUpperCase(),
+    market: item.market === "US" ? "US" : "TH",
+  };
+}
+
 export function useWatchlist() {
   const [items, setItems] = useState<WatchlistItem[]>(DEFAULT_WATCHLIST);
-  const [selected, setSelected] = useState<string>(DEFAULT_WATCHLIST[0].symbol);
+  const [selected, setSelected] = useState<string>(
+    watchlistId(DEFAULT_WATCHLIST[0])
+  );
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem(WATCHLIST_KEY);
       if (raw) {
-        const parsed = JSON.parse(raw) as WatchlistItem[];
+        const parsed = (JSON.parse(raw) as WatchlistItem[]).map(normalizeItem);
         if (parsed.length > 0) {
           setItems(parsed);
-          setSelected(parsed[0].symbol);
+          setSelected(watchlistId(parsed[0]));
         }
       }
     } catch {
@@ -36,24 +46,32 @@ export function useWatchlist() {
   }, [items, loaded]);
 
   const addStock = useCallback(
-    (symbol: string, market: "TH" | "US" | "auto" = "auto") => {
+    (symbol: string, market: "TH" | "US") => {
       const normalized = symbol.trim().toUpperCase();
       if (!normalized) return false;
-      if (items.some((i) => i.symbol === normalized)) return false;
 
-      setItems((prev) => [...prev, { symbol: normalized, market }]);
-      setSelected(normalized);
+      const nextItem = { symbol: normalized, market };
+      const nextId = watchlistId(nextItem);
+      const existing = items.find((item) => watchlistId(item) === nextId);
+
+      if (existing) {
+        setSelected(nextId);
+        return true;
+      }
+
+      setItems((prev) => [nextItem, ...prev]);
+      setSelected(nextId);
       return true;
     },
     [items]
   );
 
   const removeStock = useCallback(
-    (symbol: string) => {
+    (id: string) => {
       setItems((prev) => {
-        const next = prev.filter((i) => i.symbol !== symbol);
-        if (selected === symbol && next.length > 0) {
-          setSelected(next[0].symbol);
+        const next = prev.filter((item) => watchlistId(item) !== id);
+        if (selected === id && next.length > 0) {
+          setSelected(watchlistId(next[0]));
         }
         return next;
       });
@@ -61,7 +79,8 @@ export function useWatchlist() {
     [selected]
   );
 
-  const selectedItem = items.find((i) => i.symbol === selected) ?? items[0];
+  const selectedItem =
+    items.find((item) => watchlistId(item) === selected) ?? items[0];
 
   return {
     items,

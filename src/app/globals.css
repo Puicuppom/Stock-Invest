@@ -36,6 +36,11 @@ select {
   font: inherit;
 }
 
+.modal-panel button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
 .app-shell {
   max-width: 720px;
   margin: 0 auto;
@@ -113,11 +118,74 @@ select {
   opacity: 0.5;
 }
 
+.watchlist-section {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  margin: -0.25rem -1rem 0;
+  padding: 0.5rem 1rem 0.75rem;
+  background: linear-gradient(
+    to bottom,
+    var(--bg) 70%,
+    color-mix(in srgb, var(--bg) 0%, transparent)
+  );
+  backdrop-filter: blur(8px);
+}
+
+.watchlist-panel {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  padding: 0.65rem 0.75rem 0.75rem;
+}
+
+.watchlist-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
+}
+
+.watchlist-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.watchlist-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  margin-left: 0.25rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 0.75rem;
+}
+
+.watchlist-add-btn {
+  min-height: 36px;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
 .watchlist-scroll {
   display: flex;
   gap: 0.5rem;
   overflow-x: auto;
-  padding-bottom: 0.25rem;
+  padding-bottom: 0.15rem;
+  scroll-snap-type: x proximity;
   scrollbar-width: none;
 }
 
@@ -133,15 +201,18 @@ select {
   padding: 0.5rem 0.75rem;
   border-radius: 999px;
   border: 1px solid var(--border);
-  background: var(--surface);
+  background: var(--surface-2);
   color: var(--text);
   white-space: nowrap;
   cursor: pointer;
+  scroll-snap-align: center;
+  flex-shrink: 0;
 }
 
 .watchlist-chip.active {
   border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 15%, var(--surface));
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface-2));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 .chip-symbol {
@@ -166,11 +237,39 @@ select {
 }
 
 .watchlist-empty {
-  padding: 1rem;
+  padding: 0.85rem;
   border: 1px dashed var(--border);
   border-radius: 12px;
   text-align: center;
   color: var(--muted);
+}
+
+.toast-banner {
+  position: fixed;
+  top: 0.85rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 70;
+  padding: 0.65rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--accent);
+  background: color-mix(in srgb, var(--surface) 92%, var(--accent));
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  animation: toast-in 0.2s ease;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }
 
 .chart-section {
@@ -324,6 +423,8 @@ select {
   display: grid;
   align-items: end;
   z-index: 60;
+  overflow-y: auto;
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 .modal-panel {
@@ -341,9 +442,121 @@ select {
   font-size: 1.1rem;
 }
 
+.modal-step {
+  margin: 0 0 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.market-hint {
+  margin: 0.25rem 0 0;
+  padding: 0.65rem 0.75rem;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface-2));
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, var(--border));
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.market-hint-strong {
+  color: var(--text);
+  margin-bottom: 0.25rem;
+}
+
+.market-hint strong {
+  color: var(--accent);
+}
+
 .add-form {
-  display: grid;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  width: 100%;
+}
+
+.market-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.market-option {
+  display: block;
+  width: 100%;
+  cursor: pointer;
+}
+
+.market-option input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.market-option-card {
+  display: block;
+  width: 100%;
+  padding: 1rem;
+  border-radius: 14px;
+  border: 2px solid #334155;
+  background: #1e293b;
+  color: #f8fafc;
+  box-sizing: border-box;
+}
+
+.market-option input:checked + .market-option-card {
+  border-color: #38bdf8;
+  background: #0c4a6e;
+  box-shadow: 0 0 0 1px #38bdf8;
+}
+
+.market-option-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.market-option-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.market-option-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  background: #334155;
+  color: #94a3b8;
+}
+
+.market-option input:checked + .market-option-card .market-option-badge {
+  background: #075985;
+  color: #bae6fd;
+}
+
+.market-option-desc {
+  display: block;
+  font-size: 0.82rem;
+  color: #94a3b8;
+  margin-bottom: 0.35rem;
+}
+
+.market-option-code {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  color: #38bdf8;
 }
 
 .field-label {

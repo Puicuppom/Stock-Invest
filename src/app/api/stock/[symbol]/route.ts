@@ -6,16 +6,12 @@ export async function GET(
   { params }: { params: Promise<{ symbol: string }> }
 ) {
   const { symbol } = await params;
-  const market = request.nextUrl.searchParams.get("market") as
-    | "TH"
-    | "US"
-    | "auto"
-    | null;
+  const market = request.nextUrl.searchParams.get("market") as "TH" | "US" | null;
 
   try {
     const data = await getStockData(
       decodeURIComponent(symbol),
-      market ?? "auto"
+      market ?? "TH"
     );
     return NextResponse.json(data);
   } catch (error) {
