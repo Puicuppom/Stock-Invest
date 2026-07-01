@@ -215,34 +215,19 @@ select {
   transition: transform 0.15s ease;
 }
 
-.watchlist-chip-wrap.dragging {
+.watchlist-chip.dragging {
   opacity: 0.55;
   transform: scale(0.97);
-}
-
-.watchlist-chip-wrap.drop-target {
-  box-shadow: 0 0 0 2px #38bdf8;
-  border-radius: 999px;
-}
-
-.chip-drag {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  min-height: 44px;
-  border-radius: 10px;
-  color: var(--muted);
-  font-size: 0.95rem;
-  cursor: grab;
-  touch-action: none;
-  user-select: none;
-  flex-shrink: 0;
-}
-
-.chip-drag:active {
   cursor: grabbing;
-  color: var(--accent);
+}
+
+.watchlist-chip.pressing {
+  transform: scale(0.96);
+  border-color: var(--accent);
+}
+
+.watchlist-chip.drop-target {
+  box-shadow: 0 0 0 2px #38bdf8;
 }
 
 .watchlist-chip {
@@ -258,6 +243,9 @@ select {
   white-space: nowrap;
   cursor: pointer;
   flex-shrink: 0;
+  touch-action: pan-x;
+  user-select: none;
+  transition: transform 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease;
 }
 
 .watchlist-chip.active {

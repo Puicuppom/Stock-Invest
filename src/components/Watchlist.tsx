@@ -14,6 +14,9 @@ interface WatchlistProps {
   onAddClick: () => void;
 }
 
+const LONG_PRESS_MS = 420;
+const MOVE_THRESHOLD = 10;
+
 export default function Watchlist({
   items,
   selected,
@@ -23,11 +26,16 @@ export default function Watchlist({
   onAddClick,
 }: WatchlistProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const chipRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const chipRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
   const draggingIdRef = useRef<string | null>(null);
   const dragOverIdRef = useRef<string | null>(null);
+  const pendingIdRef = useRef<string | null>(null);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const startPosRef = useRef({ x: 0, y: 0 });
+  const suppressClickRef = useRef(false);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const [pressingId, setPressingId] = useState<string | null>(null);
 
   useEffect(() => {
     const chip = chipRefs.current.get(selected);
@@ -40,17 +48,42 @@ export default function Watchlist({
     }
   }, [selected, items, draggingId]);
 
+  const clearLongPress = useCallback(() => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    pendingIdRef.current = null;
+    setPressingId(null);
+  }, []);
+
+  const startDrag = useCallback((id: string) => {
+    draggingIdRef.current = id;
+    dragOverIdRef.current = id;
+    setDraggingId(id);
+    setDragOverId(id);
+    setPressingId(null);
+    suppressClickRef.current = true;
+    if (navigator.vibrate) {
+      navigator.vibrate(12);
+    }
+  }, []);
+
   const finishDrag = useCallback(() => {
+    clearLongPress();
+
     const fromId = draggingIdRef.current;
     const toId = dragOverIdRef.current;
     if (fromId && toId && fromId !== toId) {
       onReorder(fromId, toId);
+      suppressClickRef.current = true;
     }
+
     draggingIdRef.current = null;
     dragOverIdRef.current = null;
     setDraggingId(null);
     setDragOverId(null);
-  }, [onReorder]);
+  }, [clearLongPress, onReorder]);
 
   useEffect(() => {
     window.addEventListener("pointerup", finishDrag);
@@ -67,24 +100,53 @@ export default function Watchlist({
     return chip?.getAttribute("data-watchlist-id") ?? null;
   };
 
-  const handleDragStart = (id: string, event: React.PointerEvent) => {
-    event.preventDefault();
-    event.stopPropagation();
-    draggingIdRef.current = id;
-    dragOverIdRef.current = id;
-    setDraggingId(id);
-    setDragOverId(id);
-    event.currentTarget.setPointerCapture(event.pointerId);
+  const handlePointerDown = (id: string, event: React.PointerEvent) => {
+    if ((event.target as HTMLElement).closest(".chip-remove")) {
+      return;
+    }
+
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+
+    pendingIdRef.current = id;
+    startPosRef.current = { x: event.clientX, y: event.clientY };
+    setPressingId(id);
+
+    longPressTimerRef.current = setTimeout(() => {
+      if (pendingIdRef.current === id) {
+        startDrag(id);
+      }
+    }, LONG_PRESS_MS);
   };
 
-  const handleDragMove = (event: React.PointerEvent) => {
-    if (!draggingIdRef.current) return;
-    event.preventDefault();
-    const targetId = findTargetId(event.clientX, event.clientY);
-    if (targetId) {
-      dragOverIdRef.current = targetId;
-      setDragOverId(targetId);
+  const handlePointerMove = (event: React.PointerEvent) => {
+    if (draggingIdRef.current) {
+      event.preventDefault();
+      const targetId = findTargetId(event.clientX, event.clientY);
+      if (targetId) {
+        dragOverIdRef.current = targetId;
+        setDragOverId(targetId);
+      }
+      return;
     }
+
+    if (!pendingIdRef.current) return;
+
+    const dx = event.clientX - startPosRef.current.x;
+    const dy = event.clientY - startPosRef.current.y;
+    if (Math.hypot(dx, dy) > MOVE_THRESHOLD) {
+      clearLongPress();
+    }
+  };
+
+  const handleChipClick = (id: string) => {
+    if (suppressClickRef.current) {
+      suppressClickRef.current = false;
+      return;
+    }
+    onSelect(id);
   };
 
   if (items.length === 0) {
@@ -115,63 +177,56 @@ export default function Watchlist({
         </button>
       </div>
 
-      <p className="watchlist-hint">กดค้าง ☰ แล้วลากเพื่อเรียงลำดับ</p>
+      <p className="watchlist-hint">กดค้างแล้วลากเพื่อเรียงลำดับ</p>
 
       <div
         ref={scrollRef}
         className={`watchlist-scroll ${draggingId ? "is-dragging" : ""}`}
-        onPointerMove={handleDragMove}
+        onPointerMove={handlePointerMove}
       >
         {items.map((item) => {
           const id = watchlistId(item);
           const active = id === selected;
           const isDragging = draggingId === id;
           const isDropTarget = dragOverId === id && draggingId !== id;
+          const isPressing = pressingId === id && !draggingId;
 
           return (
-            <div
+            <button
               key={id}
+              type="button"
               data-watchlist-id={id}
               ref={(el) => {
                 if (el) chipRefs.current.set(id, el);
                 else chipRefs.current.delete(id);
               }}
-              className={`watchlist-chip-wrap ${isDragging ? "dragging" : ""} ${isDropTarget ? "drop-target" : ""}`}
+              className={`watchlist-chip ${active ? "active" : ""} ${isDragging ? "dragging" : ""} ${isDropTarget ? "drop-target" : ""} ${isPressing ? "pressing" : ""}`}
+              onPointerDown={(event) => handlePointerDown(id, event)}
+              onClick={() => handleChipClick(id)}
             >
+              <span className="chip-symbol">{displaySymbol(item.symbol)}</span>
+              <span className="chip-market">{marketLabel(item.market)}</span>
               <span
-                className="chip-drag"
-                aria-label={`ลากเพื่อเรียง ${item.symbol}`}
-                onPointerDown={(event) => handleDragStart(id, event)}
-              >
-                ☰
-              </span>
-              <button
-                type="button"
-                className={`watchlist-chip ${active ? "active" : ""}`}
-                onClick={() => onSelect(id)}
-              >
-                <span className="chip-symbol">{displaySymbol(item.symbol)}</span>
-                <span className="chip-market">{marketLabel(item.market)}</span>
-                <span
-                  role="button"
-                  tabIndex={0}
-                  className="chip-remove"
-                  onClick={(e) => {
+                role="button"
+                tabIndex={0}
+                className="chip-remove"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  suppressClickRef.current = false;
+                  onRemove(id);
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
                     e.stopPropagation();
                     onRemove(id);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.stopPropagation();
-                      onRemove(id);
-                    }
-                  }}
-                  aria-label={`ลบ ${item.symbol} ${marketLabel(item.market)}`}
-                >
-                  ×
-                </span>
-              </button>
-            </div>
+                  }
+                }}
+                aria-label={`ลบ ${item.symbol} ${marketLabel(item.market)}`}
+              >
+                ×
+              </span>
+            </button>
           );
         })}
       </div>
