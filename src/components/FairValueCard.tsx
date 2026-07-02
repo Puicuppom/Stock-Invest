@@ -92,7 +92,11 @@ export default function FairValueCard({
 
           <div className="fv-models">
             <ModelRow label="Analyst Target" value={models.analyst} market={market} />
-            <ModelRow label="P/E Model" value={models.pe} market={market} />
+            <ModelRow
+              label="Forward P/E Model"
+              value={models.pe}
+              market={market}
+            />
             <ModelRow label="P/B Model" value={models.pb} market={market} />
           </div>
 
@@ -120,7 +124,8 @@ export default function FairValueCard({
       )}
 
       <p className="hint-text fv-disclaimer">
-        คำนวณจาก Analyst Target + P/E + P/B — ใช้เพื่อวิเคราะห์ ไม่ใช่คำแนะนำลงทุน
+        คำนวณจาก Analyst Target + Forward P/E + P/B (ถ่วงน้ำหนัก) — ไม่ใช่ DCF
+        แบบ Investing.com ใช้เพื่อวิเคราะห์ ไม่ใช่คำแนะนำลงทุน
       </p>
     </section>
   );

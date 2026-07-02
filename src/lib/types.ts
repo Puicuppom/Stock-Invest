@@ -33,8 +33,11 @@ export interface FairValueData {
   currentPrice: number | null;
   analyst: number | null;
   trailingEps: number | null;
+  forwardEps: number | null;
   bookValue: number | null;
   trailingPE: number | null;
+  forwardPE: number | null;
+  priceToBook: number | null;
   fiftyTwoWeekHigh: number | null;
   fiftyTwoWeekLow: number | null;
 }

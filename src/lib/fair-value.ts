@@ -17,10 +17,13 @@ interface QuoteSummaryResponse {
       };
       defaultKeyStatistics?: {
         trailingEps?: YahooRaw;
+        forwardEps?: YahooRaw;
         bookValue?: YahooRaw;
+        priceToBook?: YahooRaw;
       };
       summaryDetail?: {
         trailingPE?: YahooRaw;
+        forwardPE?: YahooRaw;
         previousClose?: YahooRaw;
         fiftyTwoWeekHigh?: YahooRaw;
         fiftyTwoWeekLow?: YahooRaw;
@@ -67,8 +70,11 @@ export async function fetchFundamentals(
 
     const analyst = num(row.financialData?.targetMeanPrice);
     const trailingEps = num(row.defaultKeyStatistics?.trailingEps);
+    const forwardEps = num(row.defaultKeyStatistics?.forwardEps);
     const bookValue = num(row.defaultKeyStatistics?.bookValue);
+    const priceToBook = num(row.defaultKeyStatistics?.priceToBook);
     const trailingPE = num(row.summaryDetail?.trailingPE);
+    const forwardPE = num(row.summaryDetail?.forwardPE);
     const currentPrice =
       num(row.financialData?.currentPrice) ??
       num(row.summaryDetail?.previousClose);
@@ -79,8 +85,11 @@ export async function fetchFundamentals(
       currentPrice,
       analyst,
       trailingEps,
+      forwardEps,
       bookValue,
       trailingPE,
+      forwardPE,
+      priceToBook,
       fiftyTwoWeekHigh,
       fiftyTwoWeekLow,
     };
@@ -89,15 +98,41 @@ export async function fetchFundamentals(
   }
 }
 
-const FAIR_PE: Record<"TH" | "US", number> = {
-  US: 16,
+const BASE_PE: Record<"TH" | "US", number> = {
+  US: 18,
   TH: 14,
 };
 
-const FAIR_PB: Record<"TH" | "US", number> = {
-  US: 2.0,
+const BASE_PB: Record<"TH" | "US", number> = {
+  US: 2.5,
   TH: 1.5,
 };
+
+/** Blend market baseline with the stock's own multiple (closer to peer-style valuation). */
+function fairPE(market: "TH" | "US", trailingPE: number | null): number {
+  const base = BASE_PE[market];
+  if (trailingPE == null || trailingPE <= 0) return base;
+  const blended = (base + trailingPE * 0.65) / 2;
+  return Math.min(45, Math.max(8, blended));
+}
+
+function fairPB(market: "TH" | "US", priceToBook: number | null): number {
+  const base = BASE_PB[market];
+  if (priceToBook == null || priceToBook <= 0) return base;
+  const blended = (base + priceToBook * 0.5) / 2;
+  return Math.min(6, Math.max(0.8, blended));
+}
+
+function shouldUsePB(priceToBook: number | null): boolean {
+  if (priceToBook == null || priceToBook <= 0) return false;
+  // Skip P/B when book value is a poor fit (asset-light tech, deep discount to book).
+  return priceToBook >= 0.5 && priceToBook <= 5;
+}
+
+interface WeightedValue {
+  value: number;
+  weight: number;
+}
 
 export function calculateFairValue(
   market: "TH" | "US",
@@ -126,25 +161,32 @@ export function calculateFairValue(
     };
   }
 
+  const weighted: WeightedValue[] = [];
+
   if (data.analyst != null && data.analyst > 0) {
     models.analyst = data.analyst;
+    weighted.push({ value: data.analyst, weight: 3 });
   }
 
-  if (data.trailingEps != null && data.trailingEps > 0) {
-    models.pe = data.trailingEps * FAIR_PE[market];
+  const eps = data.forwardEps ?? data.trailingEps;
+  if (eps != null && eps > 0) {
+    models.pe = eps * fairPE(market, data.trailingPE);
+    weighted.push({ value: models.pe, weight: 2 });
   }
 
-  if (data.bookValue != null && data.bookValue > 0) {
-    models.pb = data.bookValue * FAIR_PB[market];
+  if (
+    data.bookValue != null &&
+    data.bookValue > 0 &&
+    shouldUsePB(data.priceToBook)
+  ) {
+    models.pb = data.bookValue * fairPB(market, data.priceToBook);
+    weighted.push({ value: models.pb, weight: 1 });
   }
-
-  const values = [models.analyst, models.pe, models.pb].filter(
-    (value): value is number => value != null && value > 0
-  );
 
   const fairValue =
-    values.length > 0
-      ? values.reduce((sum, value) => sum + value, 0) / values.length
+    weighted.length > 0
+      ? weighted.reduce((sum, item) => sum + item.value * item.weight, 0) /
+        weighted.reduce((sum, item) => sum + item.weight, 0)
       : null;
 
   const upsidePercent =
