@@ -1,7 +1,8 @@
+import { calculateFairValue, fetchFundamentals } from "./fair-value";
 import { calculatePivot } from "./pivot";
 import { detectMarket, resolveSymbol } from "./symbol";
 import { clusterZones, findSwingPoints, topZones } from "./swing";
-import type { Candle, StockData } from "./types";
+import type { Candle, FairValueData, StockData } from "./types";
 
 export const revalidate = 900;
 
@@ -82,7 +83,8 @@ async function fetchHistorical(resolvedSymbol: string): Promise<Candle[]> {
 function buildStockData(
   input: string,
   resolvedSymbol: string,
-  candles: Candle[]
+  candles: Candle[],
+  fundamentals: FairValueData | null
 ): StockData {
   const prev = candles[candles.length - 2];
   const last = candles[candles.length - 1];
@@ -92,6 +94,12 @@ function buildStockData(
   const detectedMarket = detectMarket(resolvedSymbol);
   const change = last.close - prev.close;
   const changePercent = (change / prev.close) * 100;
+
+  const fairValueCalc = calculateFairValue(
+    detectedMarket,
+    last.close,
+    fundamentals
+  );
 
   return {
     symbol: input.toUpperCase(),
@@ -104,6 +112,10 @@ function buildStockData(
     lastClose: last.close,
     change,
     changePercent,
+    fairValue: {
+      ...fairValueCalc,
+      trailingPE: fundamentals?.trailingPE ?? null,
+    },
   };
 }
 
@@ -116,10 +128,14 @@ export async function getStockData(
     throw new Error("Stock not found");
   }
 
-  const candles = await fetchHistorical(resolvedSymbol);
+  const [candles, fundamentals] = await Promise.all([
+    fetchHistorical(resolvedSymbol),
+    fetchFundamentals(resolvedSymbol),
+  ]);
+
   if (candles.length < 10) {
     throw new Error("Stock not found");
   }
 
-  return buildStockData(input, resolvedSymbol, candles);
+  return buildStockData(input, resolvedSymbol, candles, fundamentals);
 }

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import AddStockFab from "@/components/AddStockFab";
+import FairValueCard from "@/components/FairValueCard";
 import PivotTable from "@/components/PivotTable";
 import StockChart from "@/components/StockChart";
 import Watchlist from "@/components/Watchlist";
@@ -151,6 +152,12 @@ export default function StockApp() {
 
       {data && (
         <>
+          <FairValueCard
+            fairValue={data.fairValue}
+            currentPrice={data.lastClose}
+            market={data.market}
+          />
+
           <PivotTable pivot={data.pivot} market={data.market} />
 
           <section className="zones-card">

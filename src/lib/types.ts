@@ -29,6 +29,31 @@ export interface PriceZone {
   strength: number;
 }
 
+export interface FairValueData {
+  currentPrice: number | null;
+  analyst: number | null;
+  trailingEps: number | null;
+  bookValue: number | null;
+  trailingPE: number | null;
+  fiftyTwoWeekHigh: number | null;
+  fiftyTwoWeekLow: number | null;
+}
+
+export interface FairValueModels {
+  analyst: number | null;
+  pe: number | null;
+  pb: number | null;
+}
+
+export interface FairValueResult {
+  fairValue: number | null;
+  upsidePercent: number | null;
+  verdict: "undervalued" | "fair" | "overvalued" | "unknown";
+  models: FairValueModels;
+  range52w: { low: number; high: number } | null;
+  trailingPE: number | null;
+}
+
 export interface StockData {
   symbol: string;
   resolvedSymbol: string;
@@ -40,6 +65,7 @@ export interface StockData {
   lastClose: number;
   change: number;
   changePercent: number;
+  fairValue: FairValueResult;
 }
 
 export interface WatchlistItem {
