@@ -3,9 +3,12 @@
 import { useCallback, useEffect, useState } from "react";
 import AddStockFab from "@/components/AddStockFab";
 import FairValueCard from "@/components/FairValueCard";
+import SrAlertPanel from "@/components/SrAlertPanel";
 import SupportResistanceCard from "@/components/SupportResistanceCard";
 import StockChart from "@/components/StockChart";
 import Watchlist from "@/components/Watchlist";
+import { useSrAlertMonitor } from "@/hooks/useSrAlertMonitor";
+import { useSrAlerts } from "@/hooks/useSrAlerts";
 import { useWatchlist } from "@/hooks/useWatchlist";
 import { useSrMode } from "@/hooks/useSrMode";
 import { displaySymbol } from "@/lib/symbol";
@@ -25,12 +28,35 @@ export default function StockApp() {
   } = useWatchlist();
 
   const { mode: srMode, setMode: setSrMode } = useSrMode();
+  const {
+    settings: alertSettings,
+    loaded: alertsLoaded,
+    permission: alertPermission,
+    setEnabled: setAlertsEnabled,
+    setTolerance: setAlertTolerance,
+    shouldNotify,
+  } = useSrAlerts();
 
   const [data, setData] = useState<StockData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [addOpen, setAddOpen] = useState(false);
   const [toast, setToast] = useState("");
+  const [alertToast, setAlertToast] = useState("");
+
+  const handleAlert = useCallback((message: string) => {
+    setAlertToast(message);
+  }, []);
+
+  useSrAlertMonitor({
+    items,
+    loaded: loaded && alertsLoaded,
+    enabled: alertSettings.enabled,
+    tolerancePercent: alertSettings.tolerancePercent,
+    srMode,
+    shouldNotify,
+    onAlert: handleAlert,
+  });
 
   const handleAddStock = useCallback(
     (symbol: string, market: "TH" | "US") => {
@@ -59,6 +85,24 @@ export default function StockApp() {
     const timer = window.setTimeout(() => setToast(""), 2200);
     return () => window.clearTimeout(timer);
   }, [toast]);
+
+  useEffect(() => {
+    if (!alertToast) return;
+    const timer = window.setTimeout(() => setAlertToast(""), 5000);
+    return () => window.clearTimeout(timer);
+  }, [alertToast]);
+
+  const handleToggleAlerts = useCallback(
+    async (enabled: boolean) => {
+      const ok = await setAlertsEnabled(enabled);
+      if (enabled && ok === false) {
+        setToast("เปิดการแจ้งเตือนไม่สำเร็จ — ตรวจสอบ permission");
+      } else if (enabled) {
+        setToast("เปิดแจ้งเตือนแนวรับ/ต้านแล้ว");
+      }
+    },
+    [setAlertsEnabled]
+  );
 
   const fetchStock = useCallback(async () => {
     if (!selectedItem) return;
@@ -140,6 +184,9 @@ export default function StockApp() {
       </section>
 
       {toast && <div className="toast-banner">{toast}</div>}
+      {alertToast && (
+        <div className="toast-banner toast-alert">{alertToast}</div>
+      )}
 
       <section className="chart-section">
         {loading && <div className="state-banner">กำลังโหลด...</div>}
@@ -170,6 +217,16 @@ export default function StockApp() {
             onModeChange={setSrMode}
           />
         </>
+      )}
+
+      {loaded && items.length > 0 && (
+        <SrAlertPanel
+          settings={alertSettings}
+          permission={alertPermission}
+          srMode={srMode}
+          onToggle={handleToggleAlerts}
+          onToleranceChange={setAlertTolerance}
+        />
       )}
 
       <AddStockFab

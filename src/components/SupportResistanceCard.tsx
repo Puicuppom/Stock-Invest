@@ -1,3 +1,7 @@
+import {
+  buildSrLevels,
+  nearestSrLevels,
+} from "@/lib/sr-levels";
 import type { PivotLevels, PriceZone, SrMode } from "@/lib/types";
 
 interface SupportResistanceCardProps {
@@ -7,15 +11,6 @@ interface SupportResistanceCardProps {
   mode: SrMode;
   onModeChange: (mode: SrMode) => void;
 }
-
-interface Level {
-  price: number;
-  label: string;
-  kind: "resistance" | "support" | "pivot";
-  source: "pivot" | "swing";
-  strength?: number;
-}
-
 const MODE_COPY: Record<
   SrMode,
   { title: string; subtitle: string; hint: string; empty: string }
@@ -42,42 +37,6 @@ function distPercent(price: number, current: number): number {
   return ((price - current) / current) * 100;
 }
 
-function buildLevels(
-  pivot: PivotLevels,
-  zones: PriceZone[],
-  mode: SrMode
-): Level[] {
-  if (mode === "swing") {
-    let res = 0;
-    let sup = 0;
-    return zones
-      .map((zone) => {
-        const label =
-          zone.type === "resistance"
-            ? `แนวต้าน ${++res}`
-            : `แนวรับ ${++sup}`;
-        return {
-          price: zone.price,
-          label,
-          kind: zone.type,
-          source: "swing" as const,
-          strength: zone.strength,
-        };
-      })
-      .sort((a, b) => b.price - a.price);
-  }
-
-  return (
-    [
-      { price: pivot.r2, label: "R2", kind: "resistance", source: "pivot" },
-      { price: pivot.r1, label: "R1", kind: "resistance", source: "pivot" },
-      { price: pivot.pivot, label: "Pivot", kind: "pivot", source: "pivot" },
-      { price: pivot.s1, label: "S1", kind: "support", source: "pivot" },
-      { price: pivot.s2, label: "S2", kind: "support", source: "pivot" },
-    ] satisfies Level[]
-  ).sort((a, b) => b.price - a.price);
-}
-
 export default function SupportResistanceCard({
   pivot,
   zones,
@@ -86,17 +45,9 @@ export default function SupportResistanceCard({
   onModeChange,
 }: SupportResistanceCardProps) {
   const copy = MODE_COPY[mode];
-  const levels = buildLevels(pivot, zones, mode);
-  const resistances = levels.filter(
-    (l) => l.kind === "resistance" && l.price > currentPrice
-  );
-  const supports = levels.filter(
-    (l) => l.kind === "support" && l.price < currentPrice
-  );
-
-  const nearestRes = resistances.at(-1) ?? null;
-  const nearestSup = supports[0] ?? null;
-
+  const levels = buildSrLevels(pivot, zones, mode);
+  const { nearestResistance: nearestRes, nearestSupport: nearestSup } =
+    nearestSrLevels(levels, currentPrice);
   const ladderLow = nearestSup?.price ?? currentPrice * 0.95;
   const ladderHigh = nearestRes?.price ?? currentPrice * 1.05;
   const ladderSpan = ladderHigh - ladderLow;
