@@ -30,31 +30,34 @@ export interface PriceZone {
 }
 
 export interface FairValueData {
-  currentPrice: number | null;
   analyst: number | null;
+  analystLow: number | null;
+  analystHigh: number | null;
   trailingEps: number | null;
   forwardEps: number | null;
-  bookValue: number | null;
   trailingPE: number | null;
   forwardPE: number | null;
-  priceToBook: number | null;
   fiftyTwoWeekHigh: number | null;
   fiftyTwoWeekLow: number | null;
 }
 
-export interface FairValueModels {
-  analyst: number | null;
-  pe: number | null;
-  pb: number | null;
-}
-
 export interface FairValueResult {
+  /** Primary: Yahoo analyst consensus mean (≈ Investing.com) */
   fairValue: number | null;
+  fairValueLow: number | null;
+  fairValueHigh: number | null;
+  /** Supplementary P/E reference — not blended into fair value */
+  peReference: number | null;
   upsidePercent: number | null;
+  upsideLowPercent: number | null;
+  upsideHighPercent: number | null;
   verdict: "undervalued" | "fair" | "overvalued" | "unknown";
-  models: FairValueModels;
+  analystRange: { low: number; high: number } | null;
   range52w: { low: number; high: number } | null;
   trailingPE: number | null;
+  forwardPE: number | null;
+  forwardEps: number | null;
+  source: "analyst" | "pe-fallback" | "unknown";
 }
 
 export interface StockData {

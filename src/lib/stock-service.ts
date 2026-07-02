@@ -115,6 +115,7 @@ function buildStockData(
     fairValue: {
       ...fairValueCalc,
       trailingPE: fundamentals?.trailingPE ?? null,
+      forwardPE: fundamentals?.forwardPE ?? null,
     },
   };
 }

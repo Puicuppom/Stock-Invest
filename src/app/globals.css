@@ -480,6 +480,27 @@ body.watchlist-dragging {
   margin: 0;
 }
 
+.fv-subtitle {
+  margin: 0.15rem 0 0;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.fv-supplement {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+}
+
+.fv-supplement-title {
+  margin: 0 0 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 .fv-badge {
   font-size: 0.68rem;
   font-weight: 700;
@@ -532,6 +553,34 @@ body.watchlist-dragging {
   font-weight: 800;
   color: var(--accent);
   font-family: var(--font-geist-mono), monospace;
+}
+
+.fv-price-range {
+  font-size: 1.35rem;
+  line-height: 1.25;
+}
+
+.fv-range-sep {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.fv-midpoint {
+  margin: 0.2rem 0 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-family: var(--font-geist-mono), monospace;
+}
+
+.fv-note {
+  margin: 0 0 0.75rem;
+  padding: 0.45rem 0.65rem;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 12%, var(--surface-2));
+  border: 1px solid color-mix(in srgb, var(--warning) 28%, transparent);
 }
 
 .fv-side {
@@ -598,6 +647,17 @@ body.watchlist-dragging {
   margin-top: 0.35rem;
 }
 
+.fv-analyst-range {
+  margin-bottom: 0.65rem;
+}
+
+.fv-range-title {
+  margin: 0 0 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
 .fv-range-labels {
   display: flex;
   justify-content: space-between;
@@ -612,6 +672,15 @@ body.watchlist-dragging {
   height: 8px;
   border-radius: 999px;
   background: linear-gradient(to right, var(--success), var(--warning), var(--danger));
+}
+
+.fv-range-track-analyst {
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--danger) 70%, var(--surface-2)),
+    color-mix(in srgb, var(--accent) 70%, var(--surface-2)),
+    color-mix(in srgb, var(--success) 70%, var(--surface-2))
+  );
 }
 
 .fv-range-marker {

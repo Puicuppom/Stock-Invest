@@ -7,34 +7,23 @@ interface FairValueCardProps {
 }
 
 const VERDICT_LABEL = {
-  undervalued: "ถูกกว่าราคายุติธรรม",
-  fair: "ใกล้ราคายุติธรรม",
-  overvalued: "แพงกว่าราคายุติธรรม",
+  undervalued: "ต่ำกว่าเป้า",
+  fair: "ใกล้เป้า",
+  overvalued: "สูงกว่าเป้า",
   unknown: "ข้อมูลไม่พอ",
 };
 
 function formatPrice(value: number, market: "TH" | "US"): string {
-  const decimals = market === "TH" ? 2 : 2;
-  return value.toFixed(decimals);
+  return value.toFixed(market === "TH" ? 2 : 2);
 }
 
-function ModelRow({
-  label,
-  value,
-  market,
-}: {
-  label: string;
-  value: number | null;
-  market: "TH" | "US";
-}) {
-  if (value == null) return null;
-
-  return (
-    <div className="fv-row">
-      <span className="fv-row-label">{label}</span>
-      <span className="fv-row-value">{formatPrice(value, market)}</span>
-    </div>
-  );
+function rangeMarker(
+  price: number,
+  low: number,
+  high: number
+): number | null {
+  if (high <= low) return null;
+  return Math.min(100, Math.max(0, ((price - low) / (high - low)) * 100));
 }
 
 export default function FairValueCard({
@@ -42,90 +31,153 @@ export default function FairValueCard({
   currentPrice,
   market,
 }: FairValueCardProps) {
-  const { fairValue: fair, upsidePercent, verdict, models, range52w, trailingPE } =
-    fairValue;
+  const {
+    fairValue: target,
+    upsidePercent,
+    upsideLowPercent,
+    upsideHighPercent,
+    verdict,
+    analystRange,
+    range52w,
+    peReference,
+    trailingPE,
+    forwardPE,
+    forwardEps,
+    source,
+  } = fairValue;
 
-  const rangePosition =
-    range52w && currentPrice > 0
-      ? Math.min(
-          100,
-          Math.max(
-            0,
-            ((currentPrice - range52w.low) /
-              (range52w.high - range52w.low)) *
-              100
-          )
-        )
-      : null;
+  const analystPos =
+    analystRange && rangeMarker(currentPrice, analystRange.low, analystRange.high);
+  const weekPos =
+    range52w && rangeMarker(currentPrice, range52w.low, range52w.high);
 
   return (
     <section className="fv-card">
       <div className="fv-header">
-        <h3 className="section-title">Fair Value (ราคายุติธรรม)</h3>
+        <div>
+          <h3 className="section-title">Analyst Target</h3>
+          <p className="fv-subtitle">เป้าราคานักวิเคราะห์ · Yahoo</p>
+        </div>
         <span className={`fv-badge fv-badge-${verdict}`}>
           {VERDICT_LABEL[verdict]}
         </span>
       </div>
 
-      {fair != null ? (
+      {target != null ? (
         <>
           <div className="fv-main">
             <div>
-              <p className="fv-label">ราคายุติธรรม</p>
-              <p className="fv-price">{formatPrice(fair, market)}</p>
+              <p className="fv-label">เป้าเฉลี่ย 12 เดือน</p>
+              <p className="fv-price">{formatPrice(target, market)}</p>
+              {analystRange && (
+                <p className="fv-midpoint">
+                  ช่วง {formatPrice(analystRange.low, market)} –{" "}
+                  {formatPrice(analystRange.high, market)}
+                </p>
+              )}
             </div>
             <div className="fv-side">
               <p className="fv-label">ราคาปัจจุบัน</p>
               <p className="fv-current">{formatPrice(currentPrice, market)}</p>
-              {upsidePercent != null && (
+              {analystRange &&
+              upsideLowPercent != null &&
+              upsideHighPercent != null ? (
                 <p
                   className={
-                    upsidePercent >= 0 ? "fv-upside-up" : "fv-upside-down"
+                    upsidePercent != null && upsidePercent >= 0
+                      ? "fv-upside-up"
+                      : "fv-upside-down"
                   }
                 >
-                  {upsidePercent >= 0 ? "+" : ""}
-                  {upsidePercent.toFixed(1)}%
+                  {upsideLowPercent >= 0 ? "+" : ""}
+                  {upsideLowPercent.toFixed(1)}% –{" "}
+                  {upsideHighPercent >= 0 ? "+" : ""}
+                  {upsideHighPercent.toFixed(1)}%
                 </p>
+              ) : (
+                upsidePercent != null && (
+                  <p
+                    className={
+                      upsidePercent >= 0 ? "fv-upside-up" : "fv-upside-down"
+                    }
+                  >
+                    {upsidePercent >= 0 ? "+" : ""}
+                    {upsidePercent.toFixed(1)}%
+                  </p>
+                )
               )}
             </div>
           </div>
 
-          <div className="fv-models">
-            <ModelRow label="Analyst Target" value={models.analyst} market={market} />
-            <ModelRow
-              label="Forward P/E Model"
-              value={models.pe}
-              market={market}
-            />
-            <ModelRow label="P/B Model" value={models.pb} market={market} />
-          </div>
+          {analystRange && analystPos != null && (
+            <div className="fv-range fv-analyst-range">
+              <div className="fv-range-labels">
+                <span>Low {formatPrice(analystRange.low, market)}</span>
+                <span>High {formatPrice(analystRange.high, market)}</span>
+              </div>
+              <div className="fv-range-track fv-range-track-analyst">
+                <span
+                  className="fv-range-marker"
+                  style={{ left: `${analystPos}%` }}
+                />
+              </div>
+            </div>
+          )}
 
-          {trailingPE != null && (
-            <p className="fv-meta">Trailing P/E: {trailingPE.toFixed(2)}</p>
+          {(peReference != null ||
+            forwardPE != null ||
+            forwardEps != null) && (
+            <div className="fv-supplement">
+              <p className="fv-supplement-title">ข้อมูลเสริม</p>
+              {peReference != null && (
+                <div className="fv-row">
+                  <span className="fv-row-label">P/E อ้างอิง</span>
+                  <span className="fv-row-value">
+                    {formatPrice(peReference, market)}
+                  </span>
+                </div>
+              )}
+              {(forwardEps != null || forwardPE != null || trailingPE != null) && (
+                <p className="fv-meta">
+                  {forwardEps != null && `Forward EPS ${forwardEps.toFixed(2)}`}
+                  {forwardEps != null && forwardPE != null && " · "}
+                  {forwardPE != null && `Fwd P/E ${forwardPE.toFixed(1)}`}
+                  {(forwardEps != null || forwardPE != null) &&
+                    trailingPE != null &&
+                    " · "}
+                  {trailingPE != null && `Trail P/E ${trailingPE.toFixed(1)}`}
+                </p>
+              )}
+            </div>
+          )}
+
+          {source === "pe-fallback" && (
+            <p className="fv-note">ไม่มี Analyst Target — แสดง P/E อ้างอิงแทน</p>
           )}
         </>
       ) : (
-        <p className="hint-text">ไม่มีข้อมูลเพียงพอสำหรับคำนวณ Fair Value</p>
+        <p className="hint-text">ไม่มีข้อมูล Analyst Target สำหรับหุ้นนี้</p>
       )}
 
-      {range52w && rangePosition != null && (
+      {range52w && weekPos != null && (
         <div className="fv-range">
+          <p className="fv-range-title">52 สัปดาห์</p>
           <div className="fv-range-labels">
-            <span>52W Low {formatPrice(range52w.low, market)}</span>
-            <span>52W High {formatPrice(range52w.high, market)}</span>
+            <span>{formatPrice(range52w.low, market)}</span>
+            <span>{formatPrice(range52w.high, market)}</span>
           </div>
           <div className="fv-range-track">
             <span
               className="fv-range-marker"
-              style={{ left: `${rangePosition}%` }}
+              style={{ left: `${weekPos}%` }}
             />
           </div>
         </div>
       )}
 
       <p className="hint-text fv-disclaimer">
-        คำนวณจาก Analyst Target + Forward P/E + P/B (ถ่วงน้ำหนัก) — ไม่ใช่ DCF
-        แบบ Investing.com ใช้เพื่อวิเคราะห์ ไม่ใช่คำแนะนำลงทุน
+        ข้อมูลจาก Yahoo Finance · ใกล้เคียง Investing.com — ใช้เพื่อวิเคราะห์
+        ไม่ใช่คำแนะนำลงทุน
       </p>
     </section>
   );

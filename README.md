@@ -6,7 +6,7 @@
 
 - เพิ่ม/ลบหุ้นใน Watchlist (เก็บใน localStorage)
 - ดึงข้อมูล OHLCV จาก Yahoo Finance
-- **Fair Value** — Analyst Target + P/E + P/B (ราคายุติธรรม)
+- **Analyst Target** — เป้านักวิเคราะห์ 12 เดือน (Yahoo ≈ Investing.com)
 - **Pivot Points** — R1–R3, S1–S3, Pivot
 - **Swing High/Low** — โซนแนวรับ/แนวต้านบนกราฟ
 - กราฟแท่งเทียน (TradingView Lightweight Charts)
