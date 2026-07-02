@@ -7,12 +7,12 @@ import SupportResistanceCard from "@/components/SupportResistanceCard";
 import StockChart from "@/components/StockChart";
 import Watchlist from "@/components/Watchlist";
 import { useSrTagSettings } from "@/hooks/useSrTagSettings";
-import { useSrWatchlistTags } from "@/hooks/useSrWatchlistTags";
+import { useSrWatchlistTags, type WatchlistSrTags } from "@/hooks/useSrWatchlistTags";
 import { useWatchlist } from "@/hooks/useWatchlist";
 import { useSrMode } from "@/hooks/useSrMode";
 import { findSrHits } from "@/lib/sr-levels";
 import { displaySymbol } from "@/lib/symbol";
-import { marketLabel, watchlistId } from "@/lib/watchlist-id";
+import { marketLabel, stockDataMatchesItem, watchlistId } from "@/lib/watchlist-id";
 import type { StockData } from "@/lib/types";
 
 export default function StockApp() {
@@ -47,29 +47,66 @@ export default function StockApp() {
   const [error, setError] = useState("");
   const [addOpen, setAddOpen] = useState(false);
   const [toast, setToast] = useState("");
+  const [liveTagCache, setLiveTagCache] = useState<WatchlistSrTags>({});
+
+  const selectedData =
+    selectedItem && data && stockDataMatchesItem(data, selectedItem) ? data : null;
 
   const currentHits = useMemo(() => {
-    if (!data) return [];
+    if (!selectedData) return [];
     return findSrHits(
-      data.pivot,
-      data.zones,
-      data.lastClose,
+      selectedData.pivot,
+      selectedData.zones,
+      selectedData.lastClose,
       srMode,
       tagSettings.tolerancePercent
     );
-  }, [data, srMode, tagSettings.tolerancePercent]);
+  }, [selectedData, srMode, tagSettings.tolerancePercent]);
+
+  useEffect(() => {
+    setLiveTagCache({});
+  }, [srMode, tagSettings.tolerancePercent]);
+
+  useEffect(() => {
+    if (!selectedItem || !selectedData) return;
+
+    const id = watchlistId(selectedItem);
+    const hits = findSrHits(
+      selectedData.pivot,
+      selectedData.zones,
+      selectedData.lastClose,
+      srMode,
+      tagSettings.tolerancePercent
+    );
+
+    setLiveTagCache((prev) => {
+      const prevHits = prev[id];
+      const same =
+        prevHits?.length === hits.length &&
+        hits.every(
+          (hit, index) =>
+            prevHits[index]?.kind === hit.kind &&
+            prevHits[index]?.level.price === hit.level.price
+        );
+
+      if (same) return prev;
+      if (hits.length === 0) {
+        if (!(id in prev)) return prev;
+        const { [id]: _, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [id]: hits };
+    });
+  }, [selectedItem, selectedData, srMode, tagSettings.tolerancePercent]);
 
   const mergedWatchlistTags = useMemo(() => {
-    if (!selectedItem) return watchlistTags;
-    const id = watchlistId(selectedItem);
-    if (!data) return watchlistTags;
-    if (currentHits.length === 0) {
-      const next = { ...watchlistTags };
-      delete next[id];
-      return next;
+    const merged = { ...watchlistTags };
+    for (const [id, hits] of Object.entries(liveTagCache)) {
+      if (hits.length === 0) delete merged[id];
+      else merged[id] = hits;
     }
-    return { ...watchlistTags, [id]: currentHits };
-  }, [watchlistTags, selectedItem, data, currentHits]);
+    return merged;
+  }, [watchlistTags, liveTagCache]);
 
   const handleAddStock = useCallback(
     (symbol: string, market: "TH" | "US") => {
@@ -194,18 +231,18 @@ export default function StockApp() {
         )}
       </section>
 
-      {data && (
+      {data && selectedData && (
         <>
           <FairValueCard
-            fairValue={data.fairValue}
-            currentPrice={data.lastClose}
-            market={data.market}
+            fairValue={selectedData.fairValue}
+            currentPrice={selectedData.lastClose}
+            market={selectedData.market}
           />
 
           <SupportResistanceCard
-            pivot={data.pivot}
-            zones={data.zones}
-            currentPrice={data.lastClose}
+            pivot={selectedData.pivot}
+            zones={selectedData.zones}
+            currentPrice={selectedData.lastClose}
             mode={srMode}
             hits={currentHits}
             tolerancePercent={tagSettings.tolerancePercent}

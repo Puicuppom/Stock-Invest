@@ -375,16 +375,13 @@ body.watchlist-dragging {
   font-weight: 600;
 }
 
-.watchlist-chip.has-sr-tag {
-  padding-bottom: 0.35rem;
-}
-
 .chip-sr-tags {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 0.2rem;
-  margin-top: 0.1rem;
+  min-height: 1.05rem;
+  margin-top: 0.05rem;
 }
 
 .chip-sr-tag {

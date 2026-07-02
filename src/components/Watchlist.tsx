@@ -259,7 +259,7 @@ export default function Watchlist({
                 if (el) chipRefs.current.set(id, el);
                 else chipRefs.current.delete(id);
               }}
-              className={`watchlist-chip ${active ? "active" : ""} ${isDragging ? "dragging" : ""} ${isDropTarget ? "drop-target" : ""} ${isPressing ? "pressing" : ""} ${nearResistance || nearSupport ? "has-sr-tag" : ""}`}
+              className={`watchlist-chip ${active ? "active" : ""} ${isDragging ? "dragging" : ""} ${isDropTarget ? "drop-target" : ""} ${isPressing ? "pressing" : ""}`}
               onTouchStart={(event) => handleTouchStart(id, event)}
               onPointerDown={(event) => handlePointerDown(id, event)}
               onContextMenu={(event) => event.preventDefault()}
@@ -282,16 +282,17 @@ export default function Watchlist({
               </span>
               <span className="chip-symbol">{displaySymbol(item.symbol)}</span>
               <span className="chip-market">{marketLabel(item.market)}</span>
-              {(nearResistance || nearSupport) && (
-                <span className="chip-sr-tags">
-                  {nearResistance && (
-                    <span className="chip-sr-tag chip-sr-tag-res">ต้าน</span>
-                  )}
-                  {nearSupport && (
-                    <span className="chip-sr-tag chip-sr-tag-sup">รับ</span>
-                  )}
-                </span>
-              )}
+              <span
+                className="chip-sr-tags"
+                aria-hidden={!nearResistance && !nearSupport}
+              >
+                {nearResistance && (
+                  <span className="chip-sr-tag chip-sr-tag-res">ต้าน</span>
+                )}
+                {nearSupport && (
+                  <span className="chip-sr-tag chip-sr-tag-sup">รับ</span>
+                )}
+              </span>
               {isDropTarget && <span className="chip-drop-label">วาง</span>}
             </button>
           );
