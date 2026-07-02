@@ -10,12 +10,13 @@ import {
   type ISeriesApi,
   type UTCTimestamp,
 } from "lightweight-charts";
-import type { Candle, PivotLevels, PriceZone } from "@/lib/types";
+import type { Candle, PivotLevels, PriceZone, SrMode } from "@/lib/types";
 
 interface StockChartProps {
   candles: Candle[];
   pivot: PivotLevels;
   zones: PriceZone[];
+  mode: SrMode;
 }
 
 const CHART_COLORS = {
@@ -33,7 +34,7 @@ function toUtc(date: string): UTCTimestamp {
   return Math.floor(new Date(`${date}T00:00:00Z`).getTime() / 1000) as UTCTimestamp;
 }
 
-export default function StockChart({ candles, pivot, zones }: StockChartProps) {
+export default function StockChart({ candles, pivot, zones, mode }: StockChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
@@ -119,22 +120,32 @@ export default function StockChart({ candles, pivot, zones }: StockChartProps) {
       priceLinesRef.current.push(line);
     };
 
-    addLine(pivot.pivot, CHART_COLORS.pivot, "P", LineStyle.Solid);
-    addLine(pivot.r1, CHART_COLORS.resistance, "R1");
-    addLine(pivot.r2, CHART_COLORS.resistance, "R2");
-    addLine(pivot.s1, CHART_COLORS.support, "S1");
-    addLine(pivot.s2, CHART_COLORS.support, "S2");
-
-    zones.forEach((zone, index) => {
-      addLine(
-        zone.price,
-        zone.type === "resistance" ? CHART_COLORS.resistance : CHART_COLORS.support,
-        zone.type === "resistance" ? `R${index + 1}` : `S${index + 1}`
-      );
-    });
+    if (mode === "pivot") {
+      addLine(pivot.pivot, CHART_COLORS.pivot, "P", LineStyle.Solid);
+      addLine(pivot.r1, CHART_COLORS.resistance, "R1");
+      addLine(pivot.r2, CHART_COLORS.resistance, "R2");
+      addLine(pivot.s1, CHART_COLORS.support, "S1");
+      addLine(pivot.s2, CHART_COLORS.support, "S2");
+    } else {
+      let res = 0;
+      let sup = 0;
+      zones.forEach((zone) => {
+        const title =
+          zone.type === "resistance"
+            ? `ต้าน${++res}`
+            : `รับ${++sup}`;
+        addLine(
+          zone.price,
+          zone.type === "resistance"
+            ? CHART_COLORS.resistance
+            : CHART_COLORS.support,
+          title
+        );
+      });
+    }
 
     chart.timeScale().fitContent();
-  }, [candles, pivot, zones]);
+  }, [candles, pivot, zones, mode]);
 
   return (
     <div className="chart-shell">

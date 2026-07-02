@@ -1,9 +1,11 @@
-import type { PivotLevels, PriceZone } from "@/lib/types";
+import type { PivotLevels, PriceZone, SrMode } from "@/lib/types";
 
 interface SupportResistanceCardProps {
   pivot: PivotLevels;
   zones: PriceZone[];
   currentPrice: number;
+  mode: SrMode;
+  onModeChange: (mode: SrMode) => void;
 }
 
 interface Level {
@@ -14,6 +16,24 @@ interface Level {
   strength?: number;
 }
 
+const MODE_COPY: Record<
+  SrMode,
+  { title: string; subtitle: string; hint: string; empty: string }
+> = {
+  swing: {
+    title: "แนวรับ / แนวต้าน",
+    subtitle: "ถือยาว · Swing 6 เดือน",
+    hint: "จากจุดสูง/ต่ำย้อนหลัง · × = จำนวนครั้งที่ราคาเคยสะท้อน",
+    empty: "ไม่พบโซน Swing ที่ชัดเจน",
+  },
+  pivot: {
+    title: "Pivot Points",
+    subtitle: "เทรดสั้น · วันถัดไป",
+    hint: "คำนวณจาก High/Low/Close ของวันก่อนหน้า",
+    empty: "ไม่มีข้อมูล Pivot",
+  },
+};
+
 function formatPrice(value: number): string {
   return value.toFixed(2);
 }
@@ -22,42 +42,51 @@ function distPercent(price: number, current: number): number {
   return ((price - current) / current) * 100;
 }
 
-function buildLevels(pivot: PivotLevels, zones: PriceZone[]): Level[] {
-  const levels: Level[] = [
-    { price: pivot.r3, label: "R3", kind: "resistance", source: "pivot" },
-    { price: pivot.r2, label: "R2", kind: "resistance", source: "pivot" },
-    { price: pivot.r1, label: "R1", kind: "resistance", source: "pivot" },
-    { price: pivot.pivot, label: "Pivot", kind: "pivot", source: "pivot" },
-    { price: pivot.s1, label: "S1", kind: "support", source: "pivot" },
-    { price: pivot.s2, label: "S2", kind: "support", source: "pivot" },
-    { price: pivot.s3, label: "S3", kind: "support", source: "pivot" },
-    ...zones.map((zone, index) => ({
-      price: zone.price,
-      label:
-        zone.type === "resistance"
-          ? `แนวต้าน ${index + 1}`
-          : `แนวรับ ${index + 1}`,
-      kind: zone.type,
-      source: "swing" as const,
-      strength: zone.strength,
-    })),
-  ];
-
-  const unique = new Map<string, Level>();
-  for (const level of levels) {
-    const key = `${level.kind}-${level.price.toFixed(2)}`;
-    if (!unique.has(key)) unique.set(key, level);
+function buildLevels(
+  pivot: PivotLevels,
+  zones: PriceZone[],
+  mode: SrMode
+): Level[] {
+  if (mode === "swing") {
+    let res = 0;
+    let sup = 0;
+    return zones
+      .map((zone) => {
+        const label =
+          zone.type === "resistance"
+            ? `แนวต้าน ${++res}`
+            : `แนวรับ ${++sup}`;
+        return {
+          price: zone.price,
+          label,
+          kind: zone.type,
+          source: "swing" as const,
+          strength: zone.strength,
+        };
+      })
+      .sort((a, b) => b.price - a.price);
   }
 
-  return [...unique.values()].sort((a, b) => b.price - a.price);
+  return (
+    [
+      { price: pivot.r2, label: "R2", kind: "resistance", source: "pivot" },
+      { price: pivot.r1, label: "R1", kind: "resistance", source: "pivot" },
+      { price: pivot.pivot, label: "Pivot", kind: "pivot", source: "pivot" },
+      { price: pivot.s1, label: "S1", kind: "support", source: "pivot" },
+      { price: pivot.s2, label: "S2", kind: "support", source: "pivot" },
+    ] satisfies Level[]
+  ).sort((a, b) => b.price - a.price);
 }
 
 export default function SupportResistanceCard({
   pivot,
   zones,
   currentPrice,
+  mode,
+  onModeChange,
 }: SupportResistanceCardProps) {
-  const levels = buildLevels(pivot, zones);
+  const copy = MODE_COPY[mode];
+  const levels = buildLevels(pivot, zones, mode);
   const resistances = levels.filter(
     (l) => l.kind === "resistance" && l.price > currentPrice
   );
@@ -73,98 +102,144 @@ export default function SupportResistanceCard({
   const ladderSpan = ladderHigh - ladderLow;
   const pricePos =
     ladderSpan > 0
-      ? Math.min(100, Math.max(0, ((currentPrice - ladderLow) / ladderSpan) * 100))
+      ? Math.min(
+          100,
+          Math.max(0, ((currentPrice - ladderLow) / ladderSpan) * 100)
+        )
       : 50;
 
   return (
     <section className="sr-card">
-      <h3 className="section-title">แนวรับ / แนวต้าน</h3>
+      <div className="sr-header">
+        <div>
+          <h3 className="section-title">{copy.title}</h3>
+          <p className="fv-subtitle">{copy.subtitle}</p>
+        </div>
+        <div className="sr-mode-toggle" role="group" aria-label="โหมดแนวรับแนวต้าน">
+          <button
+            type="button"
+            className={`sr-mode-btn${mode === "swing" ? " active" : ""}`}
+            onClick={() => onModeChange("swing")}
+          >
+            ถือยาว
+          </button>
+          <button
+            type="button"
+            className={`sr-mode-btn${mode === "pivot" ? " active" : ""}`}
+            onClick={() => onModeChange("pivot")}
+          >
+            เทรดสั้น
+          </button>
+        </div>
+      </div>
 
-      {(nearestRes || nearestSup) && (
-        <div className="sr-nearest">
-          {nearestRes && (
-            <div className="sr-nearest-box sr-nearest-res">
-              <p className="sr-nearest-label">แนวต้านใกล้</p>
-              <p className="sr-nearest-price">{formatPrice(nearestRes.price)}</p>
-              <p className="sr-nearest-meta">
-                {nearestRes.label}
-                {nearestRes.source === "swing" &&
-                  nearestRes.strength &&
-                  ` · ×${nearestRes.strength}`}
-              </p>
-              <p className="sr-nearest-dist sr-dist-up">
-                +{distPercent(nearestRes.price, currentPrice).toFixed(1)}%
-              </p>
+      {levels.length === 0 ? (
+        <p className="hint-text">{copy.empty}</p>
+      ) : (
+        <>
+          {(nearestRes || nearestSup) && (
+            <div className="sr-nearest">
+              {nearestRes && (
+                <div className="sr-nearest-box sr-nearest-res">
+                  <p className="sr-nearest-label">แนวต้านใกล้</p>
+                  <p className="sr-nearest-price">
+                    {formatPrice(nearestRes.price)}
+                  </p>
+                  <p className="sr-nearest-meta">
+                    {nearestRes.label}
+                    {mode === "swing" &&
+                      nearestRes.strength &&
+                      ` · ×${nearestRes.strength}`}
+                  </p>
+                  <p className="sr-nearest-dist sr-dist-up">
+                    +{distPercent(nearestRes.price, currentPrice).toFixed(1)}%
+                  </p>
+                </div>
+              )}
+              {nearestSup && (
+                <div className="sr-nearest-box sr-nearest-sup">
+                  <p className="sr-nearest-label">แนวรับใกล้</p>
+                  <p className="sr-nearest-price">
+                    {formatPrice(nearestSup.price)}
+                  </p>
+                  <p className="sr-nearest-meta">
+                    {nearestSup.label}
+                    {mode === "swing" &&
+                      nearestSup.strength &&
+                      ` · ×${nearestSup.strength}`}
+                  </p>
+                  <p className="sr-nearest-dist sr-dist-down">
+                    {distPercent(nearestSup.price, currentPrice).toFixed(1)}%
+                  </p>
+                </div>
+              )}
             </div>
           )}
-          {nearestSup && (
-            <div className="sr-nearest-box sr-nearest-sup">
-              <p className="sr-nearest-label">แนวรับใกล้</p>
-              <p className="sr-nearest-price">{formatPrice(nearestSup.price)}</p>
-              <p className="sr-nearest-meta">
-                {nearestSup.label}
-                {nearestSup.strength && ` · ×${nearestSup.strength}`}
-              </p>
-              <p className="sr-nearest-dist sr-dist-down">
-                {distPercent(nearestSup.price, currentPrice).toFixed(1)}%
-              </p>
+
+          {nearestRes && nearestSup && (
+            <div className="sr-ladder">
+              <div className="sr-ladder-labels">
+                <span className="sr-dist-up">
+                  {formatPrice(nearestRes.price)}
+                </span>
+                <span>{formatPrice(currentPrice)}</span>
+                <span className="sr-dist-down">
+                  {formatPrice(nearestSup.price)}
+                </span>
+              </div>
+              <div className="sr-ladder-track">
+                <span
+                  className="sr-ladder-marker"
+                  style={{ left: `${pricePos}%` }}
+                />
+              </div>
             </div>
           )}
-        </div>
+
+          <ul className="sr-list">
+            {levels.map((level) => {
+              const dist = distPercent(level.price, currentPrice);
+
+              return (
+                <li
+                  key={`${level.source}-${level.label}-${level.price}`}
+                  className={`sr-row sr-row-${level.kind}${
+                    level.price === nearestRes?.price ||
+                    level.price === nearestSup?.price
+                      ? " sr-row-highlight"
+                      : ""
+                  }`}
+                >
+                  <span className={`sr-tag sr-tag-${level.kind}`}>
+                    {level.kind === "resistance"
+                      ? "ต้าน"
+                      : level.kind === "support"
+                        ? "รับ"
+                        : "Pivot"}
+                  </span>
+                  <span className="sr-label">
+                    {level.label}
+                    {mode === "swing" && level.strength
+                      ? ` ×${level.strength}`
+                      : ""}
+                  </span>
+                  <span className="sr-price">{formatPrice(level.price)}</span>
+                  <span
+                    className={
+                      dist >= 0 ? "sr-dist sr-dist-up" : "sr-dist sr-dist-down"
+                    }
+                  >
+                    {dist >= 0 ? "+" : ""}
+                    {dist.toFixed(1)}%
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </>
       )}
 
-      {nearestRes && nearestSup && (
-        <div className="sr-ladder">
-          <div className="sr-ladder-labels">
-            <span className="sr-dist-up">{formatPrice(nearestRes.price)}</span>
-            <span>{formatPrice(currentPrice)}</span>
-            <span className="sr-dist-down">{formatPrice(nearestSup.price)}</span>
-          </div>
-          <div className="sr-ladder-track">
-            <span className="sr-ladder-marker" style={{ left: `${pricePos}%` }} />
-          </div>
-        </div>
-      )}
-
-      <ul className="sr-list">
-        {levels.map((level) => {
-          const dist = distPercent(level.price, currentPrice);
-
-          return (
-            <li
-              key={`${level.source}-${level.label}-${level.price}`}
-              className={`sr-row sr-row-${level.kind}${
-                level.price === nearestRes?.price ||
-                level.price === nearestSup?.price
-                  ? " sr-row-highlight"
-                  : ""
-              }`}
-            >
-              <span className={`sr-tag sr-tag-${level.kind}`}>
-                {level.kind === "resistance"
-                  ? "ต้าน"
-                  : level.kind === "support"
-                    ? "รับ"
-                    : "Pivot"}
-              </span>
-              <span className="sr-label">{level.label}</span>
-              <span className="sr-price">{formatPrice(level.price)}</span>
-              <span
-                className={
-                  dist >= 0 ? "sr-dist sr-dist-up" : "sr-dist sr-dist-down"
-                }
-              >
-                {dist >= 0 ? "+" : ""}
-                {dist.toFixed(1)}%
-              </span>
-            </li>
-          );
-        })}
-      </ul>
-
-      <p className="hint-text">
-        Pivot จากวันก่อน · Swing จากจุดสูง/ต่ำ 6 เดือน — ใกล้ราคา = สำคัญกว่า
-      </p>
+      <p className="hint-text">{copy.hint}</p>
     </section>
   );
 }

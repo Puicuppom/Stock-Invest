@@ -80,3 +80,6 @@ export interface WatchlistItem {
 }
 
 export const WATCHLIST_KEY = "stock-sr-watchlist";
+
+/** swing = ถือยาว (6 เดือน), pivot = เทรดสั้น (วันถัดไป) */
+export type SrMode = "swing" | "pivot";

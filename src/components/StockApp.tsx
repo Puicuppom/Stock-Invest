@@ -7,6 +7,7 @@ import SupportResistanceCard from "@/components/SupportResistanceCard";
 import StockChart from "@/components/StockChart";
 import Watchlist from "@/components/Watchlist";
 import { useWatchlist } from "@/hooks/useWatchlist";
+import { useSrMode } from "@/hooks/useSrMode";
 import { displaySymbol } from "@/lib/symbol";
 import { marketLabel, watchlistId } from "@/lib/watchlist-id";
 import type { StockData } from "@/lib/types";
@@ -22,6 +23,8 @@ export default function StockApp() {
     reorderStock,
     loaded,
   } = useWatchlist();
+
+  const { mode: srMode, setMode: setSrMode } = useSrMode();
 
   const [data, setData] = useState<StockData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -146,6 +149,7 @@ export default function StockApp() {
             candles={data.candles}
             pivot={data.pivot}
             zones={data.zones}
+            mode={srMode}
           />
         )}
       </section>
@@ -162,6 +166,8 @@ export default function StockApp() {
             pivot={data.pivot}
             zones={data.zones}
             currentPrice={data.lastClose}
+            mode={srMode}
+            onModeChange={setSrMode}
           />
         </>
       )}
