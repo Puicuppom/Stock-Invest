@@ -1,16 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import AddStockFab from "@/components/AddStockFab";
 import FairValueCard from "@/components/FairValueCard";
-import SrAlertPanel from "@/components/SrAlertPanel";
 import SupportResistanceCard from "@/components/SupportResistanceCard";
 import StockChart from "@/components/StockChart";
 import Watchlist from "@/components/Watchlist";
-import { useSrAlertMonitor } from "@/hooks/useSrAlertMonitor";
-import { useSrAlerts } from "@/hooks/useSrAlerts";
+import { useSrTagSettings } from "@/hooks/useSrTagSettings";
+import { useSrWatchlistTags } from "@/hooks/useSrWatchlistTags";
 import { useWatchlist } from "@/hooks/useWatchlist";
 import { useSrMode } from "@/hooks/useSrMode";
+import { findSrHits } from "@/lib/sr-levels";
 import { displaySymbol } from "@/lib/symbol";
 import { marketLabel, watchlistId } from "@/lib/watchlist-id";
 import type { StockData } from "@/lib/types";
@@ -29,34 +29,47 @@ export default function StockApp() {
 
   const { mode: srMode, setMode: setSrMode } = useSrMode();
   const {
-    settings: alertSettings,
-    loaded: alertsLoaded,
-    permission: alertPermission,
-    setEnabled: setAlertsEnabled,
-    setTolerance: setAlertTolerance,
-    shouldNotify,
-  } = useSrAlerts();
+    settings: tagSettings,
+    loaded: tagSettingsLoaded,
+    setTolerance: setTagTolerance,
+    toleranceOptions,
+  } = useSrTagSettings();
+
+  const watchlistTags = useSrWatchlistTags({
+    items,
+    loaded: loaded && tagSettingsLoaded,
+    tolerancePercent: tagSettings.tolerancePercent,
+    srMode,
+  });
 
   const [data, setData] = useState<StockData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [addOpen, setAddOpen] = useState(false);
   const [toast, setToast] = useState("");
-  const [alertToast, setAlertToast] = useState("");
 
-  const handleAlert = useCallback((message: string) => {
-    setAlertToast(message);
-  }, []);
+  const currentHits = useMemo(() => {
+    if (!data) return [];
+    return findSrHits(
+      data.pivot,
+      data.zones,
+      data.lastClose,
+      srMode,
+      tagSettings.tolerancePercent
+    );
+  }, [data, srMode, tagSettings.tolerancePercent]);
 
-  useSrAlertMonitor({
-    items,
-    loaded: loaded && alertsLoaded,
-    enabled: alertSettings.enabled,
-    tolerancePercent: alertSettings.tolerancePercent,
-    srMode,
-    shouldNotify,
-    onAlert: handleAlert,
-  });
+  const mergedWatchlistTags = useMemo(() => {
+    if (!selectedItem) return watchlistTags;
+    const id = watchlistId(selectedItem);
+    if (!data) return watchlistTags;
+    if (currentHits.length === 0) {
+      const next = { ...watchlistTags };
+      delete next[id];
+      return next;
+    }
+    return { ...watchlistTags, [id]: currentHits };
+  }, [watchlistTags, selectedItem, data, currentHits]);
 
   const handleAddStock = useCallback(
     (symbol: string, market: "TH" | "US") => {
@@ -85,24 +98,6 @@ export default function StockApp() {
     const timer = window.setTimeout(() => setToast(""), 2200);
     return () => window.clearTimeout(timer);
   }, [toast]);
-
-  useEffect(() => {
-    if (!alertToast) return;
-    const timer = window.setTimeout(() => setAlertToast(""), 5000);
-    return () => window.clearTimeout(timer);
-  }, [alertToast]);
-
-  const handleToggleAlerts = useCallback(
-    async (enabled: boolean) => {
-      const ok = await setAlertsEnabled(enabled);
-      if (enabled && ok === false) {
-        setToast("เปิดการแจ้งเตือนไม่สำเร็จ — ตรวจสอบ permission");
-      } else if (enabled) {
-        setToast("เปิดแจ้งเตือนแนวรับ/ต้านแล้ว");
-      }
-    },
-    [setAlertsEnabled]
-  );
 
   const fetchStock = useCallback(async () => {
     if (!selectedItem) return;
@@ -176,6 +171,7 @@ export default function StockApp() {
         <Watchlist
           items={items}
           selected={selected}
+          srTags={mergedWatchlistTags}
           onSelect={setSelected}
           onRemove={removeStock}
           onReorder={reorderStock}
@@ -184,9 +180,6 @@ export default function StockApp() {
       </section>
 
       {toast && <div className="toast-banner">{toast}</div>}
-      {alertToast && (
-        <div className="toast-banner toast-alert">{alertToast}</div>
-      )}
 
       <section className="chart-section">
         {loading && <div className="state-banner">กำลังโหลด...</div>}
@@ -214,19 +207,13 @@ export default function StockApp() {
             zones={data.zones}
             currentPrice={data.lastClose}
             mode={srMode}
+            hits={currentHits}
+            tolerancePercent={tagSettings.tolerancePercent}
+            toleranceOptions={toleranceOptions}
             onModeChange={setSrMode}
+            onToleranceChange={setTagTolerance}
           />
         </>
-      )}
-
-      {loaded && items.length > 0 && (
-        <SrAlertPanel
-          settings={alertSettings}
-          permission={alertPermission}
-          srMode={srMode}
-          onToggle={handleToggleAlerts}
-          onToleranceChange={setAlertTolerance}
-        />
       )}
 
       <AddStockFab

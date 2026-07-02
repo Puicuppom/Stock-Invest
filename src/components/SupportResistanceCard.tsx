@@ -1,6 +1,7 @@
 import {
   buildSrLevels,
   nearestSrLevels,
+  type SrHit,
 } from "@/lib/sr-levels";
 import type { PivotLevels, PriceZone, SrMode } from "@/lib/types";
 
@@ -9,7 +10,11 @@ interface SupportResistanceCardProps {
   zones: PriceZone[];
   currentPrice: number;
   mode: SrMode;
+  hits: SrHit[];
+  tolerancePercent: number;
+  toleranceOptions: readonly number[];
   onModeChange: (mode: SrMode) => void;
+  onToleranceChange: (percent: number) => void;
 }
 const MODE_COPY: Record<
   SrMode,
@@ -37,12 +42,20 @@ function distPercent(price: number, current: number): number {
   return ((price - current) / current) * 100;
 }
 
+function isNearHit(levelPrice: number, hits: SrHit[]): boolean {
+  return hits.some((hit) => hit.level.price === levelPrice);
+}
+
 export default function SupportResistanceCard({
   pivot,
   zones,
   currentPrice,
   mode,
+  hits,
+  tolerancePercent,
+  toleranceOptions,
   onModeChange,
+  onToleranceChange,
 }: SupportResistanceCardProps) {
   const copy = MODE_COPY[mode];
   const levels = buildSrLevels(pivot, zones, mode);
@@ -84,6 +97,24 @@ export default function SupportResistanceCard({
         </div>
       </div>
 
+      <div className="sr-tolerance">
+        <span className="sr-tolerance-label">Tag เมื่อใกล้ระดับ</span>
+        <div className="sr-tolerance-options">
+          {toleranceOptions.map((value) => (
+            <button
+              key={value}
+              type="button"
+              className={`sr-tolerance-btn${
+                tolerancePercent === value ? " active" : ""
+              }`}
+              onClick={() => onToleranceChange(value)}
+            >
+              ±{value}%
+            </button>
+          ))}
+        </div>
+      </div>
+
       {levels.length === 0 ? (
         <p className="hint-text">{copy.empty}</p>
       ) : (
@@ -91,8 +122,17 @@ export default function SupportResistanceCard({
           {(nearestRes || nearestSup) && (
             <div className="sr-nearest">
               {nearestRes && (
-                <div className="sr-nearest-box sr-nearest-res">
-                  <p className="sr-nearest-label">แนวต้านใกล้</p>
+                <div
+                  className={`sr-nearest-box sr-nearest-res${
+                    isNearHit(nearestRes.price, hits) ? " sr-nearest-near" : ""
+                  }`}
+                >
+                  <div className="sr-nearest-head">
+                    <p className="sr-nearest-label">แนวต้านใกล้</p>
+                    {isNearHit(nearestRes.price, hits) && (
+                      <span className="sr-near-tag sr-near-tag-res">ใกล้ต้าน</span>
+                    )}
+                  </div>
                   <p className="sr-nearest-price">
                     {formatPrice(nearestRes.price)}
                   </p>
@@ -108,8 +148,17 @@ export default function SupportResistanceCard({
                 </div>
               )}
               {nearestSup && (
-                <div className="sr-nearest-box sr-nearest-sup">
-                  <p className="sr-nearest-label">แนวรับใกล้</p>
+                <div
+                  className={`sr-nearest-box sr-nearest-sup${
+                    isNearHit(nearestSup.price, hits) ? " sr-nearest-near" : ""
+                  }`}
+                >
+                  <div className="sr-nearest-head">
+                    <p className="sr-nearest-label">แนวรับใกล้</p>
+                    {isNearHit(nearestSup.price, hits) && (
+                      <span className="sr-near-tag sr-near-tag-sup">ใกล้รับ</span>
+                    )}
+                  </div>
                   <p className="sr-nearest-price">
                     {formatPrice(nearestSup.price)}
                   </p>
@@ -150,6 +199,7 @@ export default function SupportResistanceCard({
           <ul className="sr-list">
             {levels.map((level) => {
               const dist = distPercent(level.price, currentPrice);
+              const near = isNearHit(level.price, hits);
 
               return (
                 <li
@@ -159,7 +209,7 @@ export default function SupportResistanceCard({
                     level.price === nearestSup?.price
                       ? " sr-row-highlight"
                       : ""
-                  }`}
+                  }${near ? " sr-row-near" : ""}`}
                 >
                   <span className={`sr-tag sr-tag-${level.kind}`}>
                     {level.kind === "resistance"
@@ -173,6 +223,15 @@ export default function SupportResistanceCard({
                     {mode === "swing" && level.strength
                       ? ` ×${level.strength}`
                       : ""}
+                    {near && (
+                      <span
+                        className={`sr-near-tag sr-near-tag-${
+                          level.kind === "support" ? "sup" : "res"
+                        }`}
+                      >
+                        {level.kind === "support" ? "ใกล้รับ" : "ใกล้ต้าน"}
+                      </span>
+                    )}
                   </span>
                   <span className="sr-price">{formatPrice(level.price)}</span>
                   <span

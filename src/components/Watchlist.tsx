@@ -3,11 +3,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { displaySymbol } from "@/lib/symbol";
 import { marketLabel, watchlistId } from "@/lib/watchlist-id";
+import type { WatchlistSrTags } from "@/hooks/useSrWatchlistTags";
 import type { WatchlistItem } from "@/lib/types";
 
 interface WatchlistProps {
   items: WatchlistItem[];
   selected: string;
+  srTags?: WatchlistSrTags;
   onSelect: (id: string) => void;
   onRemove: (id: string) => void;
   onReorder: (fromId: string, toId: string) => void;
@@ -20,6 +22,7 @@ const MOVE_THRESHOLD = 12;
 export default function Watchlist({
   items,
   selected,
+  srTags = {},
   onSelect,
   onRemove,
   onReorder,
@@ -243,6 +246,9 @@ export default function Watchlist({
           const isDragging = draggingId === id;
           const isDropTarget = dragOverId === id && draggingId !== id;
           const isPressing = pressingId === id && !draggingId;
+          const hits = srTags[id] ?? [];
+          const nearResistance = hits.some((hit) => hit.kind === "resistance");
+          const nearSupport = hits.some((hit) => hit.kind === "support");
 
           return (
             <button
@@ -253,7 +259,7 @@ export default function Watchlist({
                 if (el) chipRefs.current.set(id, el);
                 else chipRefs.current.delete(id);
               }}
-              className={`watchlist-chip ${active ? "active" : ""} ${isDragging ? "dragging" : ""} ${isDropTarget ? "drop-target" : ""} ${isPressing ? "pressing" : ""}`}
+              className={`watchlist-chip ${active ? "active" : ""} ${isDragging ? "dragging" : ""} ${isDropTarget ? "drop-target" : ""} ${isPressing ? "pressing" : ""} ${nearResistance || nearSupport ? "has-sr-tag" : ""}`}
               onTouchStart={(event) => handleTouchStart(id, event)}
               onPointerDown={(event) => handlePointerDown(id, event)}
               onContextMenu={(event) => event.preventDefault()}
@@ -276,6 +282,16 @@ export default function Watchlist({
               </span>
               <span className="chip-symbol">{displaySymbol(item.symbol)}</span>
               <span className="chip-market">{marketLabel(item.market)}</span>
+              {(nearResistance || nearSupport) && (
+                <span className="chip-sr-tags">
+                  {nearResistance && (
+                    <span className="chip-sr-tag chip-sr-tag-res">ต้าน</span>
+                  )}
+                  {nearSupport && (
+                    <span className="chip-sr-tag chip-sr-tag-sup">รับ</span>
+                  )}
+                </span>
+              )}
               {isDropTarget && <span className="chip-drop-label">วาง</span>}
             </button>
           );
