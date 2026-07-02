@@ -7,9 +7,9 @@ interface FairValueCardProps {
 }
 
 const VERDICT_LABEL = {
-  undervalued: "ต่ำกว่าเป้า",
-  fair: "ใกล้เป้า",
-  overvalued: "สูงกว่าเป้า",
+  undervalued: "ถูกกว่าราคายุติธรรม",
+  fair: "ใกล้ราคายุติธรรม",
+  overvalued: "แพงกว่าราคายุติธรรม",
   unknown: "ข้อมูลไม่พอ",
 };
 
@@ -34,8 +34,6 @@ export default function FairValueCard({
   const {
     fairValue: target,
     upsidePercent,
-    upsideLowPercent,
-    upsideHighPercent,
     verdict,
     analystRange,
     range52w,
@@ -55,8 +53,8 @@ export default function FairValueCard({
     <section className="fv-card">
       <div className="fv-header">
         <div>
-          <h3 className="section-title">Analyst Target</h3>
-          <p className="fv-subtitle">เป้าราคานักวิเคราะห์ · Yahoo</p>
+          <h3 className="section-title">ราคายุติธรรม</h3>
+          <p className="fv-subtitle">เป้าเฉลี่ยนักวิเคราะห์ 12 เดือน · Yahoo</p>
         </div>
         <span className={`fv-badge fv-badge-${verdict}`}>
           {VERDICT_LABEL[verdict]}
@@ -67,7 +65,7 @@ export default function FairValueCard({
         <>
           <div className="fv-main">
             <div>
-              <p className="fv-label">เป้าเฉลี่ย 12 เดือน</p>
+              <p className="fv-label">ราคายุติธรรม</p>
               <p className="fv-price">{formatPrice(target, market)}</p>
               {analystRange && (
                 <p className="fv-midpoint">
@@ -79,32 +77,15 @@ export default function FairValueCard({
             <div className="fv-side">
               <p className="fv-label">ราคาปัจจุบัน</p>
               <p className="fv-current">{formatPrice(currentPrice, market)}</p>
-              {analystRange &&
-              upsideLowPercent != null &&
-              upsideHighPercent != null ? (
+              {upsidePercent != null && (
                 <p
                   className={
-                    upsidePercent != null && upsidePercent >= 0
-                      ? "fv-upside-up"
-                      : "fv-upside-down"
+                    upsidePercent >= 0 ? "fv-upside-up" : "fv-upside-down"
                   }
                 >
-                  {upsideLowPercent >= 0 ? "+" : ""}
-                  {upsideLowPercent.toFixed(1)}% –{" "}
-                  {upsideHighPercent >= 0 ? "+" : ""}
-                  {upsideHighPercent.toFixed(1)}%
+                  {upsidePercent >= 0 ? "+" : ""}
+                  {upsidePercent.toFixed(1)}%
                 </p>
-              ) : (
-                upsidePercent != null && (
-                  <p
-                    className={
-                      upsidePercent >= 0 ? "fv-upside-up" : "fv-upside-down"
-                    }
-                  >
-                    {upsidePercent >= 0 ? "+" : ""}
-                    {upsidePercent.toFixed(1)}%
-                  </p>
-                )
               )}
             </div>
           </div>
@@ -152,11 +133,11 @@ export default function FairValueCard({
           )}
 
           {source === "pe-fallback" && (
-            <p className="fv-note">ไม่มี Analyst Target — แสดง P/E อ้างอิงแทน</p>
+            <p className="fv-note">ไม่มีราคายุติธรรมจากนักวิเคราะห์ — ใช้ P/E อ้างอิงแทน</p>
           )}
         </>
       ) : (
-        <p className="hint-text">ไม่มีข้อมูล Analyst Target สำหรับหุ้นนี้</p>
+        <p className="hint-text">ไม่มีข้อมูลราคายุติธรรมสำหรับหุ้นนี้</p>
       )}
 
       {range52w && weekPos != null && (
