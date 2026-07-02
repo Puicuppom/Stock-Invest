@@ -57,6 +57,7 @@ export interface FairValueResult {
   trailingPE: number | null;
   forwardPE: number | null;
   forwardEps: number | null;
+  peReferenceUpsidePercent: number | null;
   source: "analyst" | "pe-fallback" | "unknown";
 }
 

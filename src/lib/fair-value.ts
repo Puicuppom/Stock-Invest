@@ -138,6 +138,7 @@ export function calculateFairValue(
   analystRange: { low: number; high: number } | null;
   range52w: { low: number; high: number } | null;
   forwardEps: number | null;
+  peReferenceUpsidePercent: number | null;
   source: "analyst" | "pe-fallback" | "unknown";
 } {
   if (!data) {
@@ -153,6 +154,7 @@ export function calculateFairValue(
       analystRange: null,
       range52w: null,
       forwardEps: null,
+      peReferenceUpsidePercent: null,
       source: "unknown",
     };
   }
@@ -203,6 +205,7 @@ export function calculateFairValue(
     analystRange,
     range52w,
     forwardEps: data.forwardEps,
+    peReferenceUpsidePercent: upsidePercent(peRef, currentPrice),
     source: hasAnalyst ? "analyst" : peRef != null ? "pe-fallback" : "unknown",
   };
 }

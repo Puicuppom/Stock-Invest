@@ -830,6 +830,18 @@ body.watchlist-dragging {
   font-family: var(--font-geist-mono), monospace;
 }
 
+.fv-row-value-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.fv-row-pct {
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-family: var(--font-geist-mono), monospace;
+}
+
 .fv-meta {
   margin: 0 0 0.65rem;
   font-size: 0.75rem;

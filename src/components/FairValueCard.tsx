@@ -38,6 +38,7 @@ export default function FairValueCard({
     analystRange,
     range52w,
     peReference,
+    peReferenceUpsidePercent,
     trailingPE,
     forwardPE,
     forwardEps,
@@ -107,26 +108,43 @@ export default function FairValueCard({
 
           {(peReference != null ||
             forwardPE != null ||
-            forwardEps != null) && (
+            forwardEps != null ||
+            trailingPE != null) && (
             <div className="fv-supplement">
-              <p className="fv-supplement-title">ข้อมูลเสริม</p>
+              <p className="fv-supplement-title">ข้อมูลเสริม · Forward P/E</p>
+              {forwardPE != null && (
+                <div className="fv-row">
+                  <span className="fv-row-label">Forward P/E</span>
+                  <span className="fv-row-value">{forwardPE.toFixed(1)}x</span>
+                </div>
+              )}
               {peReference != null && (
                 <div className="fv-row">
                   <span className="fv-row-label">P/E อ้างอิง</span>
-                  <span className="fv-row-value">
-                    {formatPrice(peReference, market)}
+                  <span className="fv-row-value-group">
+                    <span className="fv-row-value">
+                      {formatPrice(peReference, market)}
+                    </span>
+                    {peReferenceUpsidePercent != null && (
+                      <span
+                        className={
+                          peReferenceUpsidePercent >= 0
+                            ? "fv-row-pct fv-upside-up"
+                            : "fv-row-pct fv-upside-down"
+                        }
+                      >
+                        {peReferenceUpsidePercent >= 0 ? "+" : ""}
+                        {peReferenceUpsidePercent.toFixed(1)}%
+                      </span>
+                    )}
                   </span>
                 </div>
               )}
-              {(forwardEps != null || forwardPE != null || trailingPE != null) && (
+              {(forwardEps != null || trailingPE != null) && (
                 <p className="fv-meta">
                   {forwardEps != null && `Forward EPS ${forwardEps.toFixed(2)}`}
-                  {forwardEps != null && forwardPE != null && " · "}
-                  {forwardPE != null && `Fwd P/E ${forwardPE.toFixed(1)}`}
-                  {(forwardEps != null || forwardPE != null) &&
-                    trailingPE != null &&
-                    " · "}
-                  {trailingPE != null && `Trail P/E ${trailingPE.toFixed(1)}`}
+                  {forwardEps != null && trailingPE != null && " · "}
+                  {trailingPE != null && `Trail P/E ${trailingPE.toFixed(1)}x`}
                 </p>
               )}
             </div>
