@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import AddStockFab from "@/components/AddStockFab";
 import FairValueCard from "@/components/FairValueCard";
-import PivotTable from "@/components/PivotTable";
+import SupportResistanceCard from "@/components/SupportResistanceCard";
 import StockChart from "@/components/StockChart";
 import Watchlist from "@/components/Watchlist";
 import { useWatchlist } from "@/hooks/useWatchlist";
@@ -158,30 +158,11 @@ export default function StockApp() {
             market={data.market}
           />
 
-          <PivotTable pivot={data.pivot} market={data.market} />
-
-          <section className="zones-card">
-            <h3 className="section-title">Swing Zones (แนวรับ/แนวต้าน)</h3>
-            {data.zones.length === 0 ? (
-              <p className="hint-text">ไม่พบโซนที่ชัดเจน</p>
-            ) : (
-              <ul className="zones-list">
-                {data.zones.map((zone) => (
-                  <li key={`${zone.type}-${zone.price}`} className="zone-item">
-                    <span
-                      className={
-                        zone.type === "resistance" ? "zone-res" : "zone-sup"
-                      }
-                    >
-                      {zone.type === "resistance" ? "แนวต้าน" : "แนวรับ"}
-                    </span>
-                    <span className="zone-price">{zone.price.toFixed(2)}</span>
-                    <span className="zone-strength">×{zone.strength}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+          <SupportResistanceCard
+            pivot={data.pivot}
+            zones={data.zones}
+            currentPrice={data.lastClose}
+          />
         </>
       )}
 
