@@ -39,6 +39,11 @@ export interface FairValueData {
   forwardPE: number | null;
   fiftyTwoWeekHigh: number | null;
   fiftyTwoWeekLow: number | null;
+  freeCashflow: number | null;
+  marketCap: number | null;
+  /** Yahoo decimal e.g. 0.025 = 2.5% */
+  dividendYield: number | null;
+  dividendRate: number | null;
 }
 
 export interface FairValueResult {
@@ -58,6 +63,9 @@ export interface FairValueResult {
   forwardPE: number | null;
   forwardEps: number | null;
   peReferenceUpsidePercent: number | null;
+  fcfYieldPercent: number | null;
+  dividendYieldPercent: number | null;
+  dividendRate: number | null;
   source: "analyst" | "pe-fallback" | "unknown";
 }
 

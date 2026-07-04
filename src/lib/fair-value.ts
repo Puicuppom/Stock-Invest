@@ -11,20 +11,24 @@ interface YahooRaw {
 interface QuoteSummaryResponse {
   quoteSummary?: {
     result?: Array<{
-      financialData?: {
-        targetMeanPrice?: YahooRaw;
-        targetLowPrice?: YahooRaw;
-        targetHighPrice?: YahooRaw;
-      };
-      defaultKeyStatistics?: {
-        trailingEps?: YahooRaw;
-        forwardEps?: YahooRaw;
-      };
       summaryDetail?: {
         trailingPE?: YahooRaw;
         forwardPE?: YahooRaw;
         fiftyTwoWeekHigh?: YahooRaw;
         fiftyTwoWeekLow?: YahooRaw;
+        marketCap?: YahooRaw;
+        dividendYield?: YahooRaw;
+        dividendRate?: YahooRaw;
+      };
+      financialData?: {
+        targetMeanPrice?: YahooRaw;
+        targetLowPrice?: YahooRaw;
+        targetHighPrice?: YahooRaw;
+        freeCashflow?: YahooRaw;
+      };
+      defaultKeyStatistics?: {
+        trailingEps?: YahooRaw;
+        forwardEps?: YahooRaw;
       };
     }>;
     error?: { description?: string };
@@ -76,6 +80,10 @@ export async function fetchFundamentals(
       forwardPE: num(row.summaryDetail?.forwardPE),
       fiftyTwoWeekHigh: num(row.summaryDetail?.fiftyTwoWeekHigh),
       fiftyTwoWeekLow: num(row.summaryDetail?.fiftyTwoWeekLow),
+      freeCashflow: num(row.financialData?.freeCashflow),
+      marketCap: num(row.summaryDetail?.marketCap),
+      dividendYield: num(row.summaryDetail?.dividendYield),
+      dividendRate: num(row.summaryDetail?.dividendRate),
     };
   } catch {
     return null;
@@ -103,6 +111,17 @@ function peReference(
       : base;
 
   return eps * fairPE;
+}
+
+function fcfYieldPercent(data: FairValueData): number | null {
+  const { freeCashflow, marketCap } = data;
+  if (freeCashflow == null || marketCap == null || marketCap <= 0) return null;
+  return (freeCashflow / marketCap) * 100;
+}
+
+function dividendYieldPercent(data: FairValueData): number | null {
+  if (data.dividendYield == null) return null;
+  return data.dividendYield * 100;
 }
 
 function upsidePercent(
@@ -139,6 +158,9 @@ export function calculateFairValue(
   range52w: { low: number; high: number } | null;
   forwardEps: number | null;
   peReferenceUpsidePercent: number | null;
+  fcfYieldPercent: number | null;
+  dividendYieldPercent: number | null;
+  dividendRate: number | null;
   source: "analyst" | "pe-fallback" | "unknown";
 } {
   if (!data) {
@@ -155,6 +177,9 @@ export function calculateFairValue(
       range52w: null,
       forwardEps: null,
       peReferenceUpsidePercent: null,
+      fcfYieldPercent: null,
+      dividendYieldPercent: null,
+      dividendRate: null,
       source: "unknown",
     };
   }
@@ -206,6 +231,9 @@ export function calculateFairValue(
     range52w,
     forwardEps: data.forwardEps,
     peReferenceUpsidePercent: upsidePercent(peRef, currentPrice),
+    fcfYieldPercent: fcfYieldPercent(data),
+    dividendYieldPercent: dividendYieldPercent(data),
+    dividendRate: data.dividendRate,
     source: hasAnalyst ? "analyst" : peRef != null ? "pe-fallback" : "unknown",
   };
 }

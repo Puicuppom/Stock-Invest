@@ -5,11 +5,13 @@ import {
   CandlestickSeries,
   ColorType,
   createChart,
+  LineSeries,
   LineStyle,
   type IChartApi,
   type ISeriesApi,
   type UTCTimestamp,
 } from "lightweight-charts";
+import { buildEmaSeries, CHART_VISIBLE_BARS, EMA_PERIODS } from "@/lib/ema";
 import type { Candle, PivotLevels, PriceZone, SrMode } from "@/lib/types";
 
 interface StockChartProps {
@@ -28,6 +30,15 @@ const CHART_COLORS = {
   pivot: "#fbbf24",
   resistance: "#f87171",
   support: "#4ade80",
+  ema20: "#38bdf8",
+  ema50: "#a78bfa",
+  ema200: "#fb923c",
+};
+
+const EMA_LABELS: Record<(typeof EMA_PERIODS)[number], string> = {
+  20: "EMA 20",
+  50: "EMA 50",
+  200: "EMA 200",
 };
 
 function toUtc(date: string): UTCTimestamp {
@@ -38,6 +49,9 @@ export default function StockChart({ candles, pivot, zones, mode }: StockChartPr
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+  const emaSeriesRef = useRef<
+    Record<(typeof EMA_PERIODS)[number], ISeriesApi<"Line"> | null>
+  >({ 20: null, 50: null, 200: null });
   const priceLinesRef = useRef<ReturnType<ISeriesApi<"Candlestick">["createPriceLine"]>[]>([]);
 
   useEffect(() => {
@@ -67,6 +81,22 @@ export default function StockChart({ candles, pivot, zones, mode }: StockChartPr
       wickDownColor: CHART_COLORS.down,
     });
 
+    const emaColors: Record<(typeof EMA_PERIODS)[number], string> = {
+      20: CHART_COLORS.ema20,
+      50: CHART_COLORS.ema50,
+      200: CHART_COLORS.ema200,
+    };
+
+    for (const period of EMA_PERIODS) {
+      emaSeriesRef.current[period] = chart.addSeries(LineSeries, {
+        color: emaColors[period],
+        lineWidth: 2,
+        priceLineVisible: false,
+        lastValueVisible: false,
+        crosshairMarkerVisible: false,
+      });
+    }
+
     chartRef.current = chart;
     seriesRef.current = series;
 
@@ -86,6 +116,7 @@ export default function StockChart({ candles, pivot, zones, mode }: StockChartPr
       chart.remove();
       chartRef.current = null;
       seriesRef.current = null;
+      emaSeriesRef.current = { 20: null, 50: null, 200: null };
       priceLinesRef.current = [];
     };
   }, []);
@@ -104,6 +135,19 @@ export default function StockChart({ candles, pivot, zones, mode }: StockChartPr
         close: c.close,
       }))
     );
+
+    for (const period of EMA_PERIODS) {
+      const emaSeries = emaSeriesRef.current[period];
+      if (!emaSeries) continue;
+
+      const points = buildEmaSeries(candles, period);
+      emaSeries.setData(
+        points.map((point) => ({
+          time: toUtc(point.date),
+          value: point.value,
+        }))
+      );
+    }
 
     priceLinesRef.current.forEach((line) => series.removePriceLine(line));
     priceLinesRef.current = [];
@@ -144,11 +188,26 @@ export default function StockChart({ candles, pivot, zones, mode }: StockChartPr
       });
     }
 
-    chart.timeScale().fitContent();
+    if (candles.length > CHART_VISIBLE_BARS) {
+      const start = candles.length - CHART_VISIBLE_BARS;
+      chart.timeScale().setVisibleRange({
+        from: toUtc(candles[start].date),
+        to: toUtc(candles[candles.length - 1].date),
+      });
+    } else {
+      chart.timeScale().fitContent();
+    }
   }, [candles, pivot, zones, mode]);
 
   return (
     <div className="chart-shell">
+      <div className="chart-legend">
+        {EMA_PERIODS.map((period) => (
+          <span key={period} className={`chart-legend-item chart-legend-ema${period}`}>
+            {EMA_LABELS[period]}
+          </span>
+        ))}
+      </div>
       <div ref={containerRef} className="chart-canvas" />
     </div>
   );

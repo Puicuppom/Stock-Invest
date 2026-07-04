@@ -461,12 +461,55 @@ body.watchlist-dragging {
 }
 
 .chart-shell {
+  position: relative;
   height: 45vh;
   min-height: 280px;
   border: 1px solid var(--border);
   border-radius: 16px;
   overflow: hidden;
   background: var(--surface);
+}
+
+.chart-legend {
+  position: absolute;
+  top: 0.55rem;
+  left: 0.65rem;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  pointer-events: none;
+}
+
+.chart-legend-item {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.2rem 0.45rem;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  border: 1px solid var(--border);
+}
+
+.chart-legend-item::before {
+  content: "";
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  margin-right: 0.3rem;
+  vertical-align: middle;
+}
+
+.chart-legend-ema20::before {
+  background: #38bdf8;
+}
+
+.chart-legend-ema50::before {
+  background: #a78bfa;
+}
+
+.chart-legend-ema200::before {
+  background: #fb923c;
 }
 
 .chart-canvas {
@@ -837,6 +880,45 @@ body.watchlist-dragging {
   align-items: flex-end;
   gap: 1rem;
   margin-bottom: 0.85rem;
+}
+
+.fv-yield-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin-bottom: 0.85rem;
+}
+
+.fv-yield-box {
+  padding: 0.55rem 0.65rem;
+  border-radius: 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.fv-yield-label {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.fv-yield-value {
+  margin: 0.15rem 0 0;
+  font-size: 1.1rem;
+  font-weight: 800;
+  font-family: var(--font-geist-mono), monospace;
+  color: var(--text);
+}
+
+.fv-yield-neg {
+  color: var(--danger);
+}
+
+.fv-yield-sub {
+  margin: 0.15rem 0 0;
+  font-size: 0.68rem;
+  color: var(--muted);
 }
 
 .fv-label {

@@ -42,6 +42,9 @@ export default function FairValueCard({
     trailingPE,
     forwardPE,
     forwardEps,
+    fcfYieldPercent,
+    dividendYieldPercent,
+    dividendRate,
     source,
   } = fairValue;
 
@@ -90,6 +93,36 @@ export default function FairValueCard({
               )}
             </div>
           </div>
+
+          {(fcfYieldPercent != null || dividendYieldPercent != null) && (
+            <div className="fv-yield-row">
+              {fcfYieldPercent != null && (
+                <div className="fv-yield-box">
+                  <p className="fv-yield-label">FCF Yield</p>
+                  <p
+                    className={`fv-yield-value${
+                      fcfYieldPercent < 0 ? " fv-yield-neg" : ""
+                    }`}
+                  >
+                    {fcfYieldPercent.toFixed(2)}%
+                  </p>
+                </div>
+              )}
+              {dividendYieldPercent != null && (
+                <div className="fv-yield-box">
+                  <p className="fv-yield-label">อัตราปันผล</p>
+                  <p className="fv-yield-value">
+                    {dividendYieldPercent.toFixed(2)}%
+                  </p>
+                  {dividendRate != null && dividendRate > 0 && (
+                    <p className="fv-yield-sub">
+                      {formatPrice(dividendRate, market)}/หุ้น/ปี
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {analystRange && analystPos != null && (
             <div className="fv-range fv-analyst-range">

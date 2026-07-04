@@ -6,6 +6,12 @@ import type { Candle, FairValueData, StockData } from "./types";
 
 export const revalidate = 900;
 
+/** Yahoo chart range — enough bars for EMA 200 */
+export const CHART_HISTORY_RANGE = "2y";
+
+/** ~6 months of trading days for swing S/R */
+export const SWING_LOOKBACK_BARS = 126;
+
 interface YahooChartResponse {
   chart?: {
     result?: Array<{
@@ -29,7 +35,7 @@ async function fetchHistorical(resolvedSymbol: string): Promise<Candle[]> {
     `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(resolvedSymbol)}`
   );
   url.searchParams.set("interval", "1d");
-  url.searchParams.set("range", "6mo");
+  url.searchParams.set("range", CHART_HISTORY_RANGE);
 
   const res = await fetch(url.toString(), {
     headers: {
@@ -89,7 +95,8 @@ function buildStockData(
   const prev = candles[candles.length - 2];
   const last = candles[candles.length - 1];
   const pivot = calculatePivot(prev);
-  const swings = findSwingPoints(candles, 5);
+  const swingCandles = candles.slice(-SWING_LOOKBACK_BARS);
+  const swings = findSwingPoints(swingCandles, 5);
   const zones = topZones(clusterZones(swings), last.close, 4);
   const detectedMarket = detectMarket(resolvedSymbol);
   const change = last.close - prev.close;
