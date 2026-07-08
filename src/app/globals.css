@@ -1567,6 +1567,23 @@ body.watchlist-dragging {
   border: 1px solid var(--border);
 }
 
+.btn-danger {
+  background: color-mix(in srgb, var(--danger) 88%, #000);
+  color: #fff;
+  border: none;
+}
+
+.remove-confirm-text {
+  margin: 0 0 0.5rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.remove-confirm-text strong {
+  color: var(--text);
+}
+
 .btn-full {
   width: 100%;
   margin-top: 0.25rem;

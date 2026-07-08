@@ -39,8 +39,12 @@ export default function Watchlist({
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [pressingId, setPressingId] = useState<string | null>(null);
   const [ghostPos, setGhostPos] = useState({ x: 0, y: 0 });
+  const [pendingRemoveId, setPendingRemoveId] = useState<string | null>(null);
 
   const draggingItem = items.find((item) => watchlistId(item) === draggingId);
+  const pendingRemoveItem = items.find(
+    (item) => watchlistId(item) === pendingRemoveId
+  );
 
   useEffect(() => {
     const chip = chipRefs.current.get(selected);
@@ -197,6 +201,23 @@ export default function Watchlist({
     beginPress(id, event.clientX, event.clientY);
   };
 
+  const requestRemove = (id: string) => {
+    clearLongPress();
+    suppressClickRef.current = true;
+    setPendingRemoveId(id);
+  };
+
+  const confirmRemove = () => {
+    if (!pendingRemoveId) return;
+    onRemove(pendingRemoveId);
+    setPendingRemoveId(null);
+  };
+
+  const cancelRemove = () => {
+    setPendingRemoveId(null);
+    suppressClickRef.current = false;
+  };
+
   const handleChipClick = (id: string) => {
     if (suppressClickRef.current) {
       suppressClickRef.current = false;
@@ -270,9 +291,7 @@ export default function Watchlist({
                 className="chip-remove"
                 onClick={(e) => {
                   e.stopPropagation();
-                  suppressClickRef.current = false;
-                  clearLongPress();
-                  onRemove(id);
+                  requestRemove(id);
                 }}
                 onTouchStart={(e) => e.stopPropagation()}
                 onPointerDown={(e) => e.stopPropagation()}
@@ -314,6 +333,38 @@ export default function Watchlist({
             {displaySymbol(normalizeInput(draggingItem.symbol))}
           </span>
           <span className="chip-market">{marketLabel(draggingItem.market)}</span>
+        </div>
+      )}
+
+      {pendingRemoveItem && pendingRemoveId && (
+        <div className="modal-backdrop" onClick={cancelRemove}>
+          <div
+            className="modal-panel"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="remove-stock-title"
+          >
+            <h2 id="remove-stock-title" className="modal-title">
+              ลบจากรายการ?
+            </h2>
+            <p className="remove-confirm-text">
+              จะลบ{" "}
+              <strong>
+                {displaySymbol(normalizeInput(pendingRemoveItem.symbol))} (
+                {marketLabel(pendingRemoveItem.market)})
+              </strong>{" "}
+              ออกจาก watchlist
+            </p>
+            <div className="modal-actions">
+              <button type="button" className="btn-secondary" onClick={cancelRemove}>
+                ยกเลิก
+              </button>
+              <button type="button" className="btn-danger" onClick={confirmRemove}>
+                ลบ
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
