@@ -191,25 +191,33 @@ export default function StockApp() {
           )}
           {selectedData && (
             <div className="price-row">
-              <span className="last-price">{selectedData.lastClose.toFixed(2)}</span>
-              <span className={changePositive ? "change-up" : "change-down"}>
-                {changePositive ? "+" : ""}
-                {selectedData.change.toFixed(2)} ({selectedData.changePercent.toFixed(2)}%)
-              </span>
-              <span className="market-badge">
-                {selectedData.market === "TH" ? "BKK" : "US"}
-              </span>
-              {assetKindLabel(selectedData.assetKind) && (
-                <span className="market-badge asset-badge">
-                  {assetKindLabel(selectedData.assetKind)}
+              <div className="price-quote">
+                <span className="last-price">{selectedData.lastClose.toFixed(2)}</span>
+                <span className={changePositive ? "change-up" : "change-down"}>
+                  {changePositive ? "+" : ""}
+                  {selectedData.change.toFixed(2)} ({selectedData.changePercent.toFixed(2)}%)
                 </span>
-              )}
-              {nearResistance && (
-                <span className="header-sr-tag header-sr-tag-res">ต้าน</span>
-              )}
-              {nearSupport && (
-                <span className="header-sr-tag header-sr-tag-sup">รับ</span>
-              )}
+              </div>
+              <div className="price-meta">
+                <span className="market-badge">
+                  {selectedData.market === "TH" ? "BKK" : "US"}
+                </span>
+                {assetKindLabel(selectedData.assetKind) && (
+                  <span className="market-badge asset-badge">
+                    {assetKindLabel(selectedData.assetKind)}
+                  </span>
+                )}
+                {(nearSupport || nearResistance) && (
+                  <div className="header-sr-tags">
+                    {nearSupport && (
+                      <span className="header-sr-tag header-sr-tag-sup">รับ</span>
+                    )}
+                    {nearResistance && (
+                      <span className="header-sr-tag header-sr-tag-res">ต้าน</span>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>

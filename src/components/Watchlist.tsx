@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { displaySymbol, normalizeInput } from "@/lib/symbol";
 import { chipSrAriaLabel, chipSrClass } from "@/lib/chip-sr-style";
 import { watchlistId } from "@/lib/watchlist-id";
@@ -46,6 +47,11 @@ export default function Watchlist({
   const [ghostPos, setGhostPos] = useState({ x: 0, y: 0 });
   const [pendingRemoveId, setPendingRemoveId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
+  const [portalReady, setPortalReady] = useState(false);
+
+  useEffect(() => {
+    setPortalReady(true);
+  }, []);
 
   const canExpand = items.length > WATCHLIST_COLLAPSED_CAPACITY;
   const hiddenCount = Math.max(0, items.length - WATCHLIST_COLLAPSED_CAPACITY);
@@ -367,36 +373,39 @@ export default function Watchlist({
         </div>
       )}
 
-      {pendingRemoveItem && pendingRemoveId && (
-        <div className="modal-backdrop" onClick={cancelRemove}>
-          <div
-            className="modal-panel"
-            onClick={(e) => e.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="remove-stock-title"
-          >
-            <h2 id="remove-stock-title" className="modal-title">
-              ลบจากรายการ?
-            </h2>
-            <p className="remove-confirm-text">
-              จะลบ{" "}
-              <strong>
-                {displaySymbol(normalizeInput(pendingRemoveItem.symbol))}
-              </strong>{" "}
-              ออกจาก watchlist
-            </p>
-            <div className="modal-actions">
-              <button type="button" className="btn-secondary" onClick={cancelRemove}>
-                ยกเลิก
-              </button>
-              <button type="button" className="btn-danger" onClick={confirmRemove}>
-                ลบ
-              </button>
+      {portalReady &&
+        pendingRemoveItem &&
+        pendingRemoveId &&
+        createPortal(
+          <div className="modal-backdrop modal-backdrop-compact" onClick={cancelRemove}>
+            <div
+              className="modal-panel remove-confirm-panel"
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="remove-stock-title"
+            >
+              <h2 id="remove-stock-title" className="remove-confirm-title">
+                ลบจากรายการ?
+              </h2>
+              <p className="remove-confirm-text">
+                ลบ{" "}
+                <strong>
+                  {displaySymbol(normalizeInput(pendingRemoveItem.symbol))}
+                </strong>
+              </p>
+              <div className="remove-confirm-actions">
+                <button type="button" className="btn-secondary" onClick={cancelRemove}>
+                  ยกเลิก
+                </button>
+                <button type="button" className="btn-danger" onClick={confirmRemove}>
+                  ลบ
+                </button>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

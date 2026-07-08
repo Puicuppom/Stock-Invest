@@ -82,10 +82,53 @@ select {
 
 .price-row {
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+}
+
+.price-quote {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 0.75rem;
+}
+
+.price-meta {
+  display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem 0.75rem;
-  margin-top: 0.35rem;
+  gap: 0.35rem 0.5rem;
+}
+
+.header-sr-tags {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.header-sr-tag {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.header-sr-tag-res {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+}
+
+.header-sr-tag-sup {
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--success) 35%, transparent);
 }
 
 .last-price {
@@ -109,26 +152,6 @@ select {
   border-radius: 999px;
   background: var(--surface-2);
   color: var(--muted);
-}
-
-.header-sr-tag {
-  font-size: 0.68rem;
-  font-weight: 700;
-  padding: 0.15rem 0.45rem;
-  border-radius: 999px;
-  white-space: nowrap;
-}
-
-.header-sr-tag-res {
-  color: var(--danger);
-  background: color-mix(in srgb, var(--danger) 18%, transparent);
-  border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
-}
-
-.header-sr-tag-sup {
-  color: var(--success);
-  background: color-mix(in srgb, var(--success) 18%, transparent);
-  border: 1px solid color-mix(in srgb, var(--success) 35%, transparent);
 }
 
 .asset-badge {
@@ -1631,15 +1654,51 @@ body.watchlist-dragging {
   border: none;
 }
 
-.remove-confirm-text {
-  margin: 0 0 0.5rem;
-  color: var(--muted);
+.modal-backdrop-compact {
+  align-items: center;
+  justify-items: center;
+  padding: 1rem;
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+.remove-confirm-panel {
+  width: min(100%, 16.5rem);
+  margin: 0;
+  padding: 0.85rem 0.9rem 0.9rem;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+
+.remove-confirm-title {
+  margin: 0 0 0.35rem;
   font-size: 0.92rem;
-  line-height: 1.5;
+  font-weight: 700;
+}
+
+.remove-confirm-text {
+  margin: 0 0 0.75rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.4;
 }
 
 .remove-confirm-text strong {
   color: var(--text);
+}
+
+.remove-confirm-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.remove-confirm-actions .btn-secondary,
+.remove-confirm-actions .btn-danger {
+  min-height: 36px;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.82rem;
+  border-radius: 10px;
 }
 
 .btn-full {
