@@ -38,9 +38,6 @@ export function calculateEma(
 
 export const EMA_PERIODS = [20, 50, 200] as const;
 
-/** Default visible window on chart (~6 months of trading days) */
-export const CHART_VISIBLE_BARS = 126;
-
 export type EmaPeriod = (typeof EMA_PERIODS)[number];
 
 export interface EmaPoint {

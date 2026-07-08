@@ -6,8 +6,8 @@ import type { Candle, FairValueData, StockData } from "./types";
 
 export const revalidate = 900;
 
-/** Yahoo chart range — enough bars for EMA 200 */
-export const CHART_HISTORY_RANGE = "2y";
+/** Yahoo chart range — full history for timeline MAX / 5Y */
+export const CHART_HISTORY_RANGE = "max";
 
 /** ~6 months of trading days for swing S/R */
 export const SWING_LOOKBACK_BARS = 126;

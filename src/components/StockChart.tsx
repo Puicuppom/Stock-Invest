@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   CandlestickSeries,
   ColorType,
@@ -11,7 +11,13 @@ import {
   type ISeriesApi,
   type UTCTimestamp,
 } from "lightweight-charts";
-import { buildEmaSeries, CHART_VISIBLE_BARS, EMA_PERIODS } from "@/lib/ema";
+import {
+  CHART_TIME_RANGES,
+  DEFAULT_CHART_RANGE,
+  visibleStartIndex,
+  type ChartTimeRange,
+} from "@/lib/chart-range";
+import { buildEmaSeries, EMA_PERIODS } from "@/lib/ema";
 import type { Candle, PivotLevels, PriceZone, SrMode } from "@/lib/types";
 
 interface StockChartProps {
@@ -45,6 +51,20 @@ function toUtc(date: string): UTCTimestamp {
   return Math.floor(new Date(`${date}T00:00:00Z`).getTime() / 1000) as UTCTimestamp;
 }
 
+function applyVisibleRange(
+  chart: IChartApi,
+  candles: Candle[],
+  range: ChartTimeRange
+) {
+  if (candles.length === 0) return;
+
+  const startIdx = visibleStartIndex(candles.length, range);
+  chart.timeScale().setVisibleRange({
+    from: toUtc(candles[startIdx].date),
+    to: toUtc(candles[candles.length - 1].date),
+  });
+}
+
 export default function StockChart({ candles, pivot, zones, mode }: StockChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -53,6 +73,19 @@ export default function StockChart({ candles, pivot, zones, mode }: StockChartPr
     Record<(typeof EMA_PERIODS)[number], ISeriesApi<"Line"> | null>
   >({ 20: null, 50: null, 200: null });
   const priceLinesRef = useRef<ReturnType<ISeriesApi<"Candlestick">["createPriceLine"]>[]>([]);
+  const [timeRange, setTimeRange] = useState<ChartTimeRange>(DEFAULT_CHART_RANGE);
+  const stockKeyRef = useRef("");
+
+  const stockKey =
+    candles.length > 0
+      ? `${candles[0].date}:${candles[candles.length - 1].date}:${candles.length}`
+      : "";
+
+  useEffect(() => {
+    if (!stockKey || stockKey === stockKeyRef.current) return;
+    stockKeyRef.current = stockKey;
+    setTimeRange(DEFAULT_CHART_RANGE);
+  }, [stockKey]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -187,17 +220,13 @@ export default function StockChart({ candles, pivot, zones, mode }: StockChartPr
         );
       });
     }
-
-    if (candles.length > CHART_VISIBLE_BARS) {
-      const start = candles.length - CHART_VISIBLE_BARS;
-      chart.timeScale().setVisibleRange({
-        from: toUtc(candles[start].date),
-        to: toUtc(candles[candles.length - 1].date),
-      });
-    } else {
-      chart.timeScale().fitContent();
-    }
   }, [candles, pivot, zones, mode]);
+
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart || candles.length === 0) return;
+    applyVisibleRange(chart, candles, timeRange);
+  }, [candles, timeRange]);
 
   return (
     <div className="chart-shell">
@@ -209,6 +238,18 @@ export default function StockChart({ candles, pivot, zones, mode }: StockChartPr
         ))}
       </div>
       <div ref={containerRef} className="chart-canvas" />
+      <div className="chart-range-bar" role="toolbar" aria-label="ช่วงเวลากรaf">
+        {CHART_TIME_RANGES.map((range) => (
+          <button
+            key={range}
+            type="button"
+            className={`chart-range-btn${timeRange === range ? " active" : ""}`}
+            onClick={() => setTimeRange(range)}
+          >
+            {range}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
