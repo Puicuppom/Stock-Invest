@@ -66,10 +66,10 @@ export function chartFetchConfig(timeRange: ChartTimeRange): ChartFetchConfig {
       };
     case "MAX":
       return {
-        interval: "1mo",
-        range: "max",
+        interval: "1d",
+        range: "10y",
         intraday: false,
-        label: "รายเดือน",
+        label: "รายวัน · 10 ปี",
       };
   }
 }

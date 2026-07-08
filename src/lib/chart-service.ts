@@ -104,7 +104,8 @@ export async function fetchYahooCandles(
 export async function fetchDailyCandles(
   resolvedSymbol: string
 ): Promise<YahooChartData> {
-  return fetchYahooCandles(resolvedSymbol, "1d", "max", false);
+  // Yahoo range=max often caps ~160 bars; 10y daily gives 2000+ for EMA/S/R.
+  return fetchYahooCandles(resolvedSymbol, "1d", "10y", false);
 }
 
 export async function fetchChartCandles(
