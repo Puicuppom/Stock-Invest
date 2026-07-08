@@ -64,6 +64,9 @@ export default function StockApp() {
     );
   }, [selectedData, srMode, tagSettings.tolerancePercent]);
 
+  const nearResistance = currentHits.some((hit) => hit.kind === "resistance");
+  const nearSupport = currentHits.some((hit) => hit.kind === "support");
+
   useEffect(() => {
     setLiveTagCache({});
   }, [srMode, tagSettings.tolerancePercent]);
@@ -200,6 +203,12 @@ export default function StockApp() {
                 <span className="market-badge asset-badge">
                   {assetKindLabel(selectedData.assetKind)}
                 </span>
+              )}
+              {nearResistance && (
+                <span className="header-sr-tag header-sr-tag-res">ต้าน</span>
+              )}
+              {nearSupport && (
+                <span className="header-sr-tag header-sr-tag-sup">รับ</span>
               )}
             </div>
           )}

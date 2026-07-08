@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { displaySymbol, normalizeInput } from "@/lib/symbol";
-import { marketLabel, watchlistId } from "@/lib/watchlist-id";
+import { chipSrAriaLabel, chipSrClass } from "@/lib/chip-sr-style";
+import { watchlistId } from "@/lib/watchlist-id";
 import type { WatchlistSrTags } from "@/hooks/useSrWatchlistTags";
 import type { WatchlistItem } from "@/lib/types";
 
@@ -18,6 +19,10 @@ interface WatchlistProps {
 
 const LONG_PRESS_MS = 500;
 const MOVE_THRESHOLD = 12;
+const WATCHLIST_COLUMNS = 4;
+const WATCHLIST_COLLAPSED_ROWS = 2;
+const WATCHLIST_COLLAPSED_CAPACITY =
+  WATCHLIST_COLUMNS * WATCHLIST_COLLAPSED_ROWS;
 
 export default function Watchlist({
   items,
@@ -40,6 +45,10 @@ export default function Watchlist({
   const [pressingId, setPressingId] = useState<string | null>(null);
   const [ghostPos, setGhostPos] = useState({ x: 0, y: 0 });
   const [pendingRemoveId, setPendingRemoveId] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(false);
+
+  const canExpand = items.length > WATCHLIST_COLLAPSED_CAPACITY;
+  const hiddenCount = Math.max(0, items.length - WATCHLIST_COLLAPSED_CAPACITY);
 
   const draggingItem = items.find((item) => watchlistId(item) === draggingId);
   const pendingRemoveItem = items.find(
@@ -55,6 +64,20 @@ export default function Watchlist({
       });
     }
   }, [selected, items, draggingId]);
+
+  useEffect(() => {
+    if (items.length <= WATCHLIST_COLLAPSED_CAPACITY) {
+      setExpanded(false);
+    }
+  }, [items.length]);
+
+  useEffect(() => {
+    if (expanded || !canExpand) return;
+    const index = items.findIndex((item) => watchlistId(item) === selected);
+    if (index >= WATCHLIST_COLLAPSED_CAPACITY) {
+      setExpanded(true);
+    }
+  }, [selected, items, expanded, canExpand]);
 
   const clearLongPress = useCallback(() => {
     if (longPressTimerRef.current) {
@@ -258,18 +281,24 @@ export default function Watchlist({
         <p className="watchlist-drag-banner">ลากไปวางตำแหน่งใหม่ แล้วปล่อยนิ้ว</p>
       )}
 
-      <div className={`watchlist-scroll ${draggingId ? "is-dragging" : ""}`}>
+      <div
+        className={`watchlist-scroll-wrap ${expanded ? "is-expanded" : ""} ${canExpand && !expanded ? "is-collapsed" : ""}`}
+      >
+        <div
+          className={`watchlist-scroll ${draggingId ? "is-dragging" : ""} ${expanded ? "is-expanded" : ""}`}
+        >
         {items.map((item) => {
           const id = watchlistId(item);
           const active = id === selected;
           const isDragging = draggingId === id;
           const isDropTarget = dragOverId === id && draggingId !== id;
           const isPressing = pressingId === id && !draggingId;
+          const symbolLabel = displaySymbol(normalizeInput(item.symbol));
           const hits = srTags[id] ?? [];
           const nearResistance = hits.some((hit) => hit.kind === "resistance");
           const nearSupport = hits.some((hit) => hit.kind === "support");
-
-          const symbolLabel = displaySymbol(normalizeInput(item.symbol));
+          const srClass = chipSrClass(nearResistance, nearSupport);
+          const srAria = chipSrAriaLabel(nearResistance, nearSupport);
 
           return (
             <button
@@ -280,7 +309,10 @@ export default function Watchlist({
                 if (el) chipRefs.current.set(id, el);
                 else chipRefs.current.delete(id);
               }}
-              className={`watchlist-chip ${active ? "active" : ""} ${isDragging ? "dragging" : ""} ${isDropTarget ? "drop-target" : ""} ${isPressing ? "pressing" : ""} ${nearResistance || nearSupport ? "has-sr-tag" : ""}`}
+              className={`watchlist-chip ${active ? "active" : ""} ${isDragging ? "dragging" : ""} ${isDropTarget ? "drop-target" : ""} ${isPressing ? "pressing" : ""} ${srClass}`}
+              aria-label={
+                srAria ? `${symbolLabel} — ${srAria}` : symbolLabel
+              }
               onTouchStart={(event) => handleTouchStart(id, event)}
               onPointerDown={(event) => handlePointerDown(id, event)}
               onContextMenu={(event) => event.preventDefault()}
@@ -295,40 +327,30 @@ export default function Watchlist({
                 }}
                 onTouchStart={(e) => e.stopPropagation()}
                 onPointerDown={(e) => e.stopPropagation()}
-                aria-label={`ลบ ${item.symbol} ${marketLabel(item.market)}`}
+                aria-label={`ลบ ${symbolLabel}`}
               >
                 ×
               </span>
-              <span className="chip-body">
-                <span className="chip-symbol" title={symbolLabel}>
-                  {symbolLabel}
-                </span>
-                <span className="chip-market">{marketLabel(item.market)}</span>
-                {(nearResistance || nearSupport) && (
-                  <span
-                    className="chip-sr-tags"
-                    aria-label={
-                      nearResistance && nearSupport
-                        ? "ใกล้แนวต้านและแนวรับ"
-                        : nearResistance
-                          ? "ใกล้แนวต้าน"
-                          : "ใกล้แนวรับ"
-                    }
-                  >
-                    {nearResistance && (
-                      <span className="chip-sr-tag chip-sr-tag-res">ต</span>
-                    )}
-                    {nearSupport && (
-                      <span className="chip-sr-tag chip-sr-tag-sup">ร</span>
-                    )}
-                  </span>
-                )}
+              <span className="chip-symbol" title={symbolLabel}>
+                {symbolLabel}
               </span>
               {isDropTarget && <span className="chip-drop-label">วาง</span>}
             </button>
           );
         })}
+        </div>
       </div>
+
+      {canExpand && (
+        <button
+          type="button"
+          className="watchlist-expand-btn"
+          onClick={() => setExpanded((prev) => !prev)}
+          aria-expanded={expanded}
+        >
+          {expanded ? "ย่อรายการ" : `ขยาย (+${hiddenCount})`}
+        </button>
+      )}
 
       {draggingItem && draggingId && (
         <div
@@ -342,7 +364,6 @@ export default function Watchlist({
           <span className="chip-symbol">
             {displaySymbol(normalizeInput(draggingItem.symbol))}
           </span>
-          <span className="chip-market">{marketLabel(draggingItem.market)}</span>
         </div>
       )}
 
@@ -361,8 +382,7 @@ export default function Watchlist({
             <p className="remove-confirm-text">
               จะลบ{" "}
               <strong>
-                {displaySymbol(normalizeInput(pendingRemoveItem.symbol))} (
-                {marketLabel(pendingRemoveItem.market)})
+                {displaySymbol(normalizeInput(pendingRemoveItem.symbol))}
               </strong>{" "}
               ออกจาก watchlist
             </p>

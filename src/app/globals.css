@@ -111,6 +111,26 @@ select {
   color: var(--muted);
 }
 
+.header-sr-tag {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.header-sr-tag-res {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+}
+
+.header-sr-tag-sup {
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--success) 35%, transparent);
+}
+
 .asset-badge {
   color: #fbbf24;
   background: color-mix(in srgb, #fbbf24 14%, var(--surface-2));
@@ -222,15 +242,40 @@ body.watchlist-dragging {
   touch-action: none;
 }
 
+.watchlist-scroll-wrap {
+  position: relative;
+}
+
+.watchlist-scroll-wrap.is-collapsed::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 0.65rem;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    var(--surface)
+  );
+}
+
 .watchlist-scroll {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.28rem;
   width: 100%;
-  max-height: 4.15rem;
-  overflow-x: hidden;
-  overflow-y: auto;
+  --watchlist-row-height: 1.85rem;
+  max-height: calc(var(--watchlist-row-height) * 2 + 0.28rem);
+  overflow: hidden;
   padding: 0.05rem;
+  transition: max-height 0.28s ease;
+}
+
+.watchlist-scroll.is-expanded {
+  max-height: min(32rem, 42vh);
+  overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
 }
@@ -243,6 +288,25 @@ body.watchlist-dragging {
   touch-action: none;
 }
 
+.watchlist-expand-btn {
+  display: block;
+  width: 100%;
+  margin-top: 0.35rem;
+  padding: 0.28rem 0.5rem;
+  border: none;
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.watchlist-expand-btn:hover {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface-2));
+}
+
 .watchlist-chip.dragging {
   opacity: 1;
   border: 2px dashed #38bdf8;
@@ -252,7 +316,7 @@ body.watchlist-dragging {
   pointer-events: none;
 }
 
-.watchlist-chip.dragging .chip-body,
+.watchlist-chip.dragging .chip-symbol,
 .watchlist-chip.dragging .chip-remove {
   visibility: hidden;
 }
@@ -318,12 +382,10 @@ body.watchlist-dragging {
   pointer-events: none;
   transform: translate(-50%, -50%) scale(1.06);
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.08rem;
   width: 4.1rem;
-  min-height: 30px;
+  min-height: 28px;
   padding: 0.25rem 0.2rem;
   border-radius: 8px;
   border: 2px solid #38bdf8;
@@ -339,11 +401,6 @@ body.watchlist-dragging {
   font-size: 0.65rem;
 }
 
-.watchlist-drag-ghost .chip-market {
-  font-size: 0.5rem;
-  color: #bae6fd;
-}
-
 .watchlist-chip {
   position: relative;
   display: flex;
@@ -353,8 +410,8 @@ body.watchlist-dragging {
   gap: 0;
   width: 100%;
   min-width: 0;
-  min-height: 30px;
-  padding: 0.24rem 0.12rem 0.16rem;
+  min-height: 28px;
+  padding: 0.22rem 0.12rem;
   border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--surface-2);
@@ -368,20 +425,40 @@ body.watchlist-dragging {
 }
 
 .watchlist-chip.active {
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 18%, var(--surface-2));
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
-.chip-body {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.06rem;
-  width: 100%;
-  min-width: 0;
-  padding: 0 0.1rem;
+.watchlist-chip.active:not(.chip-near-sup):not(.chip-near-res):not(.chip-near-both) {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface-2));
+}
+
+.watchlist-chip.chip-near-sup {
+  border-color: color-mix(in srgb, var(--success) 50%, var(--border));
+  background: color-mix(in srgb, var(--success) 24%, var(--surface-2));
+}
+
+.watchlist-chip.chip-near-res {
+  border-color: color-mix(in srgb, var(--danger) 50%, var(--border));
+  background: color-mix(in srgb, var(--danger) 24%, var(--surface-2));
+}
+
+.watchlist-chip.chip-near-both {
+  border-color: color-mix(in srgb, var(--success) 35%, var(--border));
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--success) 28%, var(--surface-2)) 50%,
+    color-mix(in srgb, var(--danger) 28%, var(--surface-2)) 50%
+  );
+}
+
+.watchlist-chip.active.chip-near-sup,
+.watchlist-chip.active.chip-near-res,
+.watchlist-chip.active.chip-near-both {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
 .chip-symbol {
@@ -394,57 +471,7 @@ body.watchlist-dragging {
   text-overflow: ellipsis;
   white-space: nowrap;
   text-align: center;
-}
-
-.chip-market {
-  flex-shrink: 0;
-  font-size: 0.5rem;
-  line-height: 1;
-  color: var(--muted);
-  font-weight: 600;
-  padding: 0;
-  border-radius: 0;
-  background: none;
-}
-
-.chip-sr-tags {
-  position: absolute;
-  bottom: 1px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: inline-flex;
-  align-items: center;
-  gap: 0.1rem;
-  flex-shrink: 0;
-}
-
-.chip-sr-tag {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 0.72rem;
-  height: 0.72rem;
-  font-size: 0.48rem;
-  font-weight: 800;
-  padding: 0;
-  border-radius: 999px;
-  line-height: 1;
-}
-
-.watchlist-chip.has-sr-tag {
-  padding-bottom: 0.22rem;
-}
-
-.chip-sr-tag-res {
-  color: var(--danger);
-  background: color-mix(in srgb, var(--danger) 18%, transparent);
-  border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
-}
-
-.chip-sr-tag-sup {
-  color: var(--success);
-  background: color-mix(in srgb, var(--success) 18%, transparent);
-  border: 1px solid color-mix(in srgb, var(--success) 35%, transparent);
+  padding: 0 0.15rem;
 }
 
 .chip-remove {
