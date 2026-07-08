@@ -72,6 +72,14 @@ select {
   font-weight: 700;
 }
 
+.app-company-name {
+  margin: 0.2rem 0 0;
+  font-size: 0.85rem;
+  line-height: 1.35;
+  color: var(--muted);
+  max-width: min(100%, 22rem);
+}
+
 .price-row {
   display: flex;
   flex-wrap: wrap;

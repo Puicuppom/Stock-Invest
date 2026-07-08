@@ -14,7 +14,8 @@ function buildStockData(
   input: string,
   resolvedSymbol: string,
   candles: Candle[],
-  fundamentals: FairValueData | null
+  fundamentals: FairValueData | null,
+  longName: string | null
 ): StockData {
   const prev = candles[candles.length - 2];
   const last = candles[candles.length - 1];
@@ -35,6 +36,7 @@ function buildStockData(
   return {
     symbol: input.toUpperCase(),
     resolvedSymbol,
+    longName,
     market: detectedMarket,
     candles,
     pivot,
@@ -60,14 +62,22 @@ export async function getStockData(
     throw new Error("Stock not found");
   }
 
-  const [candles, fundamentals] = await Promise.all([
+  const [daily, fundamentals] = await Promise.all([
     fetchDailyCandles(resolvedSymbol),
     fetchFundamentals(resolvedSymbol),
   ]);
 
-  if (candles.length < 10) {
+  if (daily.candles.length < 10) {
     throw new Error("Stock not found");
   }
 
-  return buildStockData(input, resolvedSymbol, candles, fundamentals);
+  const longName = daily.longName ?? daily.shortName;
+
+  return buildStockData(
+    input,
+    resolvedSymbol,
+    daily.candles,
+    fundamentals,
+    longName
+  );
 }

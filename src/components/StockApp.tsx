@@ -178,17 +178,22 @@ export default function StockApp() {
         <div>
           <p className="eyebrow">Stock S/R Analyzer</p>
           <h1 className="app-title">
-            {data ? displaySymbol(data.resolvedSymbol) : selected || "—"}
+            {selectedData
+              ? displaySymbol(selectedData.resolvedSymbol)
+              : selected || "—"}
           </h1>
-          {data && (
+          {selectedData?.longName && (
+            <p className="app-company-name">{selectedData.longName}</p>
+          )}
+          {selectedData && (
             <div className="price-row">
-              <span className="last-price">{data.lastClose.toFixed(2)}</span>
+              <span className="last-price">{selectedData.lastClose.toFixed(2)}</span>
               <span className={changePositive ? "change-up" : "change-down"}>
                 {changePositive ? "+" : ""}
-                {data.change.toFixed(2)} ({data.changePercent.toFixed(2)}%)
+                {selectedData.change.toFixed(2)} ({selectedData.changePercent.toFixed(2)}%)
               </span>
               <span className="market-badge">
-                {data.market === "TH" ? "BKK" : "US"}
+                {selectedData.market === "TH" ? "BKK" : "US"}
               </span>
             </div>
           )}

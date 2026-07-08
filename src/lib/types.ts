@@ -72,6 +72,7 @@ export interface FairValueResult {
 export interface StockData {
   symbol: string;
   resolvedSymbol: string;
+  longName: string | null;
   market: "TH" | "US";
   candles: Candle[];
   pivot: PivotLevels;

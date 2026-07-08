@@ -6,6 +6,10 @@ export const revalidate = 900;
 interface YahooChartResponse {
   chart?: {
     result?: Array<{
+      meta?: {
+        longName?: string;
+        shortName?: string;
+      };
       timestamp?: number[];
       indicators?: {
         quote?: Array<{
@@ -21,6 +25,12 @@ interface YahooChartResponse {
   };
 }
 
+export interface YahooChartData {
+  candles: Candle[];
+  longName: string | null;
+  shortName: string | null;
+}
+
 function formatCandleDate(timestamp: number, intraday: boolean): string {
   const date = new Date(timestamp * 1000);
   return intraday ? date.toISOString() : date.toISOString().slice(0, 10);
@@ -31,7 +41,7 @@ export async function fetchYahooCandles(
   interval: string,
   range: string,
   intraday: boolean
-): Promise<Candle[]> {
+): Promise<YahooChartData> {
   const url = new URL(
     `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(resolvedSymbol)}`
   );
@@ -84,10 +94,16 @@ export async function fetchYahooCandles(
     });
   }
 
-  return candles.sort((a, b) => a.date.localeCompare(b.date));
+  return {
+    candles: candles.sort((a, b) => a.date.localeCompare(b.date)),
+    longName: result.meta?.longName ?? null,
+    shortName: result.meta?.shortName ?? null,
+  };
 }
 
-export async function fetchDailyCandles(resolvedSymbol: string): Promise<Candle[]> {
+export async function fetchDailyCandles(
+  resolvedSymbol: string
+): Promise<YahooChartData> {
   return fetchYahooCandles(resolvedSymbol, "1d", "max", false);
 }
 
@@ -96,10 +112,11 @@ export async function fetchChartCandles(
   timeRange: ChartTimeRange
 ): Promise<Candle[]> {
   const config = chartFetchConfig(timeRange);
-  return fetchYahooCandles(
+  const { candles } = await fetchYahooCandles(
     resolvedSymbol,
     config.interval,
     config.range,
     config.intraday
   );
+  return candles;
 }
