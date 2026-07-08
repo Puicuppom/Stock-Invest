@@ -66,7 +66,7 @@ export default function AddStockFab({ open, onOpenChange, onAdd }: AddStockFabPr
               <input
                 id="symbol-input"
                 className="text-input"
-                placeholder="เช่น META, AAPL, PTT, KBANK"
+                placeholder="เช่น META, AAPL, BRKB, PTT"
                 value={symbol}
                 onChange={(e) => {
                   setSymbol(e.target.value);
@@ -109,6 +109,12 @@ export default function AddStockFab({ open, onOpenChange, onAdd }: AddStockFabPr
                 <p className="market-hint">
                   Meta/Facebook → กด <strong>US</strong> · Meta หุ้นไทย → กด{" "}
                   <strong>BKK</strong>
+                </p>
+              )}
+
+              {(normalized === "BRKB" || normalized === "BRKA") && (
+                <p className="market-hint">
+                  Berkshire → กด <strong>US</strong> · ใช้ BRKB / BRKA (Yahoo: BRK-B / BRK-A)
                 </p>
               )}
 

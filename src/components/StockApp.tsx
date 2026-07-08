@@ -221,11 +221,12 @@ export default function StockApp() {
       <section className="chart-section">
         {loading && <div className="state-banner">กำลังโหลด...</div>}
         {error && !loading && <div className="state-banner error">{error}</div>}
-        {data && !loading && (
+        {data && selectedData && selectedItem && !loading && (
           <StockChart
-            candles={data.candles}
-            pivot={data.pivot}
-            zones={data.zones}
+            symbol={selectedItem.symbol}
+            market={selectedItem.market}
+            pivot={selectedData.pivot}
+            zones={selectedData.zones}
             mode={srMode}
           />
         )}

@@ -13,15 +13,16 @@ import {
 } from "lightweight-charts";
 import {
   CHART_TIME_RANGES,
+  chartFetchConfig,
   DEFAULT_CHART_RANGE,
-  visibleStartIndex,
   type ChartTimeRange,
 } from "@/lib/chart-range";
 import { buildEmaSeries, EMA_PERIODS } from "@/lib/ema";
 import type { Candle, PivotLevels, PriceZone, SrMode } from "@/lib/types";
 
 interface StockChartProps {
-  candles: Candle[];
+  symbol: string;
+  market: "TH" | "US";
   pivot: PivotLevels;
   zones: PriceZone[];
   mode: SrMode;
@@ -47,25 +48,18 @@ const EMA_LABELS: Record<(typeof EMA_PERIODS)[number], string> = {
   200: "EMA 200",
 };
 
-function toUtc(date: string): UTCTimestamp {
-  return Math.floor(new Date(`${date}T00:00:00Z`).getTime() / 1000) as UTCTimestamp;
+function toChartTime(date: string): UTCTimestamp {
+  const normalized = date.includes("T") ? date : `${date}T00:00:00Z`;
+  return Math.floor(new Date(normalized).getTime() / 1000) as UTCTimestamp;
 }
 
-function applyVisibleRange(
-  chart: IChartApi,
-  candles: Candle[],
-  range: ChartTimeRange
-) {
-  if (candles.length === 0) return;
-
-  const startIdx = visibleStartIndex(candles.length, range);
-  chart.timeScale().setVisibleRange({
-    from: toUtc(candles[startIdx].date),
-    to: toUtc(candles[candles.length - 1].date),
-  });
-}
-
-export default function StockChart({ candles, pivot, zones, mode }: StockChartProps) {
+export default function StockChart({
+  symbol,
+  market,
+  pivot,
+  zones,
+  mode,
+}: StockChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
@@ -74,18 +68,60 @@ export default function StockChart({ candles, pivot, zones, mode }: StockChartPr
   >({ 20: null, 50: null, 200: null });
   const priceLinesRef = useRef<ReturnType<ISeriesApi<"Candlestick">["createPriceLine"]>[]>([]);
   const [timeRange, setTimeRange] = useState<ChartTimeRange>(DEFAULT_CHART_RANGE);
-  const stockKeyRef = useRef("");
+  const [candles, setCandles] = useState<Candle[]>([]);
+  const [chartLoading, setChartLoading] = useState(true);
+  const [chartError, setChartError] = useState("");
 
-  const stockKey =
-    candles.length > 0
-      ? `${candles[0].date}:${candles[candles.length - 1].date}:${candles.length}`
-      : "";
+  const stockKey = `${symbol}::${market}`;
 
   useEffect(() => {
-    if (!stockKey || stockKey === stockKeyRef.current) return;
-    stockKeyRef.current = stockKey;
     setTimeRange(DEFAULT_CHART_RANGE);
   }, [stockKey]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadChart = async () => {
+      setChartLoading(true);
+      setChartError("");
+
+      try {
+        const params = new URLSearchParams({
+          market,
+          timeRange,
+        });
+        const res = await fetch(
+          `/api/stock/${encodeURIComponent(symbol)}/chart?${params}`
+        );
+        const json = await res.json();
+
+        if (!res.ok) {
+          throw new Error(json.error ?? "โหลดกรafไม่สำเร็จ");
+        }
+
+        if (!cancelled) {
+          setCandles(json.candles as Candle[]);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setCandles([]);
+          setChartError(
+            err instanceof Error ? err.message : "โหลดกรafไม่สำเร็จ"
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setChartLoading(false);
+        }
+      }
+    };
+
+    loadChart();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [symbol, market, timeRange]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -100,7 +136,11 @@ export default function StockChart({ candles, pivot, zones, mode }: StockChartPr
         horzLines: { color: CHART_COLORS.grid },
       },
       rightPriceScale: { borderColor: CHART_COLORS.grid },
-      timeScale: { borderColor: CHART_COLORS.grid },
+      timeScale: {
+        borderColor: CHART_COLORS.grid,
+        timeVisible: true,
+        secondsVisible: false,
+      },
       crosshair: { mode: 1 },
       handleScroll: { vertTouchDrag: false },
     });
@@ -161,7 +201,7 @@ export default function StockChart({ candles, pivot, zones, mode }: StockChartPr
 
     series.setData(
       candles.map((c) => ({
-        time: toUtc(c.date),
+        time: toChartTime(c.date),
         open: c.open,
         high: c.high,
         low: c.low,
@@ -173,13 +213,17 @@ export default function StockChart({ candles, pivot, zones, mode }: StockChartPr
       const emaSeries = emaSeriesRef.current[period];
       if (!emaSeries) continue;
 
-      const points = buildEmaSeries(candles, period);
-      emaSeries.setData(
-        points.map((point) => ({
-          time: toUtc(point.date),
-          value: point.value,
-        }))
-      );
+      if (candles.length >= period) {
+        const points = buildEmaSeries(candles, period);
+        emaSeries.setData(
+          points.map((point) => ({
+            time: toChartTime(point.date),
+            value: point.value,
+          }))
+        );
+      } else {
+        emaSeries.setData([]);
+      }
     }
 
     priceLinesRef.current.forEach((line) => series.removePriceLine(line));
@@ -220,24 +264,32 @@ export default function StockChart({ candles, pivot, zones, mode }: StockChartPr
         );
       });
     }
+
+    chart.timeScale().fitContent();
   }, [candles, pivot, zones, mode]);
 
-  useEffect(() => {
-    const chart = chartRef.current;
-    if (!chart || candles.length === 0) return;
-    applyVisibleRange(chart, candles, timeRange);
-  }, [candles, timeRange]);
+  const activeEmaPeriods = EMA_PERIODS.filter((period) => candles.length >= period);
+  const intervalLabel = chartFetchConfig(timeRange).label;
 
   return (
     <div className="chart-shell">
-      <div className="chart-legend">
-        {EMA_PERIODS.map((period) => (
-          <span key={period} className={`chart-legend-item chart-legend-ema${period}`}>
-            {EMA_LABELS[period]}
-          </span>
-        ))}
+      <div className="chart-top-bar">
+        <div className="chart-legend">
+          {activeEmaPeriods.map((period) => (
+            <span key={period} className={`chart-legend-item chart-legend-ema${period}`}>
+              {EMA_LABELS[period]}
+            </span>
+          ))}
+        </div>
+        <span className="chart-interval-badge">{intervalLabel}</span>
       </div>
-      <div ref={containerRef} className="chart-canvas" />
+      <div className="chart-canvas-wrap">
+        {chartLoading && <div className="chart-loading">กำลังโหลดกรaf...</div>}
+        {chartError && !chartLoading && (
+          <div className="chart-loading chart-loading-error">{chartError}</div>
+        )}
+        <div ref={containerRef} className="chart-canvas" />
+      </div>
       <div className="chart-range-bar" role="toolbar" aria-label="ช่วงเวลากรaf">
         {CHART_TIME_RANGES.map((range) => (
           <button
@@ -245,6 +297,7 @@ export default function StockChart({ candles, pivot, zones, mode }: StockChartPr
             type="button"
             className={`chart-range-btn${timeRange === range ? " active" : ""}`}
             onClick={() => setTimeRange(range)}
+            disabled={chartLoading && timeRange === range}
           >
             {range}
           </button>

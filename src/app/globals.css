@@ -473,14 +473,52 @@ body.watchlist-dragging {
 }
 
 .chart-legend {
-  position: absolute;
-  top: 0.55rem;
-  left: 0.65rem;
-  z-index: 2;
   display: flex;
   flex-wrap: wrap;
   gap: 0.45rem;
   pointer-events: none;
+}
+
+.chart-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.45rem 0.65rem 0.35rem;
+  z-index: 2;
+}
+
+.chart-interval-badge {
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--muted);
+  padding: 0.2rem 0.45rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface-2) 90%, transparent);
+}
+
+.chart-canvas-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.chart-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--surface) 75%, transparent);
+}
+
+.chart-loading-error {
+  color: var(--danger);
 }
 
 .chart-legend-item {
