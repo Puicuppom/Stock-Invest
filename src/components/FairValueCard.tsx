@@ -1,9 +1,11 @@
-import type { FairValueResult } from "@/lib/types";
+import type { AssetKind, FairValueResult } from "@/lib/types";
+import { assetKindLabel } from "@/lib/instrument";
 
 interface FairValueCardProps {
   fairValue: FairValueResult;
   currentPrice: number;
   market: "TH" | "US";
+  assetKind: AssetKind;
 }
 
 const VERDICT_LABEL = {
@@ -30,6 +32,7 @@ export default function FairValueCard({
   fairValue,
   currentPrice,
   market,
+  assetKind,
 }: FairValueCardProps) {
   const {
     fairValue: target,
@@ -53,19 +56,89 @@ export default function FairValueCard({
   const weekPos =
     range52w && rangeMarker(currentPrice, range52w.low, range52w.high);
 
+  const kindLabel = assetKindLabel(assetKind);
+  const isGoldEtf = assetKind === "gold-etf";
+  const isEtf = assetKind === "etf" || isGoldEtf;
+
+  if (isGoldEtf) {
+    return (
+      <section className="fv-card fv-card-gold-etf">
+        <div className="fv-header">
+          <div>
+            <h3 className="section-title">ETF ทองคำ</h3>
+            <p className="fv-subtitle">
+              วิเคราะห์จากราคา · แนวรับ/ต้าน · EMA · ช่วง 52 สัปดาห์
+            </p>
+          </div>
+          <span className="fv-badge fv-badge-gold-etf">ETF ทอง</span>
+        </div>
+
+        <div className="fv-main">
+          <div>
+            <p className="fv-label">ราคาปัจจุบัน</p>
+            <p className="fv-price">{formatPrice(currentPrice, market)}</p>
+          </div>
+          {range52w && weekPos != null && (
+            <div className="fv-side">
+              <p className="fv-label">52 สัปดาห์</p>
+              <p className="fv-midpoint">
+                {formatPrice(range52w.low, market)} –{" "}
+                {formatPrice(range52w.high, market)}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {range52w && weekPos != null && (
+          <div className="fv-range">
+            <div className="fv-range-labels">
+              <span>{formatPrice(range52w.low, market)}</span>
+              <span>{formatPrice(range52w.high, market)}</span>
+            </div>
+            <div className="fv-range-track">
+              <span
+                className="fv-range-marker"
+                style={{ left: `${weekPos}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        <p className="fv-note fv-note-gold">
+          ETF ทองไม่มีราคายุติธรรมแบบหุ้น — ราคาเคลื่อนตามทองคำโลก
+          ใช้แนวรับ/ต้านและ EMA เป็นหลัก
+        </p>
+
+        <p className="hint-text fv-disclaimer">
+          ตัวอย่าง US: GLD, IAU · ไทย: GOLD01, GOLD03 · ไม่ใช่คำแนะนำลงทุน
+        </p>
+      </section>
+    );
+  }
+
   return (
     <section className="fv-card">
       <div className="fv-header">
         <div>
-          <h3 className="section-title">ราคายุติธรรม</h3>
-          <p className="fv-subtitle">เป้าเฉลี่ยนักวิเคราะห์ 12 เดือน · Yahoo</p>
+          <h3 className="section-title">
+            {isEtf ? "ข้อมูล ETF" : "ราคายุติธรรม"}
+          </h3>
+          <p className="fv-subtitle">
+            {isEtf
+              ? "ช่วงราคา · Yahoo"
+              : "เป้าเฉลี่ยนักวิเคราะห์ 12 เดือน · Yahoo"}
+          </p>
         </div>
-        <span className={`fv-badge fv-badge-${verdict}`}>
-          {VERDICT_LABEL[verdict]}
-        </span>
+        {kindLabel ? (
+          <span className="fv-badge fv-badge-etf">{kindLabel}</span>
+        ) : (
+          <span className={`fv-badge fv-badge-${verdict}`}>
+            {VERDICT_LABEL[verdict]}
+          </span>
+        )}
       </div>
 
-      {target != null ? (
+      {!isEtf && target != null ? (
         <>
           <div className="fv-main">
             <div>
@@ -94,7 +167,8 @@ export default function FairValueCard({
             </div>
           </div>
 
-          {(fcfYieldPercent != null || dividendYieldPercent != null) && (
+          {!isEtf &&
+            (fcfYieldPercent != null || dividendYieldPercent != null) && (
             <div className="fv-yield-row">
               {fcfYieldPercent != null && (
                 <div className="fv-yield-box">
@@ -187,8 +261,15 @@ export default function FairValueCard({
             <p className="fv-note">ไม่มีราคายุติธรรมจากนักวิเคราะห์ — ใช้ P/E อ้างอิงแทน</p>
           )}
         </>
-      ) : (
+      ) : !isEtf ? (
         <p className="hint-text">ไม่มีข้อมูลราคายุติธรรมสำหรับหุ้นนี้</p>
+      ) : (
+        <div className="fv-main">
+          <div>
+            <p className="fv-label">ราคาปัจจุบัน</p>
+            <p className="fv-price">{formatPrice(currentPrice, market)}</p>
+          </div>
+        </div>
       )}
 
       {range52w && weekPos != null && (
@@ -207,9 +288,14 @@ export default function FairValueCard({
         </div>
       )}
 
+      {isEtf && (
+        <p className="fv-note">
+          ETF ไม่มีราคายุติธรรมแบบหุ้น — ใช้แนวรับ/ต้านและ EMA ประกอบการตัดสินใจ
+        </p>
+      )}
+
       <p className="hint-text fv-disclaimer">
-        ข้อมูลจาก Yahoo Finance · ใกล้เคียง Investing.com — ใช้เพื่อวิเคราะห์
-        ไม่ใช่คำแนะนำลงทุน
+        ข้อมูลจาก Yahoo Finance · ใช้เพื่อวิเคราะห์ ไม่ใช่คำแนะนำลงทุน
       </p>
     </section>
   );

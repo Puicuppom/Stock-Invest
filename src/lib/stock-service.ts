@@ -1,5 +1,6 @@
 import { fetchDailyCandles } from "./chart-service";
 import { calculateFairValue, fetchFundamentals } from "./fair-value";
+import { classifyInstrument } from "./instrument";
 import { calculatePivot } from "./pivot";
 import { detectMarket, resolveSymbol } from "./symbol";
 import { clusterZones, findSwingPoints, topZones } from "./swing";
@@ -10,12 +11,15 @@ export const revalidate = 900;
 /** ~6 months of trading days for swing S/R */
 export const SWING_LOOKBACK_BARS = 126;
 
+import type { AssetKind } from "./instrument";
+
 function buildStockData(
   input: string,
   resolvedSymbol: string,
   candles: Candle[],
   fundamentals: FairValueData | null,
-  longName: string | null
+  longName: string | null,
+  assetKind: AssetKind
 ): StockData {
   const prev = candles[candles.length - 2];
   const last = candles[candles.length - 1];
@@ -37,6 +41,7 @@ function buildStockData(
     symbol: input.toUpperCase(),
     resolvedSymbol,
     longName,
+    assetKind,
     market: detectedMarket,
     candles,
     pivot,
@@ -72,12 +77,18 @@ export async function getStockData(
   }
 
   const longName = daily.longName ?? daily.shortName;
+  const assetKind = classifyInstrument(
+    resolvedSymbol,
+    longName,
+    daily.instrumentType
+  );
 
   return buildStockData(
     input,
     resolvedSymbol,
     daily.candles,
     fundamentals,
-    longName
+    longName,
+    assetKind
   );
 }

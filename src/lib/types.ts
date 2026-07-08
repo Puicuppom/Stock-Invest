@@ -1,3 +1,7 @@
+import type { AssetKind } from "./instrument";
+
+export type { AssetKind };
+
 export interface Candle {
   date: string;
   open: number;
@@ -73,6 +77,7 @@ export interface StockData {
   symbol: string;
   resolvedSymbol: string;
   longName: string | null;
+  assetKind: AssetKind;
   market: "TH" | "US";
   candles: Candle[];
   pivot: PivotLevels;

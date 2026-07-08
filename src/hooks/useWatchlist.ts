@@ -8,6 +8,7 @@ import { WATCHLIST_KEY } from "@/lib/types";
 const DEFAULT_WATCHLIST: WatchlistItem[] = [
   { symbol: "PTT", market: "TH" },
   { symbol: "AAPL", market: "US" },
+  { symbol: "GLD", market: "US" },
 ];
 
 function normalizeItem(item: WatchlistItem & { market?: string }): WatchlistItem {

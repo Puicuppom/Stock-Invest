@@ -9,6 +9,8 @@ interface YahooChartResponse {
       meta?: {
         longName?: string;
         shortName?: string;
+        instrumentType?: string;
+        quoteType?: string;
       };
       timestamp?: number[];
       indicators?: {
@@ -29,6 +31,7 @@ export interface YahooChartData {
   candles: Candle[];
   longName: string | null;
   shortName: string | null;
+  instrumentType: string | null;
 }
 
 function formatCandleDate(timestamp: number, intraday: boolean): string {
@@ -98,6 +101,7 @@ export async function fetchYahooCandles(
     candles: candles.sort((a, b) => a.date.localeCompare(b.date)),
     longName: result.meta?.longName ?? null,
     shortName: result.meta?.shortName ?? null,
+    instrumentType: result.meta?.instrumentType ?? null,
   };
 }
 

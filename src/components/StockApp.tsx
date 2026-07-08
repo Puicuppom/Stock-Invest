@@ -12,6 +12,7 @@ import { useWatchlist } from "@/hooks/useWatchlist";
 import { useSrMode } from "@/hooks/useSrMode";
 import { findSrHits } from "@/lib/sr-levels";
 import { displaySymbol } from "@/lib/symbol";
+import { assetKindLabel } from "@/lib/instrument";
 import { marketLabel, stockDataMatchesItem, watchlistId } from "@/lib/watchlist-id";
 import type { StockData } from "@/lib/types";
 
@@ -195,6 +196,11 @@ export default function StockApp() {
               <span className="market-badge">
                 {selectedData.market === "TH" ? "BKK" : "US"}
               </span>
+              {assetKindLabel(selectedData.assetKind) && (
+                <span className="market-badge asset-badge">
+                  {assetKindLabel(selectedData.assetKind)}
+                </span>
+              )}
             </div>
           )}
         </div>
@@ -243,6 +249,7 @@ export default function StockApp() {
             fairValue={selectedData.fairValue}
             currentPrice={selectedData.lastClose}
             market={selectedData.market}
+            assetKind={selectedData.assetKind}
           />
 
           <SupportResistanceCard

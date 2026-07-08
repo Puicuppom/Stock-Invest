@@ -56,17 +56,17 @@ export default function AddStockFab({ open, onOpenChange, onAdd }: AddStockFabPr
             aria-labelledby="add-stock-title"
           >
             <h2 id="add-stock-title" className="modal-title">
-              เพิ่มหุ้น
+              เพิ่มหุ้น / ETF
             </h2>
 
             <div className="add-form">
               <label className="field-label" htmlFor="symbol-input">
-                สัญลักษณ์หุ้น
+                สัญลักษณ์
               </label>
               <input
                 id="symbol-input"
                 className="text-input"
-                placeholder="เช่น META, AAPL, BRKB, PTT"
+                placeholder="เช่น META, GLD, IAU, GOLD01, PTT"
                 value={symbol}
                 onChange={(e) => {
                   setSymbol(e.target.value);
@@ -115,6 +115,20 @@ export default function AddStockFab({ open, onOpenChange, onAdd }: AddStockFabPr
               {(normalized === "BRKB" || normalized === "BRKA") && (
                 <p className="market-hint">
                   Berkshire → กด <strong>US</strong> · ใช้ BRKB / BRKA (Yahoo: BRK-B / BRK-A)
+                </p>
+              )}
+
+              {(normalized === "GLD" ||
+                normalized === "IAU" ||
+                normalized === "GLDM") && (
+                <p className="market-hint">
+                  ETF ทอง US → กด <strong>US</strong> · ตัวอย่าง GLD, IAU, GLDM
+                </p>
+              )}
+
+              {(normalized === "GOLD01" || normalized === "GOLD03") && (
+                <p className="market-hint">
+                  ETF ทองไทย → กด <strong>BKK</strong> · GOLD01 / GOLD03
                 </p>
               )}
 

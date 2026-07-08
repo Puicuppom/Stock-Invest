@@ -111,6 +111,12 @@ select {
   color: var(--muted);
 }
 
+.asset-badge {
+  color: #fbbf24;
+  background: color-mix(in srgb, #fbbf24 14%, var(--surface-2));
+  border: 1px solid color-mix(in srgb, #fbbf24 35%, transparent);
+}
+
 .refresh-btn {
   width: 44px;
   height: 44px;
@@ -962,6 +968,28 @@ body.watchlist-dragging {
   background: var(--surface-2);
   color: var(--muted);
   border: 1px solid var(--border);
+}
+
+.fv-badge-etf {
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface-2));
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.fv-badge-gold-etf {
+  background: color-mix(in srgb, #fbbf24 16%, var(--surface-2));
+  color: #fbbf24;
+  border: 1px solid color-mix(in srgb, #fbbf24 38%, transparent);
+}
+
+.fv-card-gold-etf {
+  border-color: color-mix(in srgb, #fbbf24 28%, var(--border));
+}
+
+.fv-note-gold {
+  color: #fbbf24;
+  background: color-mix(in srgb, #fbbf24 10%, var(--surface-2));
+  border-color: color-mix(in srgb, #fbbf24 28%, transparent);
 }
 
 .fv-main {
