@@ -2,10 +2,19 @@
 const US_SYMBOL_ALIASES: Record<string, string> = {
   BRKB: "BRK-B",
   BRKA: "BRK-A",
+  /** Yahoo spot proxy — COMEX gold futures track XAU/USD closely */
+  XAUUSD: "GC=F",
 };
 
+export const GOLD_SPOT_YAHOO = "GC=F";
+
 export function normalizeInput(raw: string): string {
-  return raw.trim().toUpperCase().replace(/\s+/g, "");
+  return raw.trim().toUpperCase().replace(/\s+/g, "").replace(/\//g, "");
+}
+
+export function isGoldSpotSymbol(symbol: string): boolean {
+  const key = normalizeInput(symbol);
+  return key === "XAUUSD" || symbol.toUpperCase() === GOLD_SPOT_YAHOO;
 }
 
 export function resolveSymbol(input: string, market: "TH" | "US"): string {
@@ -36,6 +45,10 @@ export function detectMarket(resolvedSymbol: string): "TH" | "US" {
 }
 
 export function displaySymbol(resolvedSymbol: string): string {
+  if (isGoldSpotSymbol(resolvedSymbol)) {
+    return "XAU/USD";
+  }
+
   if (resolvedSymbol.endsWith(".BK")) {
     return resolvedSymbol.replace(/\.BK$/, "");
   }

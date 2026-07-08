@@ -76,12 +76,16 @@ export async function getStockData(
     throw new Error("Stock not found");
   }
 
-  const longName = daily.longName ?? daily.shortName;
+  const longNameRaw = daily.longName ?? daily.shortName;
   const assetKind = classifyInstrument(
     resolvedSymbol,
-    longName,
+    longNameRaw,
     daily.instrumentType
   );
+  const longName =
+    assetKind === "gold-spot"
+      ? "ทองคำ spot · USD/oz"
+      : longNameRaw;
 
   return buildStockData(
     input,

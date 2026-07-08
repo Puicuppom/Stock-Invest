@@ -2,18 +2,19 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { watchlistId } from "@/lib/watchlist-id";
+import { normalizeInput } from "@/lib/symbol";
 import type { WatchlistItem } from "@/lib/types";
 import { WATCHLIST_KEY } from "@/lib/types";
 
 const DEFAULT_WATCHLIST: WatchlistItem[] = [
   { symbol: "PTT", market: "TH" },
   { symbol: "AAPL", market: "US" },
-  { symbol: "GLD", market: "US" },
+  { symbol: "XAUUSD", market: "US" },
 ];
 
 function normalizeItem(item: WatchlistItem & { market?: string }): WatchlistItem {
   return {
-    symbol: item.symbol.trim().toUpperCase(),
+    symbol: normalizeInput(item.symbol),
     market: item.market === "US" ? "US" : "TH",
   };
 }
@@ -48,7 +49,7 @@ export function useWatchlist() {
 
   const addStock = useCallback(
     (symbol: string, market: "TH" | "US") => {
-      const normalized = symbol.trim().toUpperCase();
+      const normalized = normalizeInput(symbol);
       if (!normalized) return false;
 
       const nextItem = { symbol: normalized, market };

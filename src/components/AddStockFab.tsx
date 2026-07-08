@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { normalizeInput } from "@/lib/symbol";
 
 interface AddStockFabProps {
   open: boolean;
@@ -19,7 +20,7 @@ export default function AddStockFab({ open, onOpenChange, onAdd }: AddStockFabPr
     }
   }, [open]);
 
-  const normalized = symbol.trim().toUpperCase();
+  const normalized = normalizeInput(symbol);
 
   const handleAdd = (market: "TH" | "US") => {
     if (!normalized) {
@@ -66,7 +67,7 @@ export default function AddStockFab({ open, onOpenChange, onAdd }: AddStockFabPr
               <input
                 id="symbol-input"
                 className="text-input"
-                placeholder="เช่น META, GLD, IAU, GOLD01, PTT"
+                placeholder="เช่น META, XAU/USD, GLD, GOLD01, PTT"
                 value={symbol}
                 onChange={(e) => {
                   setSymbol(e.target.value);
@@ -115,6 +116,12 @@ export default function AddStockFab({ open, onOpenChange, onAdd }: AddStockFabPr
               {(normalized === "BRKB" || normalized === "BRKA") && (
                 <p className="market-hint">
                   Berkshire → กด <strong>US</strong> · ใช้ BRKB / BRKA (Yahoo: BRK-B / BRK-A)
+                </p>
+              )}
+
+              {(normalized === "XAUUSD" || normalized === "GCF") && (
+                <p className="market-hint">
+                  ทอง XAU/USD → กด <strong>US</strong> · ราคา spot (USD/oz)
                 </p>
               )}
 

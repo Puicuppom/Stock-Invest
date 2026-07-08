@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { displaySymbol } from "@/lib/symbol";
+import { displaySymbol, normalizeInput } from "@/lib/symbol";
 import { marketLabel, watchlistId } from "@/lib/watchlist-id";
 import type { WatchlistSrTags } from "@/hooks/useSrWatchlistTags";
 import type { WatchlistItem } from "@/lib/types";
@@ -280,7 +280,9 @@ export default function Watchlist({
               >
                 ×
               </span>
-              <span className="chip-symbol">{displaySymbol(item.symbol)}</span>
+              <span className="chip-symbol">
+                {displaySymbol(normalizeInput(item.symbol))}
+              </span>
               <span className="chip-market">{marketLabel(item.market)}</span>
               <span
                 className="chip-sr-tags"
@@ -308,7 +310,9 @@ export default function Watchlist({
           }}
           aria-hidden
         >
-          <span className="chip-symbol">{displaySymbol(draggingItem.symbol)}</span>
+          <span className="chip-symbol">
+            {displaySymbol(normalizeInput(draggingItem.symbol))}
+          </span>
           <span className="chip-market">{marketLabel(draggingItem.market)}</span>
         </div>
       )}

@@ -1,6 +1,6 @@
-import { displaySymbol } from "./symbol";
+import { displaySymbol, isGoldSpotSymbol } from "./symbol";
 
-export type AssetKind = "stock" | "etf" | "gold-etf";
+export type AssetKind = "stock" | "etf" | "gold-etf" | "gold-spot";
 
 /** US spot-gold ETFs (Yahoo tickers) */
 const US_GOLD_ETFS = new Set([
@@ -22,6 +22,10 @@ export function classifyInstrument(
   longName: string | null,
   instrumentType: string | null
 ): AssetKind {
+  if (isGoldSpotSymbol(resolvedSymbol)) {
+    return "gold-spot";
+  }
+
   const key = displaySymbol(resolvedSymbol).toUpperCase();
 
   if (US_GOLD_ETFS.has(key) || TH_GOLD_ETFS.has(key)) {
@@ -42,6 +46,8 @@ export function classifyInstrument(
 
 export function assetKindLabel(kind: AssetKind): string | null {
   switch (kind) {
+    case "gold-spot":
+      return "XAU/USD";
     case "gold-etf":
       return "ETF ทองคำ";
     case "etf":

@@ -11,7 +11,7 @@ import { useSrWatchlistTags, type WatchlistSrTags } from "@/hooks/useSrWatchlist
 import { useWatchlist } from "@/hooks/useWatchlist";
 import { useSrMode } from "@/hooks/useSrMode";
 import { findSrHits } from "@/lib/sr-levels";
-import { displaySymbol } from "@/lib/symbol";
+import { displaySymbol, normalizeInput } from "@/lib/symbol";
 import { assetKindLabel } from "@/lib/instrument";
 import { marketLabel, stockDataMatchesItem, watchlistId } from "@/lib/watchlist-id";
 import type { StockData } from "@/lib/types";
@@ -111,7 +111,7 @@ export default function StockApp() {
 
   const handleAddStock = useCallback(
     (symbol: string, market: "TH" | "US") => {
-      const normalized = symbol.trim().toUpperCase();
+      const normalized = normalizeInput(symbol);
       if (!normalized) return false;
 
       const exists = items.some(

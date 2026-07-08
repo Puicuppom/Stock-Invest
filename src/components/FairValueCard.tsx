@@ -57,20 +57,28 @@ export default function FairValueCard({
     range52w && rangeMarker(currentPrice, range52w.low, range52w.high);
 
   const kindLabel = assetKindLabel(assetKind);
+  const isGoldSpot = assetKind === "gold-spot";
   const isGoldEtf = assetKind === "gold-etf";
+  const isGold = isGoldSpot || isGoldEtf;
   const isEtf = assetKind === "etf" || isGoldEtf;
 
-  if (isGoldEtf) {
+  if (isGold) {
     return (
       <section className="fv-card fv-card-gold-etf">
         <div className="fv-header">
           <div>
-            <h3 className="section-title">ETF ทองคำ</h3>
+            <h3 className="section-title">
+              {isGoldSpot ? "ทองคำ XAU/USD" : "ETF ทองคำ"}
+            </h3>
             <p className="fv-subtitle">
-              วิเคราะห์จากราคา · แนวรับ/ต้าน · EMA · ช่วง 52 สัปดาห์
+              {isGoldSpot
+                ? "ราคาทอง spot · แนวรับ/ต้าน · EMA · 52 สัปดาห์"
+                : "วิเคราะห์จากราคา · แนวรับ/ต้าน · EMA · ช่วง 52 สัปดาห์"}
             </p>
           </div>
-          <span className="fv-badge fv-badge-gold-etf">ETF ทอง</span>
+          <span className="fv-badge fv-badge-gold-etf">
+            {isGoldSpot ? "XAU/USD" : "ETF ทอง"}
+          </span>
         </div>
 
         <div className="fv-main">
@@ -105,12 +113,15 @@ export default function FairValueCard({
         )}
 
         <p className="fv-note fv-note-gold">
-          ETF ทองไม่มีราคายุติธรรมแบบหุ้น — ราคาเคลื่อนตามทองคำโลก
-          ใช้แนวรับ/ต้านและ EMA เป็นหลัก
+          {isGoldSpot
+            ? "ราคาอ้างอิง Gold Futures (COMEX) ใกล้เคียง XAU/USD spot — ใช้แนวรับ/ต้านและ EMA เป็นหลัก"
+            : "ETF ทองไม่มีราคายุติธรรมแบบหุ้น — ราคาเคลื่อนตามทองคำโลก ใช้แนวรับ/ต้านและ EMA เป็นหลัก"}
         </p>
 
         <p className="hint-text fv-disclaimer">
-          ตัวอย่าง US: GLD, IAU · ไทย: GOLD01, GOLD03 · ไม่ใช่คำแนะนำลงทุน
+          {isGoldSpot
+            ? "เพิ่มด้วย XAU/USD หรือ XAUUSD · ไม่ใช่คำแนะนำลงทุน"
+            : "ตัวอย่าง US: GLD, IAU · ไทย: GOLD01, GOLD03 · ไม่ใช่คำแนะนำลงทุน"}
         </p>
       </section>
     );
