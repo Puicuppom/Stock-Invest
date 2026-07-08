@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   CandlestickSeries,
   ColorType,
@@ -53,6 +53,15 @@ function toChartTime(date: string): UTCTimestamp {
   return Math.floor(new Date(normalized).getTime() / 1000) as UTCTimestamp;
 }
 
+function measureChartSize(container: HTMLDivElement) {
+  const width = container.clientWidth || container.parentElement?.clientWidth || 320;
+  const height = container.clientHeight || container.parentElement?.clientHeight || 240;
+  return {
+    width: Math.max(width, 280),
+    height: Math.max(height, 180),
+  };
+}
+
 export default function StockChart({
   symbol,
   market,
@@ -71,11 +80,14 @@ export default function StockChart({
   const [candles, setCandles] = useState<Candle[]>([]);
   const [chartLoading, setChartLoading] = useState(true);
   const [chartError, setChartError] = useState("");
+  const [chartReady, setChartReady] = useState(false);
 
   const stockKey = `${symbol}::${market}`;
 
   useEffect(() => {
     setTimeRange(DEFAULT_CHART_RANGE);
+    setCandles([]);
+    setChartError("");
   }, [stockKey]);
 
   useEffect(() => {
@@ -123,78 +135,7 @@ export default function StockChart({
     };
   }, [symbol, market, timeRange]);
 
-  useEffect(() => {
-    if (!containerRef.current) return;
-
-    const chart = createChart(containerRef.current, {
-      layout: {
-        background: { type: ColorType.Solid, color: CHART_COLORS.background },
-        textColor: CHART_COLORS.text,
-      },
-      grid: {
-        vertLines: { color: CHART_COLORS.grid },
-        horzLines: { color: CHART_COLORS.grid },
-      },
-      rightPriceScale: { borderColor: CHART_COLORS.grid },
-      timeScale: {
-        borderColor: CHART_COLORS.grid,
-        timeVisible: true,
-        secondsVisible: false,
-      },
-      crosshair: { mode: 1 },
-      handleScroll: { vertTouchDrag: false },
-    });
-
-    const series = chart.addSeries(CandlestickSeries, {
-      upColor: CHART_COLORS.up,
-      downColor: CHART_COLORS.down,
-      borderUpColor: CHART_COLORS.up,
-      borderDownColor: CHART_COLORS.down,
-      wickUpColor: CHART_COLORS.up,
-      wickDownColor: CHART_COLORS.down,
-    });
-
-    const emaColors: Record<(typeof EMA_PERIODS)[number], string> = {
-      20: CHART_COLORS.ema20,
-      50: CHART_COLORS.ema50,
-      200: CHART_COLORS.ema200,
-    };
-
-    for (const period of EMA_PERIODS) {
-      emaSeriesRef.current[period] = chart.addSeries(LineSeries, {
-        color: emaColors[period],
-        lineWidth: 2,
-        priceLineVisible: false,
-        lastValueVisible: false,
-        crosshairMarkerVisible: false,
-      });
-    }
-
-    chartRef.current = chart;
-    seriesRef.current = series;
-
-    const observer = new ResizeObserver((entries) => {
-      const entry = entries[0];
-      if (entry) {
-        chart.applyOptions({
-          width: entry.contentRect.width,
-          height: entry.contentRect.height,
-        });
-      }
-    });
-    observer.observe(containerRef.current);
-
-    return () => {
-      observer.disconnect();
-      chart.remove();
-      chartRef.current = null;
-      seriesRef.current = null;
-      emaSeriesRef.current = { 20: null, 50: null, 200: null };
-      priceLinesRef.current = [];
-    };
-  }, []);
-
-  useEffect(() => {
+  const applyChartData = useCallback(() => {
     const series = seriesRef.current;
     const chart = chartRef.current;
     if (!series || !chart || candles.length === 0) return;
@@ -267,6 +208,87 @@ export default function StockChart({
 
     chart.timeScale().fitContent();
   }, [candles, pivot, zones, mode]);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const container = containerRef.current;
+    const { width, height } = measureChartSize(container);
+
+    const chart = createChart(container, {
+      width,
+      height,
+      layout: {
+        background: { type: ColorType.Solid, color: CHART_COLORS.background },
+        textColor: CHART_COLORS.text,
+      },
+      grid: {
+        vertLines: { color: CHART_COLORS.grid },
+        horzLines: { color: CHART_COLORS.grid },
+      },
+      rightPriceScale: { borderColor: CHART_COLORS.grid },
+      timeScale: {
+        borderColor: CHART_COLORS.grid,
+        timeVisible: true,
+        secondsVisible: false,
+      },
+      crosshair: { mode: 1 },
+      handleScroll: { vertTouchDrag: false },
+    });
+
+    const series = chart.addSeries(CandlestickSeries, {
+      upColor: CHART_COLORS.up,
+      downColor: CHART_COLORS.down,
+      borderUpColor: CHART_COLORS.up,
+      borderDownColor: CHART_COLORS.down,
+      wickUpColor: CHART_COLORS.up,
+      wickDownColor: CHART_COLORS.down,
+    });
+
+    const emaColors: Record<(typeof EMA_PERIODS)[number], string> = {
+      20: CHART_COLORS.ema20,
+      50: CHART_COLORS.ema50,
+      200: CHART_COLORS.ema200,
+    };
+
+    for (const period of EMA_PERIODS) {
+      emaSeriesRef.current[period] = chart.addSeries(LineSeries, {
+        color: emaColors[period],
+        lineWidth: 2,
+        priceLineVisible: false,
+        lastValueVisible: false,
+        crosshairMarkerVisible: false,
+      });
+    }
+
+    chartRef.current = chart;
+    seriesRef.current = series;
+    setChartReady(true);
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      const nextWidth = Math.max(entry.contentRect.width, 280);
+      const nextHeight = Math.max(entry.contentRect.height, 180);
+      chart.applyOptions({ width: nextWidth, height: nextHeight });
+    });
+    observer.observe(container);
+
+    return () => {
+      observer.disconnect();
+      chart.remove();
+      chartRef.current = null;
+      seriesRef.current = null;
+      emaSeriesRef.current = { 20: null, 50: null, 200: null };
+      priceLinesRef.current = [];
+      setChartReady(false);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!chartReady) return;
+    applyChartData();
+  }, [chartReady, applyChartData]);
 
   const activeEmaPeriods = EMA_PERIODS.filter((period) => candles.length >= period);
   const intervalLabel = chartFetchConfig(timeRange).label;

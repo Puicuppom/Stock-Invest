@@ -502,7 +502,9 @@ body.watchlist-dragging {
 .chart-canvas-wrap {
   position: relative;
   flex: 1;
-  min-height: 0;
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
 }
 
 .chart-loading {
@@ -555,7 +557,7 @@ body.watchlist-dragging {
 .chart-canvas {
   flex: 1;
   width: 100%;
-  min-height: 0;
+  min-height: 180px;
 }
 
 .chart-range-bar {
