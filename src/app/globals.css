@@ -1701,6 +1701,82 @@ body.watchlist-dragging {
   border-radius: 10px;
 }
 
+.add-stock-panel {
+  width: min(100%, 19.5rem);
+  margin: 0;
+  padding: 0.9rem 0.95rem 1rem;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  max-height: min(90dvh, 28rem);
+  overflow-y: auto;
+}
+
+.add-stock-title {
+  margin: 0 0 0.65rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.add-stock-panel .add-form {
+  gap: 0.45rem;
+}
+
+.add-stock-panel .field-label {
+  font-size: 0.75rem;
+}
+
+.add-stock-panel .text-input {
+  min-height: 38px;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.88rem;
+  border-radius: 10px;
+}
+
+.add-stock-panel .market-quick-add {
+  gap: 0.45rem;
+}
+
+.add-stock-panel .market-quick-btn {
+  min-height: 54px;
+  padding: 0.4rem 0.35rem;
+  border-radius: 10px;
+  border-width: 1px;
+  gap: 0.1rem;
+}
+
+.add-stock-panel .market-quick-title {
+  font-size: 0.95rem;
+}
+
+.add-stock-panel .market-quick-sub {
+  font-size: 0.62rem;
+}
+
+.add-stock-panel .market-quick-code {
+  margin-top: 0.05rem;
+  font-size: 0.72rem;
+}
+
+.add-stock-panel .market-hint {
+  margin: 0;
+  padding: 0.45rem 0.55rem;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  border-radius: 8px;
+}
+
+.add-stock-panel .error-text {
+  font-size: 0.78rem;
+}
+
+.add-stock-panel .add-stock-cancel {
+  min-height: 36px;
+  margin-top: 0.1rem;
+  font-size: 0.82rem;
+  border-radius: 10px;
+}
+
 .btn-full {
   width: 100%;
   margin-top: 0.25rem;

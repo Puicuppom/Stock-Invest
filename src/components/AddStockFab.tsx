@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { normalizeInput } from "@/lib/symbol";
 
 interface AddStockFabProps {
@@ -12,6 +13,11 @@ interface AddStockFabProps {
 export default function AddStockFab({ open, onOpenChange, onAdd }: AddStockFabProps) {
   const [symbol, setSymbol] = useState("");
   const [error, setError] = useState("");
+  const [portalReady, setPortalReady] = useState(false);
+
+  useEffect(() => {
+    setPortalReady(true);
+  }, []);
 
   useEffect(() => {
     if (!open) {
@@ -47,111 +53,114 @@ export default function AddStockFab({ open, onOpenChange, onAdd }: AddStockFabPr
         +
       </button>
 
-      {open && (
-        <div className="modal-backdrop" onClick={() => onOpenChange(false)}>
-          <div
-            className="modal-panel"
-            onClick={(e) => e.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="add-stock-title"
-          >
-            <h2 id="add-stock-title" className="modal-title">
-              เพิ่มหุ้น / ETF
-            </h2>
+      {portalReady &&
+        open &&
+        createPortal(
+          <div className="modal-backdrop modal-backdrop-compact" onClick={() => onOpenChange(false)}>
+            <div
+              className="modal-panel add-stock-panel"
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="add-stock-title"
+            >
+              <h2 id="add-stock-title" className="add-stock-title">
+                เพิ่มหุ้น / ETF
+              </h2>
 
-            <div className="add-form">
-              <label className="field-label" htmlFor="symbol-input">
-                สัญลักษณ์
-              </label>
-              <input
-                id="symbol-input"
-                className="text-input"
-                placeholder="เช่น META, XAU/USD, GLD, GOLD01, PTT"
-                value={symbol}
-                onChange={(e) => {
-                  setSymbol(e.target.value);
-                  setError("");
-                }}
-                autoFocus
-                autoComplete="off"
-                autoCapitalize="characters"
-              />
+              <div className="add-form">
+                <label className="field-label" htmlFor="symbol-input">
+                  สัญลักษณ์
+                </label>
+                <input
+                  id="symbol-input"
+                  className="text-input"
+                  placeholder="META, XAU/USD, GLD, PTT"
+                  value={symbol}
+                  onChange={(e) => {
+                    setSymbol(e.target.value);
+                    setError("");
+                  }}
+                  autoFocus
+                  autoComplete="off"
+                  autoCapitalize="characters"
+                />
 
-              <p className="field-label">เลือกตลาดแล้วเพิ่มเลย</p>
-              <div className="market-quick-add">
+                <p className="field-label">เลือกตลาด</p>
+                <div className="market-quick-add">
+                  <button
+                    type="button"
+                    className="market-quick-btn market-quick-us"
+                    onClick={() => handleAdd("US")}
+                  >
+                    <span className="market-quick-title">US</span>
+                    <span className="market-quick-sub">NASDAQ / NYSE</span>
+                    {normalized && (
+                      <span className="market-quick-code">{normalized}</span>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    className="market-quick-btn market-quick-bkk"
+                    onClick={() => handleAdd("TH")}
+                  >
+                    <span className="market-quick-title">BKK</span>
+                    <span className="market-quick-sub">SET</span>
+                    {normalized && (
+                      <span className="market-quick-code">
+                        {normalized.includes(".") ? normalized : `${normalized}.BK`}
+                      </span>
+                    )}
+                  </button>
+                </div>
+
+                {normalized === "META" && (
+                  <p className="market-hint">
+                    Meta/Facebook → กด <strong>US</strong> · Meta หุ้นไทย → กด{" "}
+                    <strong>BKK</strong>
+                  </p>
+                )}
+
+                {(normalized === "BRKB" || normalized === "BRKA") && (
+                  <p className="market-hint">
+                    Berkshire → กด <strong>US</strong> · ใช้ BRKB / BRKA
+                  </p>
+                )}
+
+                {(normalized === "XAUUSD" || normalized === "GCF") && (
+                  <p className="market-hint">
+                    ทอง XAU/USD → กด <strong>US</strong>
+                  </p>
+                )}
+
+                {(normalized === "GLD" ||
+                  normalized === "IAU" ||
+                  normalized === "GLDM") && (
+                  <p className="market-hint">
+                    ETF ทอง US → กด <strong>US</strong>
+                  </p>
+                )}
+
+                {(normalized === "GOLD01" || normalized === "GOLD03") && (
+                  <p className="market-hint">
+                    ETF ทองไทย → กด <strong>BKK</strong>
+                  </p>
+                )}
+
+                {error && <p className="error-text">{error}</p>}
+
                 <button
                   type="button"
-                  className="market-quick-btn market-quick-us"
-                  onClick={() => handleAdd("US")}
+                  className="btn-secondary btn-full add-stock-cancel"
+                  onClick={() => onOpenChange(false)}
                 >
-                  <span className="market-quick-title">US</span>
-                  <span className="market-quick-sub">NASDAQ / NYSE</span>
-                  {normalized && (
-                    <span className="market-quick-code">{normalized}</span>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  className="market-quick-btn market-quick-bkk"
-                  onClick={() => handleAdd("TH")}
-                >
-                  <span className="market-quick-title">BKK</span>
-                  <span className="market-quick-sub">SET</span>
-                  {normalized && (
-                    <span className="market-quick-code">
-                      {normalized.includes(".") ? normalized : `${normalized}.BK`}
-                    </span>
-                  )}
+                  ยกเลิก
                 </button>
               </div>
-
-              {normalized === "META" && (
-                <p className="market-hint">
-                  Meta/Facebook → กด <strong>US</strong> · Meta หุ้นไทย → กด{" "}
-                  <strong>BKK</strong>
-                </p>
-              )}
-
-              {(normalized === "BRKB" || normalized === "BRKA") && (
-                <p className="market-hint">
-                  Berkshire → กด <strong>US</strong> · ใช้ BRKB / BRKA (Yahoo: BRK-B / BRK-A)
-                </p>
-              )}
-
-              {(normalized === "XAUUSD" || normalized === "GCF") && (
-                <p className="market-hint">
-                  ทอง XAU/USD → กด <strong>US</strong> · ราคา spot (USD/oz)
-                </p>
-              )}
-
-              {(normalized === "GLD" ||
-                normalized === "IAU" ||
-                normalized === "GLDM") && (
-                <p className="market-hint">
-                  ETF ทอง US → กด <strong>US</strong> · ตัวอย่าง GLD, IAU, GLDM
-                </p>
-              )}
-
-              {(normalized === "GOLD01" || normalized === "GOLD03") && (
-                <p className="market-hint">
-                  ETF ทองไทย → กด <strong>BKK</strong> · GOLD01 / GOLD03
-                </p>
-              )}
-
-              {error && <p className="error-text">{error}</p>}
-
-              <button
-                type="button"
-                className="btn-secondary btn-full"
-                onClick={() => onOpenChange(false)}
-              >
-                ยกเลิก
-              </button>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </>
   );
 }
