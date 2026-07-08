@@ -269,6 +269,8 @@ export default function Watchlist({
           const nearResistance = hits.some((hit) => hit.kind === "resistance");
           const nearSupport = hits.some((hit) => hit.kind === "support");
 
+          const symbolLabel = displaySymbol(normalizeInput(item.symbol));
+
           return (
             <button
               key={id}
@@ -278,7 +280,7 @@ export default function Watchlist({
                 if (el) chipRefs.current.set(id, el);
                 else chipRefs.current.delete(id);
               }}
-              className={`watchlist-chip ${active ? "active" : ""} ${isDragging ? "dragging" : ""} ${isDropTarget ? "drop-target" : ""} ${isPressing ? "pressing" : ""}`}
+              className={`watchlist-chip ${active ? "active" : ""} ${isDragging ? "dragging" : ""} ${isDropTarget ? "drop-target" : ""} ${isPressing ? "pressing" : ""} ${nearResistance || nearSupport ? "has-sr-tag" : ""}`}
               onTouchStart={(event) => handleTouchStart(id, event)}
               onPointerDown={(event) => handlePointerDown(id, event)}
               onContextMenu={(event) => event.preventDefault()}
@@ -298,8 +300,8 @@ export default function Watchlist({
                 ×
               </span>
               <span className="chip-body">
-                <span className="chip-symbol">
-                  {displaySymbol(normalizeInput(item.symbol))}
+                <span className="chip-symbol" title={symbolLabel}>
+                  {symbolLabel}
                 </span>
                 <span className="chip-market">{marketLabel(item.market)}</span>
                 {(nearResistance || nearSupport) && (

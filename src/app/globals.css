@@ -223,16 +223,14 @@ body.watchlist-dragging {
 }
 
 .watchlist-scroll {
-  display: flex;
-  flex-wrap: wrap;
-  align-content: flex-start;
-  align-items: stretch;
-  gap: 0.35rem;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.28rem;
   width: 100%;
-  max-height: 4.6rem;
+  max-height: 4.15rem;
   overflow-x: hidden;
   overflow-y: auto;
-  padding: 0.1rem 0.05rem 0.1rem;
+  padding: 0.05rem;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
 }
@@ -278,7 +276,7 @@ body.watchlist-dragging {
   content: "";
   position: absolute;
   inset: -2px;
-  border-radius: 999px;
+  border-radius: 10px;
   border: 2px solid #38bdf8;
   animation: press-hold-ring 0.5s linear forwards;
   pointer-events: none;
@@ -318,14 +316,16 @@ body.watchlist-dragging {
   position: fixed;
   z-index: 100;
   pointer-events: none;
-  transform: translate(-50%, -50%) scale(1.08);
+  transform: translate(-50%, -50%) scale(1.06);
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: center;
-  gap: 0.3rem;
-  min-height: 34px;
-  padding: 0.35rem 0.55rem;
-  border-radius: 999px;
+  justify-content: center;
+  gap: 0.08rem;
+  width: 4.1rem;
+  min-height: 30px;
+  padding: 0.25rem 0.2rem;
+  border-radius: 8px;
   border: 2px solid #38bdf8;
   background: #0c4a6e;
   color: #f8fafc;
@@ -336,26 +336,26 @@ body.watchlist-dragging {
 
 .watchlist-drag-ghost .chip-symbol {
   font-weight: 800;
-  font-size: 0.78rem;
+  font-size: 0.65rem;
 }
 
 .watchlist-drag-ghost .chip-market {
-  font-size: 0.58rem;
+  font-size: 0.5rem;
   color: #bae6fd;
 }
 
 .watchlist-chip {
   position: relative;
-  flex: 0 0 auto;
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: center;
-  gap: 0.15rem;
-  width: auto;
-  max-width: none;
-  min-height: 34px;
-  padding: 0.28rem 0.45rem 0.28rem 0.35rem;
-  border-radius: 999px;
+  justify-content: center;
+  gap: 0;
+  width: 100%;
+  min-width: 0;
+  min-height: 30px;
+  padding: 0.24rem 0.12rem 0.16rem;
+  border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--surface-2);
   color: var(--text);
@@ -374,36 +374,47 @@ body.watchlist-dragging {
 }
 
 .chip-body {
-  display: inline-flex;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.28rem;
+  justify-content: center;
+  gap: 0.06rem;
+  width: 100%;
   min-width: 0;
-  padding-right: 0.35rem;
+  padding: 0 0.1rem;
 }
 
 .chip-symbol {
   font-weight: 700;
-  font-size: 0.76rem;
-  max-width: 5.5rem;
+  font-size: 0.64rem;
+  line-height: 1.15;
+  width: 100%;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  text-align: center;
 }
 
 .chip-market {
   flex-shrink: 0;
-  font-size: 0.58rem;
+  font-size: 0.5rem;
+  line-height: 1;
   color: var(--muted);
   font-weight: 600;
-  padding: 0.05rem 0.28rem;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--muted) 12%, transparent);
+  padding: 0;
+  border-radius: 0;
+  background: none;
 }
 
 .chip-sr-tags {
+  position: absolute;
+  bottom: 1px;
+  left: 50%;
+  transform: translateX(-50%);
   display: inline-flex;
   align-items: center;
-  gap: 0.15rem;
+  gap: 0.1rem;
   flex-shrink: 0;
 }
 
@@ -411,13 +422,17 @@ body.watchlist-dragging {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1rem;
-  height: 1rem;
-  font-size: 0.58rem;
+  width: 0.72rem;
+  height: 0.72rem;
+  font-size: 0.48rem;
   font-weight: 800;
   padding: 0;
   border-radius: 999px;
   line-height: 1;
+}
+
+.watchlist-chip.has-sr-tag {
+  padding-bottom: 0.22rem;
 }
 
 .chip-sr-tag-res {
@@ -433,19 +448,19 @@ body.watchlist-dragging {
 }
 
 .chip-remove {
-  position: relative;
-  top: auto;
-  right: auto;
+  position: absolute;
+  top: 1px;
+  right: 1px;
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
-  margin-left: -0.05rem;
+  width: 13px;
+  height: 13px;
+  margin: 0;
   border-radius: 999px;
   color: var(--muted);
-  font-size: 0.82rem;
+  font-size: 0.72rem;
   line-height: 1;
   z-index: 2;
 }
