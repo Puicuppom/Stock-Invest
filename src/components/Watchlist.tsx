@@ -246,7 +246,7 @@ export default function Watchlist({
   return (
     <div className="watchlist-panel">
       <div className="watchlist-toolbar">
-        <span className="watchlist-label">
+        <span className="watchlist-label" title="กดค้าง chip แล้วลากเพื่อเรียงลำดับ">
           รายการหุ้น <span className="watchlist-count">{items.length}</span>
         </span>
         <button type="button" className="watchlist-add-btn" onClick={onAddClick}>
@@ -254,13 +254,11 @@ export default function Watchlist({
         </button>
       </div>
 
-      {draggingId ? (
+      {draggingId && (
         <p className="watchlist-drag-banner">ลากไปวางตำแหน่งใหม่ แล้วปล่อยนิ้ว</p>
-      ) : (
-        <p className="watchlist-hint">กดค้าง chip จนเห็นกรอบฟ้า แล้วลาก</p>
       )}
 
-      <div className={`watchlist-grid ${draggingId ? "is-dragging" : ""}`}>
+      <div className={`watchlist-scroll ${draggingId ? "is-dragging" : ""}`}>
         {items.map((item) => {
           const id = watchlistId(item);
           const active = id === selected;
@@ -299,19 +297,29 @@ export default function Watchlist({
               >
                 ×
               </span>
-              <span className="chip-symbol">
-                {displaySymbol(normalizeInput(item.symbol))}
-              </span>
-              <span className="chip-market">{marketLabel(item.market)}</span>
-              <span
-                className="chip-sr-tags"
-                aria-hidden={!nearResistance && !nearSupport}
-              >
-                {nearResistance && (
-                  <span className="chip-sr-tag chip-sr-tag-res">ต้าน</span>
-                )}
-                {nearSupport && (
-                  <span className="chip-sr-tag chip-sr-tag-sup">รับ</span>
+              <span className="chip-body">
+                <span className="chip-symbol">
+                  {displaySymbol(normalizeInput(item.symbol))}
+                </span>
+                <span className="chip-market">{marketLabel(item.market)}</span>
+                {(nearResistance || nearSupport) && (
+                  <span
+                    className="chip-sr-tags"
+                    aria-label={
+                      nearResistance && nearSupport
+                        ? "ใกล้แนวต้านและแนวรับ"
+                        : nearResistance
+                          ? "ใกล้แนวต้าน"
+                          : "ใกล้แนวรับ"
+                    }
+                  >
+                    {nearResistance && (
+                      <span className="chip-sr-tag chip-sr-tag-res">ต</span>
+                    )}
+                    {nearSupport && (
+                      <span className="chip-sr-tag chip-sr-tag-sup">ร</span>
+                    )}
+                  </span>
                 )}
               </span>
               {isDropTarget && <span className="chip-drop-label">วาง</span>}

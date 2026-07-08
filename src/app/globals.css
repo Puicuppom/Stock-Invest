@@ -137,7 +137,7 @@ select {
   top: 0;
   z-index: 20;
   margin: -0.25rem -1rem 0;
-  padding: 0.5rem 1rem 0.75rem;
+  padding: 0.4rem 1rem 0.55rem;
   background: linear-gradient(
     to bottom,
     var(--bg) 70%,
@@ -148,9 +148,9 @@ select {
 
 .watchlist-panel {
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: 14px;
   background: var(--surface);
-  padding: 0.65rem 0.75rem 0.75rem;
+  padding: 0.5rem 0.55rem 0.55rem;
 }
 
 .watchlist-toolbar {
@@ -158,11 +158,11 @@ select {
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  margin-bottom: 0.6rem;
+  margin-bottom: 0.4rem;
 }
 
 .watchlist-label {
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   font-weight: 600;
   color: var(--muted);
 }
@@ -182,32 +182,26 @@ select {
 }
 
 .watchlist-add-btn {
-  min-height: 36px;
-  padding: 0.35rem 0.75rem;
+  min-height: 30px;
+  padding: 0.2rem 0.6rem;
   border: 1px solid var(--accent);
   border-radius: 999px;
   background: color-mix(in srgb, var(--accent) 12%, var(--surface));
   color: var(--accent);
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
 }
 
-.watchlist-hint {
-  margin: 0 0 0.5rem;
-  font-size: 0.72rem;
-  color: var(--muted);
-}
-
 .watchlist-drag-banner {
-  margin: 0 0 0.5rem;
-  padding: 0.45rem 0.65rem;
-  border-radius: 10px;
+  margin: 0 0 0.35rem;
+  padding: 0.35rem 0.55rem;
+  border-radius: 8px;
   background: #0c4a6e;
   border: 1px solid #38bdf8;
   color: #bae6fd;
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 600;
   text-align: center;
   animation: drag-banner-pulse 1s ease-in-out infinite;
@@ -228,18 +222,26 @@ body.watchlist-dragging {
   touch-action: none;
 }
 
-.watchlist-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.5rem;
+.watchlist-scroll {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  align-items: stretch;
+  gap: 0.35rem;
   width: 100%;
+  max-height: 4.6rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 0.1rem 0.05rem 0.1rem;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
 }
 
-.watchlist-grid.is-dragging .watchlist-chip:not(.dragging):not(.drop-target) {
+.watchlist-scroll.is-dragging .watchlist-chip:not(.dragging):not(.drop-target) {
   opacity: 0.45;
 }
 
-.watchlist-grid.is-dragging {
+.watchlist-scroll.is-dragging {
   touch-action: none;
 }
 
@@ -252,8 +254,7 @@ body.watchlist-dragging {
   pointer-events: none;
 }
 
-.watchlist-chip.dragging .chip-symbol,
-.watchlist-chip.dragging .chip-market,
+.watchlist-chip.dragging .chip-body,
 .watchlist-chip.dragging .chip-remove {
   visibility: hidden;
 }
@@ -277,7 +278,7 @@ body.watchlist-dragging {
   content: "";
   position: absolute;
   inset: -2px;
-  border-radius: 14px;
+  border-radius: 999px;
   border: 2px solid #38bdf8;
   animation: press-hold-ring 0.5s linear forwards;
   pointer-events: none;
@@ -317,16 +318,14 @@ body.watchlist-dragging {
   position: fixed;
   z-index: 100;
   pointer-events: none;
-  transform: translate(-50%, -50%) scale(1.12);
+  transform: translate(-50%, -50%) scale(1.08);
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  justify-content: center;
-  gap: 0.15rem;
-  min-width: 72px;
-  min-height: 58px;
-  padding: 0.55rem 0.65rem;
-  border-radius: 12px;
+  gap: 0.3rem;
+  min-height: 34px;
+  padding: 0.35rem 0.55rem;
+  border-radius: 999px;
   border: 2px solid #38bdf8;
   background: #0c4a6e;
   color: #f8fafc;
@@ -337,25 +336,26 @@ body.watchlist-dragging {
 
 .watchlist-drag-ghost .chip-symbol {
   font-weight: 800;
-  font-size: 0.9rem;
+  font-size: 0.78rem;
 }
 
 .watchlist-drag-ghost .chip-market {
-  font-size: 0.65rem;
+  font-size: 0.58rem;
   color: #bae6fd;
 }
 
 .watchlist-chip {
   position: relative;
+  flex: 0 0 auto;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  justify-content: center;
   gap: 0.15rem;
-  width: 100%;
-  min-height: 58px;
-  padding: 0.55rem 0.35rem 0.45rem;
-  border-radius: 12px;
+  width: auto;
+  max-width: none;
+  min-height: 34px;
+  padding: 0.28rem 0.45rem 0.28rem 0.35rem;
+  border-radius: 999px;
   border: 1px solid var(--border);
   background: var(--surface-2);
   color: var(--text);
@@ -373,37 +373,51 @@ body.watchlist-dragging {
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
+.chip-body {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  min-width: 0;
+  padding-right: 0.35rem;
+}
+
 .chip-symbol {
   font-weight: 700;
-  font-size: 0.82rem;
-  max-width: 100%;
+  font-size: 0.76rem;
+  max-width: 5.5rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  padding: 0 0.15rem;
 }
 
 .chip-market {
-  font-size: 0.62rem;
+  flex-shrink: 0;
+  font-size: 0.58rem;
   color: var(--muted);
   font-weight: 600;
+  padding: 0.05rem 0.28rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--muted) 12%, transparent);
 }
 
 .chip-sr-tags {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.2rem;
-  min-height: 1.05rem;
-  margin-top: 0.05rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  flex-shrink: 0;
 }
 
 .chip-sr-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
   font-size: 0.58rem;
-  font-weight: 700;
-  padding: 0.1rem 0.35rem;
+  font-weight: 800;
+  padding: 0;
   border-radius: 999px;
-  line-height: 1.2;
+  line-height: 1;
 }
 
 .chip-sr-tag-res {
@@ -419,17 +433,19 @@ body.watchlist-dragging {
 }
 
 .chip-remove {
-  position: absolute;
-  top: 2px;
-  right: 2px;
+  position: relative;
+  top: auto;
+  right: auto;
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
+  margin-left: -0.05rem;
   border-radius: 999px;
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   line-height: 1;
   z-index: 2;
 }
