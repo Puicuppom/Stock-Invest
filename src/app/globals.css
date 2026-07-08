@@ -1655,10 +1655,20 @@ body.watchlist-dragging {
 }
 
 .modal-backdrop-compact {
-  align-items: center;
-  justify-items: center;
-  padding: 1rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: max(0.75rem, env(safe-area-inset-top)) 1rem 1rem;
+  padding-top: max(0.75rem, calc(env(safe-area-inset-top) + 6dvh));
   padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.add-stock-panel,
+.remove-confirm-panel {
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
 }
 
 .remove-confirm-panel {

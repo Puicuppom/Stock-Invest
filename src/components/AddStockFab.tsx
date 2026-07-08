@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { useKeyboardAwareModal } from "@/hooks/useKeyboardAwareModal";
 import { normalizeInput } from "@/lib/symbol";
 
 interface AddStockFabProps {
@@ -27,6 +28,7 @@ export default function AddStockFab({ open, onOpenChange, onAdd }: AddStockFabPr
   }, [open]);
 
   const normalized = normalizeInput(symbol);
+  const { panelRef, offsetY } = useKeyboardAwareModal(open);
 
   const handleAdd = (market: "TH" | "US") => {
     if (!normalized) {
@@ -58,7 +60,13 @@ export default function AddStockFab({ open, onOpenChange, onAdd }: AddStockFabPr
         createPortal(
           <div className="modal-backdrop modal-backdrop-compact" onClick={() => onOpenChange(false)}>
             <div
+              ref={panelRef}
               className="modal-panel add-stock-panel"
+              style={
+                offsetY > 0
+                  ? { transform: `translateY(-${offsetY}px)` }
+                  : undefined
+              }
               onClick={(e) => e.stopPropagation()}
               role="dialog"
               aria-modal="true"
