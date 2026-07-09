@@ -5,6 +5,7 @@ const ua =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 const INVESTING = [
+  { sym: "BRK-B", fv: 568, pct: 14.8 },
   { sym: "MU", fv: 933, pct: -1.7 },
   { sym: "MSFT", fv: 466.14, pct: 19.88 },
   { sym: "FN", fv: 408.33, pct: -14.94 },
@@ -28,6 +29,13 @@ function hasPositiveEarnings(data) {
 
 function isQualityCompounder(data) {
   if (!hasPositiveEarnings(data)) return false;
+  if (
+    data.trailingEps > 0 &&
+    data.forwardEps > 0 &&
+    data.trailingEps > data.forwardEps * 1.08
+  ) {
+    return false;
+  }
   if (data.trailingPE == null || data.trailingPE > 30) return false;
   if (data.forwardPE == null || data.forwardPE > 32) return false;
   if (!data.marketCap || data.marketCap < 200_000_000_000) return false;
@@ -262,6 +270,21 @@ function blendFairValue(market, candidates, price, data, peRef) {
       const support = [dcfO, earnG, revG].filter((v) => v != null && inBand(v, price));
       if (support.length === 0) return peQuality;
       return 0.88 * peQuality + 0.12 * robustAverage(support);
+    }
+  }
+
+  if (
+    data.trailingEps > 0 &&
+    data.forwardEps > 0 &&
+    data.trailingEps > data.forwardEps * 1.08
+  ) {
+    const peTrail = modelPETrailing(market, data);
+    if (peTrail != null && inBand(peTrail, price)) {
+      const others = candidates.filter(
+        (v) => Math.abs(v - peTrail) / peTrail > 0.08 && inBand(v, price)
+      );
+      if (others.length === 0) return peTrail;
+      return 0.72 * peTrail + 0.28 * robustAverage(others);
     }
   }
 

@@ -315,8 +315,20 @@ function hasPositiveEarnings(data: FairValueData): boolean {
 }
 
 /** Mega-cap / quality compounder — forward P/E near consensus growth premium */
+function isDecliningForwardEarnings(data: FairValueData): boolean {
+  if (
+    data.forwardEps == null ||
+    data.trailingEps == null ||
+    data.trailingEps <= 0
+  ) {
+    return false;
+  }
+  return data.trailingEps > data.forwardEps * 1.08;
+}
+
 function isQualityCompounder(data: FairValueData): boolean {
   if (!hasPositiveEarnings(data)) return false;
+  if (isDecliningForwardEarnings(data)) return false;
   if (data.trailingPE == null || data.trailingPE > 30) return false;
   if (data.forwardPE == null || data.forwardPE > 32) return false;
   if (data.marketCap == null || data.marketCap < 200_000_000_000) return false;
@@ -496,6 +508,19 @@ function blendFairValueFromCandidates(
       );
       if (support.length === 0) return peQuality;
       return 0.88 * peQuality + 0.12 * robustAverage(support);
+    }
+  }
+
+  if (isDecliningForwardEarnings(data)) {
+    const peTrail = modelPETrailing(market, data);
+    if (peTrail != null && isReasonableModelValue(peTrail, currentPrice)) {
+      const others = candidates.filter(
+        (v) =>
+          Math.abs(v - peTrail) / peTrail > 0.08 &&
+          isReasonableModelValue(v, currentPrice)
+      );
+      if (others.length === 0) return peTrail;
+      return 0.72 * peTrail + 0.28 * robustAverage(others);
     }
   }
 

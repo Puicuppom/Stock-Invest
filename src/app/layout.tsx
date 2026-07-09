@@ -13,13 +13,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Stock S/R Analyzer",
+  title: "InvestPui.com",
   description: "วิเคราะห์แนวรับแนวต้านหุ้น SET และ US",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Stock S/R",
+    title: "InvestPui",
   },
 };
 

@@ -108,7 +108,7 @@ export default function StockDashboard({
     <section className="stock-dashboard">
       <div className="dash-top">
         <div className="dash-quote">
-          <p className="eyebrow">Stock S/R Analyzer</p>
+          <p className="eyebrow">InvestPui.com</p>
           <h1 className="dash-symbol">{symbol}</h1>
           {companyName && <p className="dash-company">{companyName}</p>}
           <div className="dash-price-row">

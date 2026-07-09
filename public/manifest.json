@@ -1,6 +1,6 @@
 {
-  "name": "Stock S/R Analyzer",
-  "short_name": "StockSR",
+  "name": "InvestPui.com",
+  "short_name": "InvestPui",
   "description": "วิเคราะห์แนวรับแนวต้านหุ้น SET และ US",
   "start_url": "/",
   "display": "standalone",
