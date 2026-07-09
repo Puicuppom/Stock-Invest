@@ -5,6 +5,7 @@ const ua =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 const INVESTING = [
+  { sym: "MU", fv: 933, pct: -1.7 },
   { sym: "MSFT", fv: 466.14, pct: 19.88 },
   { sym: "FN", fv: 408.33, pct: -14.94 },
   { sym: "AVGO", fv: 444.51, pct: 15.1 },
@@ -42,6 +43,19 @@ function modelPEQualityGrowth(data) {
   const avgPE = (data.forwardPE + trailing) / 2;
   const fairPE = clamp(avgPE * 1.13, 16, 30);
   return eps * fairPE;
+}
+
+function isCyclicalEarningsRamp(data) {
+  if (!hasPositiveEarnings(data)) return false;
+  if (!data.forwardPE || data.forwardPE <= 0 || data.forwardPE > 15) return false;
+  if (!data.forwardEps || !data.trailingEps || data.trailingEps <= 0) return false;
+  return data.forwardEps >= data.trailingEps * 1.8;
+}
+
+function modelCyclicalForwardAnchor(data) {
+  if (!isCyclicalEarningsRamp(data)) return null;
+  if (!data.forwardEps || !data.forwardPE) return null;
+  return data.forwardEps * data.forwardPE * 0.985;
 }
 
 function modelPEMultiples(market, data) {
@@ -228,6 +242,15 @@ function blendFairValue(market, candidates, price, data, peRef) {
 
   if (!hasPositiveEarnings(data) && candidates.length === 1) {
     return candidates[0];
+  }
+
+  const cyclical = modelCyclicalForwardAnchor(data);
+  if (cyclical != null && inBand(cyclical, price)) {
+    const dcfO = modelDcfOcf(price, data);
+    const ps = modelPSMultiples(market, price, data);
+    const support = [dcfO, ps].filter((v) => v != null && inBand(v, price));
+    if (support.length === 0) return cyclical;
+    return 0.92 * cyclical + 0.08 * robustAverage(support);
   }
 
   if (isQualityCompounder(data)) {

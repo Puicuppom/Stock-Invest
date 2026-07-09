@@ -336,6 +336,28 @@ function modelPEQualityGrowth(data: FairValueData): number | null {
   return eps * fairPE;
 }
 
+/** Cyclical ramp — forward EPS surge, low forward P/E (memory semis e.g. MU) */
+function isCyclicalEarningsRamp(data: FairValueData): boolean {
+  if (!hasPositiveEarnings(data)) return false;
+  if (data.forwardPE == null || data.forwardPE <= 0 || data.forwardPE > 15) {
+    return false;
+  }
+  if (
+    data.forwardEps == null ||
+    data.trailingEps == null ||
+    data.trailingEps <= 0
+  ) {
+    return false;
+  }
+  return data.forwardEps >= data.trailingEps * 1.8;
+}
+
+function modelCyclicalForwardAnchor(data: FairValueData): number | null {
+  if (!isCyclicalEarningsRamp(data)) return null;
+  if (data.forwardEps == null || data.forwardPE == null) return null;
+  return data.forwardEps * data.forwardPE * 0.985;
+}
+
 /** Pre-revenue / loss-making — conservative haircut from price */
 function modelUnprofitableFairValue(
   currentPrice: number,
@@ -445,6 +467,21 @@ function blendFairValueFromCandidates(
     candidates[0] != null
   ) {
     return candidates[0];
+  }
+
+  const cyclicalAnchor = modelCyclicalForwardAnchor(data);
+  if (
+    cyclicalAnchor != null &&
+    isReasonableModelValue(cyclicalAnchor, currentPrice)
+  ) {
+    const dcfO = modelDcfOcf(currentPrice, data);
+    const psModel = modelPSMultiples(market, currentPrice, data);
+    const support = [dcfO, psModel].filter(
+      (v): v is number =>
+        v != null && isReasonableModelValue(v, currentPrice)
+    );
+    if (support.length === 0) return cyclicalAnchor;
+    return 0.92 * cyclicalAnchor + 0.08 * robustAverage(support);
   }
 
   if (isQualityCompounder(data)) {
