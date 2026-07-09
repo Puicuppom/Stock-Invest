@@ -2,8 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AddStockFab from "@/components/AddStockFab";
-import FairValueCard from "@/components/FairValueCard";
-import TradePlanCard from "@/components/TradePlanCard";
+import StockDashboard from "@/components/StockDashboard";
 import SupportResistanceCard from "@/components/SupportResistanceCard";
 import StockChart from "@/components/StockChart";
 import Watchlist from "@/components/Watchlist";
@@ -14,7 +13,6 @@ import { useSrMode } from "@/hooks/useSrMode";
 import { findSrHits } from "@/lib/sr-levels";
 import { computeTradePlan } from "@/lib/trade-plan";
 import { displaySymbol, normalizeInput } from "@/lib/symbol";
-import { assetKindLabel } from "@/lib/instrument";
 import { marketLabel, stockDataMatchesItem, watchlistId } from "@/lib/watchlist-id";
 import type { StockData } from "@/lib/types";
 
@@ -50,6 +48,7 @@ export default function StockApp() {
   const [error, setError] = useState("");
   const [addOpen, setAddOpen] = useState(false);
   const [toast, setToast] = useState("");
+  const [chartOpen, setChartOpen] = useState(false);
   const [liveTagCache, setLiveTagCache] = useState<WatchlistSrTags>({});
 
   const selectedData =
@@ -190,63 +189,32 @@ export default function StockApp() {
     }
   }, [loaded, selectedItem, fetchStock]);
 
-  const changePositive = (data?.change ?? 0) >= 0;
-
   return (
     <div className="app-shell">
-      <header className="app-header">
-        <div>
-          <p className="eyebrow">Stock S/R Analyzer</p>
-          <h1 className="app-title">
-            {selectedData
-              ? displaySymbol(selectedData.resolvedSymbol)
-              : selected || "—"}
-          </h1>
-          {selectedData?.longName && (
-            <p className="app-company-name">{selectedData.longName}</p>
-          )}
-          {selectedData && (
-            <div className="price-row">
-              <div className="price-quote">
-                <span className="last-price">{selectedData.lastClose.toFixed(2)}</span>
-                <span className={changePositive ? "change-up" : "change-down"}>
-                  {changePositive ? "+" : ""}
-                  {selectedData.change.toFixed(2)} ({selectedData.changePercent.toFixed(2)}%)
-                </span>
-              </div>
-              <div className="price-meta">
-                <span className="market-badge">
-                  {selectedData.market === "TH" ? "BKK" : "US"}
-                </span>
-                {assetKindLabel(selectedData.assetKind) && (
-                  <span className="market-badge asset-badge">
-                    {assetKindLabel(selectedData.assetKind)}
-                  </span>
-                )}
-                {(nearSupport || nearResistance) && (
-                  <div className="header-sr-tags">
-                    {nearSupport && (
-                      <span className="header-sr-tag header-sr-tag-sup">รับ</span>
-                    )}
-                    {nearResistance && (
-                      <span className="header-sr-tag header-sr-tag-res">ต้าน</span>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-        <button
-          type="button"
-          className="refresh-btn"
-          onClick={fetchStock}
-          disabled={loading}
-          aria-label="รีเฟรช"
-        >
-          ↻
-        </button>
-      </header>
+      {loading && !selectedData && (
+        <div className="state-banner">กำลังโหลด...</div>
+      )}
+      {error && !loading && !selectedData && (
+        <div className="state-banner error">{error}</div>
+      )}
+
+      {selectedData && tradePlan && (
+        <StockDashboard
+          symbol={displaySymbol(selectedData.resolvedSymbol)}
+          companyName={selectedData.longName}
+          currentPrice={selectedData.lastClose}
+          change={selectedData.change}
+          changePercent={selectedData.changePercent}
+          market={selectedData.market}
+          assetKind={selectedData.assetKind}
+          fairValue={selectedData.fairValue}
+          tradePlan={tradePlan}
+          nearSupport={nearSupport}
+          nearResistance={nearResistance}
+          loading={loading}
+          onRefresh={fetchStock}
+        />
+      )}
 
       <section className="watchlist-section">
         <Watchlist
@@ -262,38 +230,30 @@ export default function StockApp() {
 
       {toast && <div className="toast-banner">{toast}</div>}
 
-      <section className="chart-section">
-        {loading && <div className="state-banner">กำลังโหลด...</div>}
-        {error && !loading && <div className="state-banner error">{error}</div>}
-        {data && selectedData && selectedItem && !loading && (
-          <StockChart
-            symbol={selectedItem.symbol}
-            market={selectedItem.market}
-            pivot={selectedData.pivot}
-            zones={selectedData.zones}
-            mode={srMode}
-          />
-        )}
-      </section>
-
-      {data && selectedData && (
+      {data && selectedData && selectedItem && (
         <>
-          <FairValueCard
-            fairValue={selectedData.fairValue}
-            currentPrice={selectedData.lastClose}
-            market={selectedData.market}
-            assetKind={selectedData.assetKind}
-          />
-
-          {tradePlan && (
-            <TradePlanCard
-              plan={tradePlan}
-              currentPrice={selectedData.lastClose}
-              market={selectedData.market}
-              assetKind={selectedData.assetKind}
-              srMode={srMode}
-            />
-          )}
+          <section className="chart-collapse">
+            <button
+              type="button"
+              className="chart-collapse-btn"
+              onClick={() => setChartOpen((open) => !open)}
+              aria-expanded={chartOpen}
+            >
+              <span>กราฟ</span>
+              <span className="chart-collapse-icon">{chartOpen ? "▲" : "▼"}</span>
+            </button>
+            {chartOpen && (
+              <div className="chart-section">
+                <StockChart
+                  symbol={selectedItem.symbol}
+                  market={selectedItem.market}
+                  pivot={selectedData.pivot}
+                  zones={selectedData.zones}
+                  mode={srMode}
+                />
+              </div>
+            )}
+          </section>
 
           <SupportResistanceCard
             pivot={selectedData.pivot}
@@ -305,6 +265,7 @@ export default function StockApp() {
             toleranceOptions={toleranceOptions}
             onModeChange={setSrMode}
             onToleranceChange={setTagTolerance}
+            hideNearest
           />
         </>
       )}

@@ -15,6 +15,8 @@ interface SupportResistanceCardProps {
   toleranceOptions: readonly number[];
   onModeChange: (mode: SrMode) => void;
   onToleranceChange: (percent: number) => void;
+  /** Hide nearest boxes when buy/sell already shown in dashboard */
+  hideNearest?: boolean;
 }
 const MODE_COPY: Record<
   SrMode,
@@ -56,6 +58,7 @@ export default function SupportResistanceCard({
   toleranceOptions,
   onModeChange,
   onToleranceChange,
+  hideNearest = false,
 }: SupportResistanceCardProps) {
   const copy = MODE_COPY[mode];
   const levels = buildSrLevels(pivot, zones, mode);
@@ -119,7 +122,7 @@ export default function SupportResistanceCard({
         <p className="hint-text">{copy.empty}</p>
       ) : (
         <>
-          {(nearestRes || nearestSup) && (
+          {!hideNearest && (nearestRes || nearestSup) && (
             <div className="sr-nearest">
               {nearestRes && (
                 <div
