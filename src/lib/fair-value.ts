@@ -370,6 +370,39 @@ function modelCyclicalForwardAnchor(data: FairValueData): number | null {
   return data.forwardEps * data.forwardPE * 0.985;
 }
 
+/** Mature dividend payers only — skip high-growth names that also pay a yield (BLK-style) */
+function isMatureDividendPayer(data: FairValueData): boolean {
+  const earnG = data.earningsGrowth ?? 0;
+  const revG = data.revenueGrowth ?? 0;
+  if (earnG >= 0.25 || revG >= 0.15) return false;
+  if (
+    data.forwardEps != null &&
+    data.trailingEps != null &&
+    data.trailingEps > 0 &&
+    data.forwardEps >= data.trailingEps * 1.45
+  ) {
+    return false;
+  }
+  return true;
+}
+
+/** Moderate forward earnings ramp — forward EPS surge + low forward P/E (asset mgrs e.g. BLK) */
+function isModerateForwardEarningsRamp(data: FairValueData): boolean {
+  if (!hasPositiveEarnings(data)) return false;
+  if (isCyclicalEarningsRamp(data)) return false;
+  if (data.forwardPE == null || data.forwardPE <= 0 || data.forwardPE > 18) {
+    return false;
+  }
+  if (
+    data.forwardEps == null ||
+    data.trailingEps == null ||
+    data.trailingEps <= 0
+  ) {
+    return false;
+  }
+  return data.forwardEps >= data.trailingEps * 1.45;
+}
+
 /** Pre-revenue / loss-making — conservative haircut from price */
 function modelUnprofitableFairValue(
   currentPrice: number,
@@ -464,7 +497,7 @@ function blendFairValueFromCandidates(
       : 0;
   const divModel = modelDividendYieldReversion(currentPrice, data);
 
-  if (divYield >= 0.018 && divModel != null) {
+  if (divYield >= 0.018 && divModel != null && isMatureDividendPayer(data)) {
     const others = candidates.filter(
       (v) => v >= divModel * 0.72 && Math.abs(v - divModel) / divModel > 0.04
     );
@@ -494,6 +527,18 @@ function blendFairValueFromCandidates(
     );
     if (support.length === 0) return cyclicalAnchor;
     return 0.92 * cyclicalAnchor + 0.08 * robustAverage(support);
+  }
+
+  if (isModerateForwardEarningsRamp(data) && peReference != null) {
+    if (isReasonableModelValue(peReference, currentPrice)) {
+      const support = candidates.filter(
+        (v) =>
+          Math.abs(v - peReference) / peReference > 0.08 &&
+          isReasonableModelValue(v, currentPrice)
+      );
+      if (support.length === 0) return peReference;
+      return 0.9 * peReference + 0.1 * robustAverage(support);
+    }
   }
 
   if (isQualityCompounder(data)) {

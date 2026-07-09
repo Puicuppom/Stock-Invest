@@ -5,6 +5,7 @@ const ua =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 const INVESTING = [
+  { sym: "BLK", fv: 1051, pct: 6.1 },
   { sym: "BRK-B", fv: 568, pct: 14.8 },
   { sym: "MU", fv: 933, pct: -1.7 },
   { sym: "MSFT", fv: 466.14, pct: 19.88 },
@@ -64,6 +65,28 @@ function modelCyclicalForwardAnchor(data) {
   if (!isCyclicalEarningsRamp(data)) return null;
   if (!data.forwardEps || !data.forwardPE) return null;
   return data.forwardEps * data.forwardPE * 0.985;
+}
+
+function isMatureDividendPayer(data) {
+  const earnG = data.earningsGrowth ?? 0;
+  const revG = data.revenueGrowth ?? 0;
+  if (earnG >= 0.25 || revG >= 0.15) return false;
+  if (
+    data.forwardEps > 0 &&
+    data.trailingEps > 0 &&
+    data.forwardEps >= data.trailingEps * 1.45
+  ) {
+    return false;
+  }
+  return true;
+}
+
+function isModerateForwardEarningsRamp(data) {
+  if (!hasPositiveEarnings(data)) return false;
+  if (isCyclicalEarningsRamp(data)) return false;
+  if (!data.forwardPE || data.forwardPE <= 0 || data.forwardPE > 18) return false;
+  if (!data.forwardEps || !data.trailingEps || data.trailingEps <= 0) return false;
+  return data.forwardEps >= data.trailingEps * 1.45;
 }
 
 function modelPEMultiples(market, data) {
@@ -240,7 +263,7 @@ function blendFairValue(market, candidates, price, data, peRef) {
   const divY = data.dividendRate > 0 ? data.dividendRate / price : 0;
   const divModel = modelDivYieldRev(price, data);
 
-  if (divY >= 0.018 && divModel != null) {
+  if (divY >= 0.018 && divModel != null && isMatureDividendPayer(data)) {
     const others = candidates.filter(
       (v) => v >= divModel * 0.72 && Math.abs(v - divModel) / divModel > 0.04
     );
@@ -259,6 +282,14 @@ function blendFairValue(market, candidates, price, data, peRef) {
     const support = [dcfO, ps].filter((v) => v != null && inBand(v, price));
     if (support.length === 0) return cyclical;
     return 0.92 * cyclical + 0.08 * robustAverage(support);
+  }
+
+  if (isModerateForwardEarningsRamp(data) && peRef != null && inBand(peRef, price)) {
+    const support = candidates.filter(
+      (v) => Math.abs(v - peRef) / peRef > 0.08 && inBand(v, price)
+    );
+    if (support.length === 0) return peRef;
+    return 0.9 * peRef + 0.1 * robustAverage(support);
   }
 
   if (isQualityCompounder(data)) {
