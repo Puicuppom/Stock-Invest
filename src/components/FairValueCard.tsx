@@ -38,7 +38,10 @@ export default function FairValueCard({
     fairValue: target,
     upsidePercent,
     verdict,
-    analystRange,
+    modelRange,
+    analystTarget,
+    analystUpsidePercent,
+    modelCount,
     range52w,
     peReference,
     peReferenceUpsidePercent,
@@ -51,8 +54,8 @@ export default function FairValueCard({
     source,
   } = fairValue;
 
-  const analystPos =
-    analystRange && rangeMarker(currentPrice, analystRange.low, analystRange.high);
+  const modelPos =
+    modelRange && rangeMarker(currentPrice, modelRange.low, modelRange.high);
   const weekPos =
     range52w && rangeMarker(currentPrice, range52w.low, range52w.high);
 
@@ -137,7 +140,7 @@ export default function FairValueCard({
           <p className="fv-subtitle">
             {isEtf
               ? "ช่วงราคา · Yahoo"
-              : "เป้าเฉลี่ยนักวิเคราะห์ 12 เดือน · Yahoo"}
+              : `เฉลี่ย ${modelCount || "หลาย"} โมเดล · DCF · Multiples · Dividend`}
           </p>
         </div>
         {kindLabel ? (
@@ -155,10 +158,10 @@ export default function FairValueCard({
             <div>
               <p className="fv-label">ราคายุติธรรม</p>
               <p className="fv-price">{formatPrice(target, market)}</p>
-              {analystRange && (
+              {modelRange && (
                 <p className="fv-midpoint">
-                  ช่วง {formatPrice(analystRange.low, market)} –{" "}
-                  {formatPrice(analystRange.high, market)}
+                  ช่วงโมเดล {formatPrice(modelRange.low, market)} –{" "}
+                  {formatPrice(modelRange.high, market)}
                 </p>
               )}
             </div>
@@ -209,27 +212,50 @@ export default function FairValueCard({
             </div>
           )}
 
-          {analystRange && analystPos != null && (
+          {modelRange && modelPos != null && (
             <div className="fv-range fv-analyst-range">
               <div className="fv-range-labels">
-                <span>Low {formatPrice(analystRange.low, market)}</span>
-                <span>High {formatPrice(analystRange.high, market)}</span>
+                <span>Low {formatPrice(modelRange.low, market)}</span>
+                <span>High {formatPrice(modelRange.high, market)}</span>
               </div>
               <div className="fv-range-track fv-range-track-analyst">
                 <span
                   className="fv-range-marker"
-                  style={{ left: `${analystPos}%` }}
+                  style={{ left: `${modelPos}%` }}
                 />
               </div>
             </div>
           )}
 
-          {(peReference != null ||
+          {(analystTarget != null ||
+            peReference != null ||
             forwardPE != null ||
             forwardEps != null ||
             trailingPE != null) && (
             <div className="fv-supplement">
-              <p className="fv-supplement-title">ข้อมูลเสริม · Forward P/E</p>
+              <p className="fv-supplement-title">ข้อมูลเสริม</p>
+              {analystTarget != null && (
+                <div className="fv-row">
+                  <span className="fv-row-label">เป้านักวิเคราะห์</span>
+                  <span className="fv-row-value-group">
+                    <span className="fv-row-value">
+                      {formatPrice(analystTarget, market)}
+                    </span>
+                    {analystUpsidePercent != null && (
+                      <span
+                        className={
+                          analystUpsidePercent >= 0
+                            ? "fv-row-pct fv-upside-up"
+                            : "fv-row-pct fv-upside-down"
+                        }
+                      >
+                        {analystUpsidePercent >= 0 ? "+" : ""}
+                        {analystUpsidePercent.toFixed(1)}%
+                      </span>
+                    )}
+                  </span>
+                </div>
+              )}
               {forwardPE != null && (
                 <div className="fv-row">
                   <span className="fv-row-label">Forward P/E</span>
@@ -269,7 +295,10 @@ export default function FairValueCard({
           )}
 
           {source === "pe-fallback" && (
-            <p className="fv-note">ไม่มีราคายุติธรรมจากนักวิเคราะห์ — ใช้ P/E อ้างอิงแทน</p>
+            <p className="fv-note">โมเดลไม่ครบ — ใช้ P/E เป็นหลัก</p>
+          )}
+          {source === "multi-model" && (
+            <p className="fv-note">เฉลี่ยจากหลายโมเดล (คล้าย Investing.com Pro)</p>
           )}
         </>
       ) : !isEtf ? (

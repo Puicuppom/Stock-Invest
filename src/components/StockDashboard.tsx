@@ -68,10 +68,13 @@ export default function StockDashboard({
   const {
     fairValue: target,
     upsidePercent,
-    analystRange,
+    modelRange,
+    analystTarget,
+    analystUpsidePercent,
     range52w,
     peReference,
     peReferenceUpsidePercent,
+    modelCount,
     trailingPE,
     forwardPE,
     forwardEps,
@@ -86,9 +89,8 @@ export default function StockDashboard({
   const isEtf = assetKind === "etf" || isGoldEtf;
   const kindLabel = assetKindLabel(assetKind);
 
-  const analystPos =
-    analystRange &&
-    rangeMarker(currentPrice, analystRange.low, analystRange.high);
+  const modelPos =
+    modelRange && rangeMarker(currentPrice, modelRange.low, modelRange.high);
   const weekPos =
     range52w && rangeMarker(currentPrice, range52w.low, range52w.high);
 
@@ -99,7 +101,8 @@ export default function StockDashboard({
     forwardPE != null ||
     peReference != null ||
     forwardEps != null ||
-    trailingPE != null;
+    trailingPE != null ||
+    analystTarget != null;
 
   return (
     <section className="stock-dashboard">
@@ -173,7 +176,12 @@ export default function StockDashboard({
         <div className="dash-metrics">
           <div className={`dash-fv-row${hasSupplement ? "" : " dash-fv-row-solo"}`}>
             <div className="dash-metric dash-metric-fv">
-              <p className="dash-metric-label">ราคายุติธรรม</p>
+              <p className="dash-metric-label">
+                ราคายุติธรรม
+                {modelCount >= 2 && (
+                  <span className="dash-metric-tag">{modelCount} โมเดล</span>
+                )}
+              </p>
               <div className="dash-metric-head">
                 <p className="dash-metric-value">{formatPrice(target)}</p>
                 {upsidePercent != null && (
@@ -189,16 +197,16 @@ export default function StockDashboard({
                   </p>
                 )}
               </div>
-              {analystRange && analystPos != null && (
+              {modelRange && modelPos != null && (
                 <div className="dash-mini-range">
                   <div className="fv-range-labels dash-range-labels">
-                    <span>{formatPrice(analystRange.low)}</span>
-                    <span>{formatPrice(analystRange.high)}</span>
+                    <span>{formatPrice(modelRange.low)}</span>
+                    <span>{formatPrice(modelRange.high)}</span>
                   </div>
                   <div className="fv-range-track fv-range-track-analyst">
                     <span
                       className="fv-range-marker"
-                      style={{ left: `${analystPos}%` }}
+                      style={{ left: `${modelPos}%` }}
                     />
                   </div>
                 </div>
@@ -208,6 +216,26 @@ export default function StockDashboard({
             {hasSupplement && (
               <div className="dash-metric dash-metric-supplement">
                 <p className="dash-metric-label">ข้อมูลเสริม</p>
+                {analystTarget != null && (
+                  <p className="dash-sup-line">
+                    <span>เป้านักวิเคราะห์</span>
+                    <span className="dash-sup-value">
+                      {formatPrice(analystTarget)}
+                      {analystUpsidePercent != null && (
+                        <em
+                          className={
+                            analystUpsidePercent >= 0
+                              ? "change-up"
+                              : "change-down"
+                          }
+                        >
+                          {analystUpsidePercent >= 0 ? "+" : ""}
+                          {analystUpsidePercent.toFixed(1)}%
+                        </em>
+                      )}
+                    </span>
+                  </p>
+                )}
                 {forwardPE != null && (
                   <p className="dash-sup-line">
                     <span>Fwd P/E</span>

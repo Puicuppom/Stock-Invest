@@ -44,6 +44,15 @@ export interface FairValueData {
   fiftyTwoWeekHigh: number | null;
   fiftyTwoWeekLow: number | null;
   freeCashflow: number | null;
+  operatingCashflow: number | null;
+  ebitda: number | null;
+  revenuePerShare: number | null;
+  earningsGrowth: number | null;
+  revenueGrowth: number | null;
+  bookValue: number | null;
+  priceToBook: number | null;
+  enterpriseValue: number | null;
+  sharesOutstanding: number | null;
   marketCap: number | null;
   /** Yahoo decimal e.g. 0.025 = 2.5% */
   dividendYield: number | null;
@@ -51,26 +60,30 @@ export interface FairValueData {
 }
 
 export interface FairValueResult {
-  /** Primary: Yahoo analyst consensus mean (≈ Investing.com) */
+  /** Primary: simple average of valuation models (Investing.com Pro style) */
   fairValue: number | null;
   fairValueLow: number | null;
   fairValueHigh: number | null;
-  /** Supplementary P/E reference — not blended into fair value */
+  /** P/E multiples model (one of the blended models) */
   peReference: number | null;
   upsidePercent: number | null;
   upsideLowPercent: number | null;
   upsideHighPercent: number | null;
   verdict: "undervalued" | "fair" | "overvalued" | "unknown";
+  analystTarget: number | null;
   analystRange: { low: number; high: number } | null;
+  modelRange: { low: number; high: number } | null;
+  modelCount: number;
   range52w: { low: number; high: number } | null;
   trailingPE: number | null;
   forwardPE: number | null;
   forwardEps: number | null;
   peReferenceUpsidePercent: number | null;
+  analystUpsidePercent: number | null;
   fcfYieldPercent: number | null;
   dividendYieldPercent: number | null;
   dividendRate: number | null;
-  source: "analyst" | "pe-fallback" | "unknown";
+  source: "multi-model" | "pe-fallback" | "unknown";
 }
 
 export interface StockData {

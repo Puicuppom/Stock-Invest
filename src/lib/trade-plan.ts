@@ -59,8 +59,8 @@ export function computeTradePlan(
       ? fairValue.fairValue
       : null;
   const longTermLabel =
-    longTermTarget != null && fairValue?.source === "analyst"
-      ? "เป้านักวิเคราะห์ 12 เดือน"
+    longTermTarget != null && fairValue?.source === "multi-model"
+      ? "ราคายุติธรรม (หลายโมเดล)"
       : longTermTarget != null
         ? "ราคาอ้างอิง"
         : null;
