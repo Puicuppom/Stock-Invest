@@ -206,8 +206,13 @@ export default function StockChart({
       });
     }
 
+    chart.timeScale().applyOptions({
+      barSpacing: timeRange === "1D" ? 4 : 6,
+      minBarSpacing: timeRange === "1D" ? 1 : 0.5,
+      rightOffset: timeRange === "1D" ? 6 : 0,
+    });
     chart.timeScale().fitContent();
-  }, [candles, pivot, zones, mode]);
+  }, [candles, pivot, zones, mode, timeRange]);
 
   useEffect(() => {
     if (!containerRef.current) return;

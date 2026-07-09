@@ -24,10 +24,10 @@ export function chartFetchConfig(timeRange: ChartTimeRange): ChartFetchConfig {
   switch (timeRange) {
     case "1D":
       return {
-        interval: "1h",
+        interval: "5m",
         range: "1d",
         intraday: true,
-        label: "รายชั่วโมง",
+        label: "ราย 5 นาที",
       };
     case "5D":
       return {
