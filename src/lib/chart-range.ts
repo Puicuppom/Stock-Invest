@@ -31,17 +31,17 @@ export function chartFetchConfig(timeRange: ChartTimeRange): ChartFetchConfig {
       };
     case "5D":
       return {
-        interval: "1d",
+        interval: "15m",
         range: "5d",
-        intraday: false,
-        label: "รายวัน",
+        intraday: true,
+        label: "ราย 15 นาที",
       };
     case "1M":
       return {
-        interval: "1mo",
-        range: "2y",
+        interval: "1d",
+        range: "1mo",
         intraday: false,
-        label: "รายเดือน",
+        label: "รายวัน",
       };
     case "6M":
       return {

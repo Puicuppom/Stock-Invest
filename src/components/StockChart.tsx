@@ -206,11 +206,16 @@ export default function StockChart({
       });
     }
 
-    chart.timeScale().applyOptions({
-      barSpacing: timeRange === "1D" ? 4 : 6,
-      minBarSpacing: timeRange === "1D" ? 1 : 0.5,
-      rightOffset: timeRange === "1D" ? 6 : 0,
-    });
+    const spacing =
+      timeRange === "1D"
+        ? { barSpacing: 4, minBarSpacing: 1, rightOffset: 6 }
+        : timeRange === "5D"
+          ? { barSpacing: 3, minBarSpacing: 1, rightOffset: 6 }
+          : timeRange === "1M"
+            ? { barSpacing: 5, minBarSpacing: 1, rightOffset: 4 }
+            : { barSpacing: 6, minBarSpacing: 0.5, rightOffset: 0 };
+
+    chart.timeScale().applyOptions(spacing);
     chart.timeScale().fitContent();
   }, [candles, pivot, zones, mode, timeRange]);
 
