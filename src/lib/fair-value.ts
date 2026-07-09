@@ -314,6 +314,28 @@ function hasPositiveEarnings(data: FairValueData): boolean {
   );
 }
 
+/** Mega-cap / quality compounder — forward P/E near consensus growth premium */
+function isQualityCompounder(data: FairValueData): boolean {
+  if (!hasPositiveEarnings(data)) return false;
+  if (data.trailingPE == null || data.trailingPE > 30) return false;
+  if (data.forwardPE == null || data.forwardPE > 32) return false;
+  if (data.marketCap == null || data.marketCap < 200_000_000_000) return false;
+  const earnG = clamp(data.earningsGrowth ?? 0, 0, 0.5);
+  const revG = clamp(data.revenueGrowth ?? 0, 0, 0.5);
+  return earnG >= 0.12 || revG >= 0.1;
+}
+
+function modelPEQualityGrowth(data: FairValueData): number | null {
+  const eps = data.forwardEps ?? data.trailingEps;
+  if (eps == null || eps <= 0 || data.forwardPE == null || data.forwardPE <= 0) {
+    return null;
+  }
+  const trailing = data.trailingPE ?? data.forwardPE;
+  const avgPE = (data.forwardPE + trailing) / 2;
+  const fairPE = clamp(avgPE * 1.13, 16, 30);
+  return eps * fairPE;
+}
+
 /** Pre-revenue / loss-making — conservative haircut from price */
 function modelUnprofitableFairValue(
   currentPrice: number,
@@ -423,6 +445,21 @@ function blendFairValueFromCandidates(
     candidates[0] != null
   ) {
     return candidates[0];
+  }
+
+  if (isQualityCompounder(data)) {
+    const peQuality = modelPEQualityGrowth(data);
+    if (peQuality != null && isReasonableModelValue(peQuality, currentPrice)) {
+      const dcfO = modelDcfOcf(currentPrice, data);
+      const earnG = modelEarningsGrowthValue(currentPrice, data);
+      const revG = modelRevenueGrowthValue(currentPrice, data);
+      const support = [dcfO, earnG, revG].filter(
+        (v): v is number =>
+          v != null && isReasonableModelValue(v, currentPrice)
+      );
+      if (support.length === 0) return peQuality;
+      return 0.88 * peQuality + 0.12 * robustAverage(support);
+    }
   }
 
   if (

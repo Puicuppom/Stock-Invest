@@ -5,6 +5,7 @@ const ua =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 const INVESTING = [
+  { sym: "MSFT", fv: 466.14, pct: 19.88 },
   { sym: "FN", fv: 408.33, pct: -14.94 },
   { sym: "AVGO", fv: 444.51, pct: 15.1 },
   { sym: "CEG", fv: 233.13, pct: -3.63 },
@@ -22,6 +23,25 @@ function clamp(v, lo, hi) {
 
 function hasPositiveEarnings(data) {
   return data.forwardEps > 0 || data.trailingEps > 0;
+}
+
+function isQualityCompounder(data) {
+  if (!hasPositiveEarnings(data)) return false;
+  if (data.trailingPE == null || data.trailingPE > 30) return false;
+  if (data.forwardPE == null || data.forwardPE > 32) return false;
+  if (!data.marketCap || data.marketCap < 200_000_000_000) return false;
+  const earnG = clamp(data.earningsGrowth ?? 0, 0, 0.5);
+  const revG = clamp(data.revenueGrowth ?? 0, 0, 0.5);
+  return earnG >= 0.12 || revG >= 0.1;
+}
+
+function modelPEQualityGrowth(data) {
+  const eps = data.forwardEps ?? data.trailingEps;
+  if (eps == null || eps <= 0 || !data.forwardPE) return null;
+  const trailing = data.trailingPE ?? data.forwardPE;
+  const avgPE = (data.forwardPE + trailing) / 2;
+  const fairPE = clamp(avgPE * 1.13, 16, 30);
+  return eps * fairPE;
 }
 
 function modelPEMultiples(market, data) {
@@ -210,6 +230,18 @@ function blendFairValue(market, candidates, price, data, peRef) {
     return candidates[0];
   }
 
+  if (isQualityCompounder(data)) {
+    const peQuality = modelPEQualityGrowth(data);
+    if (peQuality != null && inBand(peQuality, price)) {
+      const dcfO = modelDcfOcf(price, data);
+      const earnG = modelEarningsGrowth(price, data);
+      const revG = modelRevenueGrowth(price, data);
+      const support = [dcfO, earnG, revG].filter((v) => v != null && inBand(v, price));
+      if (support.length === 0) return peQuality;
+      return 0.88 * peQuality + 0.12 * robustAverage(support);
+    }
+  }
+
   if (data.trailingPE > 28 && peRef != null) {
     const ps = modelPSMultiples(market, price, data);
     if (ps != null && inBand(ps, price)) {
@@ -274,6 +306,7 @@ async function yahoo(sym) {
     dividendRate: n(sd.dividendRate),
     earningsGrowth: n(fd.earningsGrowth),
     revenueGrowth: n(fd.revenueGrowth),
+    marketCap: n(sd.marketCap),
   };
 }
 
