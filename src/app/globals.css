@@ -711,7 +711,8 @@ body.watchlist-dragging {
 .pivot-card,
 .zones-card,
 .fv-card,
-.sr-card {
+.sr-card,
+.trade-plan-card {
   border: 1px solid var(--border);
   border-radius: 16px;
   background: var(--surface);
@@ -984,6 +985,204 @@ body.watchlist-dragging {
   font-family: var(--font-geist-mono), monospace;
   min-width: 3.5rem;
   text-align: right;
+}
+
+.trade-plan-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.trade-plan-header .section-title {
+  margin: 0;
+}
+
+.trade-plan-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  max-width: 48%;
+  text-align: right;
+  line-height: 1.3;
+}
+
+.trade-plan-badge-near-support {
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 16%, var(--surface-2));
+  border: 1px solid color-mix(in srgb, var(--success) 32%, transparent);
+}
+
+.trade-plan-badge-near-resistance {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 16%, var(--surface-2));
+  border: 1px solid color-mix(in srgb, var(--danger) 32%, transparent);
+}
+
+.trade-plan-badge-mid-range,
+.trade-plan-badge-no-levels {
+  color: var(--muted);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.trade-plan-detail {
+  margin: 0 0 0.85rem;
+  font-size: 0.82rem;
+  color: var(--text);
+  line-height: 1.45;
+}
+
+.trade-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.trade-plan-box {
+  border-radius: 12px;
+  padding: 0.65rem 0.5rem;
+  text-align: center;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+.trade-plan-buy {
+  border-color: color-mix(in srgb, var(--success) 35%, var(--border));
+  background: color-mix(in srgb, var(--success) 8%, var(--surface-2));
+}
+
+.trade-plan-sell {
+  border-color: color-mix(in srgb, var(--danger) 35%, var(--border));
+  background: color-mix(in srgb, var(--danger) 8%, var(--surface-2));
+}
+
+.trade-plan-stop {
+  border-color: color-mix(in srgb, var(--warning) 30%, var(--border));
+  background: color-mix(in srgb, var(--warning) 6%, var(--surface-2));
+}
+
+.trade-plan-box-label {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.trade-plan-box-price {
+  margin: 0.25rem 0 0.15rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  font-family: var(--font-geist-mono), monospace;
+  color: var(--text);
+}
+
+.trade-plan-box-meta {
+  margin: 0;
+  font-size: 0.65rem;
+  color: var(--muted);
+  line-height: 1.3;
+}
+
+.trade-plan-box-hint {
+  margin: 0.25rem 0 0;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.trade-plan-long {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.5rem;
+  margin-top: 0.75rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  font-size: 0.78rem;
+}
+
+.trade-plan-long-label {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.trade-plan-long-price {
+  font-family: var(--font-geist-mono), monospace;
+  font-weight: 700;
+}
+
+.trade-plan-long-up {
+  color: var(--success);
+  font-weight: 600;
+}
+
+.trade-plan-long-down {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.trade-plan-rr {
+  margin: 0.65rem 0 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-align: center;
+}
+
+.trade-plan-disclaimer {
+  margin-top: 0.65rem;
+  margin-bottom: 0;
+  font-size: 0.68rem;
+  line-height: 1.4;
+}
+
+.trade-plan-near-support {
+  border-color: color-mix(in srgb, var(--success) 28%, var(--border));
+}
+
+.trade-plan-near-resistance {
+  border-color: color-mix(in srgb, var(--danger) 28%, var(--border));
+}
+
+@media (max-width: 380px) {
+  .trade-plan-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .trade-plan-box {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+    text-align: left;
+    column-gap: 0.65rem;
+    align-items: center;
+  }
+
+  .trade-plan-box-label {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .trade-plan-box-price {
+    grid-column: 2;
+    grid-row: 1;
+    text-align: right;
+    margin: 0;
+  }
+
+  .trade-plan-box-meta,
+  .trade-plan-box-hint {
+    grid-column: 1 / -1;
+  }
 }
 
 .fv-header {

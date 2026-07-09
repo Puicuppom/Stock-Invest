@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AddStockFab from "@/components/AddStockFab";
 import FairValueCard from "@/components/FairValueCard";
+import TradePlanCard from "@/components/TradePlanCard";
 import SupportResistanceCard from "@/components/SupportResistanceCard";
 import StockChart from "@/components/StockChart";
 import Watchlist from "@/components/Watchlist";
@@ -11,6 +12,7 @@ import { useSrWatchlistTags, type WatchlistSrTags } from "@/hooks/useSrWatchlist
 import { useWatchlist } from "@/hooks/useWatchlist";
 import { useSrMode } from "@/hooks/useSrMode";
 import { findSrHits } from "@/lib/sr-levels";
+import { computeTradePlan } from "@/lib/trade-plan";
 import { displaySymbol, normalizeInput } from "@/lib/symbol";
 import { assetKindLabel } from "@/lib/instrument";
 import { marketLabel, stockDataMatchesItem, watchlistId } from "@/lib/watchlist-id";
@@ -66,6 +68,20 @@ export default function StockApp() {
 
   const nearResistance = currentHits.some((hit) => hit.kind === "resistance");
   const nearSupport = currentHits.some((hit) => hit.kind === "support");
+
+  const tradePlan = useMemo(() => {
+    if (!selectedData) return null;
+    const kind = selectedData.assetKind;
+    return computeTradePlan(
+      selectedData.pivot,
+      selectedData.zones,
+      selectedData.lastClose,
+      srMode,
+      tagSettings.tolerancePercent,
+      selectedData.fairValue,
+      kind === "stock" || kind === "etf"
+    );
+  }, [selectedData, srMode, tagSettings.tolerancePercent]);
 
   useEffect(() => {
     setLiveTagCache({});
@@ -268,6 +284,16 @@ export default function StockApp() {
             market={selectedData.market}
             assetKind={selectedData.assetKind}
           />
+
+          {tradePlan && (
+            <TradePlanCard
+              plan={tradePlan}
+              currentPrice={selectedData.lastClose}
+              market={selectedData.market}
+              assetKind={selectedData.assetKind}
+              srMode={srMode}
+            />
+          )}
 
           <SupportResistanceCard
             pivot={selectedData.pivot}

@@ -212,7 +212,7 @@ export default function StockChart({
         : timeRange === "5D"
           ? { barSpacing: 3, minBarSpacing: 1, rightOffset: 6 }
           : timeRange === "1M"
-            ? { barSpacing: 5, minBarSpacing: 1, rightOffset: 4 }
+            ? { barSpacing: 2, minBarSpacing: 0.5, rightOffset: 6 }
             : { barSpacing: 6, minBarSpacing: 0.5, rightOffset: 0 };
 
     chart.timeScale().applyOptions(spacing);

@@ -38,10 +38,10 @@ export function chartFetchConfig(timeRange: ChartTimeRange): ChartFetchConfig {
       };
     case "1M":
       return {
-        interval: "1d",
+        interval: "1h",
         range: "1mo",
-        intraday: false,
-        label: "รายวัน",
+        intraday: true,
+        label: "รายชั่วโมง",
       };
     case "6M":
       return {
