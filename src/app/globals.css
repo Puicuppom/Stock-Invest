@@ -64,15 +64,73 @@ select {
 }
 
 .dash-top {
-  display: grid;
-  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
-  gap: 0.35rem 0.5rem;
-  align-items: start;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
   position: relative;
+  padding-right: 2.25rem;
+}
+
+.dash-refresh {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 32px;
+  height: 32px;
+  font-size: 0.95rem;
+  border-radius: 8px;
+}
+
+.dash-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  min-width: 0;
+}
+
+.dash-metrics-cols {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.28rem;
+}
+
+.dash-metric-fv {
+  width: 100%;
+}
+
+.dash-metric-fv .dash-mini-range {
+  margin-top: 0.2rem;
+}
+
+.dash-range-labels {
+  font-size: var(--t-label) !important;
+  margin-bottom: 0.15rem;
+}
+
+.dash-metric-supplement .dash-sup-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.25rem;
+  margin: 0.08rem 0 0;
+  font-size: var(--t-label);
+  line-height: 1.25;
+}
+
+.dash-metric-supplement .dash-sup-line span:first-child {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.dash-metric-supplement .dash-sup-line em {
+  font-style: normal;
+  font-weight: 600;
+  margin-left: 0.1rem;
 }
 
 .dash-quote {
   min-width: 0;
+  flex: 1;
 }
 
 .dash-symbol {
@@ -126,24 +184,6 @@ select {
   font-size: var(--t-meta);
 }
 
-.dash-refresh {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 32px;
-  height: 32px;
-  font-size: 0.95rem;
-  border-radius: 8px;
-}
-
-.dash-metrics {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.28rem;
-  min-width: 0;
-  padding-top: 0.85rem;
-}
-
 .dash-metric {
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -153,11 +193,7 @@ select {
 }
 
 .dash-metric-wide {
-  grid-column: 1 / -1;
-}
-
-.dash-metric-supplement {
-  grid-column: auto;
+  width: 100%;
 }
 
 .dash-metric-head {
@@ -2249,22 +2285,6 @@ body.watchlist-dragging {
   color: var(--muted);
   font-size: 0.75rem;
   padding-top: 0.5rem;
-}
-
-@media (max-width: 520px) {
-  .dash-top {
-    grid-template-columns: 1fr;
-    padding-top: 1.75rem;
-  }
-
-  .dash-metrics {
-    padding-top: 0;
-  }
-
-  .dash-refresh {
-    top: 0;
-    right: 0;
-  }
 }
 
 @media (min-width: 768px) {

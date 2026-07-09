@@ -22,6 +22,24 @@ function formatPrice(value: number): string {
   return value.toFixed(2);
 }
 
+function formatDividendDisplay(
+  dividendRate: number | null,
+  dividendYieldPercent: number | null,
+  market: "TH" | "US"
+): string {
+  const prefix = market === "TH" ? "฿" : "$";
+  if (dividendRate != null && dividendRate > 0 && dividendYieldPercent != null) {
+    return `${prefix}${dividendRate.toFixed(2)} (${dividendYieldPercent.toFixed(2)}%)`;
+  }
+  if (dividendRate != null && dividendRate > 0) {
+    return `${prefix}${dividendRate.toFixed(2)}`;
+  }
+  if (dividendYieldPercent != null) {
+    return `${dividendYieldPercent.toFixed(2)}%`;
+  }
+  return "—";
+}
+
 function rangeMarker(
   price: number,
   low: number,
@@ -116,155 +134,165 @@ export default function StockDashboard({
         >
           ↻
         </button>
+      </div>
 
+      {isGold ? (
         <div className="dash-metrics">
-          {isGold ? (
-            <>
-              <div className="dash-metric dash-metric-wide">
-                <p className="dash-metric-label">
-                  {isGoldSpot ? "XAU/USD" : "ETF ทอง"}
-                </p>
-                <p className="dash-metric-value">{formatPrice(currentPrice)}</p>
-                {range52w && (
-                  <p className="dash-metric-sub">
-                    52W {formatPrice(range52w.low)} – {formatPrice(range52w.high)}
-                  </p>
-                )}
-              </div>
-              {range52w && weekPos != null && (
-                <div className="dash-metric dash-metric-wide">
-                  <p className="dash-metric-label">52 สัปดาห์</p>
-                  <div className="dash-mini-range">
-                    <div className="fv-range-track">
-                      <span
-                        className="fv-range-marker"
-                        style={{ left: `${weekPos}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </>
-          ) : showFundamentals ? (
-            <>
-              <div className="dash-metric dash-metric-fv">
-                <p className="dash-metric-label">ราคายุติธรรม</p>
-                <div className="dash-metric-head">
-                  <p className="dash-metric-value">{formatPrice(target)}</p>
-                  {upsidePercent != null && (
-                    <p
-                      className={
-                        upsidePercent >= 0
-                          ? "dash-metric-pct change-up"
-                          : "dash-metric-pct change-down"
-                      }
-                    >
-                      {upsidePercent >= 0 ? "+" : ""}
-                      {upsidePercent.toFixed(1)}%
-                    </p>
-                  )}
-                </div>
-                {analystRange && analystPos != null && (
-                  <div className="dash-mini-range">
-                    <div className="fv-range-track fv-range-track-analyst">
-                      <span
-                        className="fv-range-marker"
-                        style={{ left: `${analystPos}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {fcfYieldPercent != null && (
-                <div className="dash-metric">
-                  <p className="dash-metric-label">FCF Yield</p>
-                  <p
-                    className={`dash-metric-value${
-                      fcfYieldPercent < 0 ? " change-down" : ""
-                    }`}
-                  >
-                    {fcfYieldPercent.toFixed(2)}%
-                  </p>
-                </div>
-              )}
-
-              {dividendYieldPercent != null && (
-                <div className="dash-metric">
-                  <p className="dash-metric-label">อัตราปันผล</p>
-                  <p className="dash-metric-value">
-                    {dividendYieldPercent.toFixed(2)}%
-                  </p>
-                  {dividendRate != null && dividendRate > 0 && (
-                    <p className="dash-metric-sub">
-                      {formatPrice(dividendRate)}/หุ้น/ปี
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {(forwardPE != null ||
-                peReference != null ||
-                forwardEps != null ||
-                trailingPE != null) && (
-                <div className="dash-metric dash-metric-supplement">
-                  <p className="dash-metric-label">ข้อมูลเสริม</p>
-                  <p className="dash-sup-compact">
-                    {forwardPE != null && (
-                      <span>Fwd {forwardPE.toFixed(1)}x</span>
-                    )}
-                    {peReference != null && (
-                      <span>
-                        P/E {formatPrice(peReference)}
-                        {peReferenceUpsidePercent != null && (
-                          <em
-                            className={
-                              peReferenceUpsidePercent >= 0
-                                ? "change-up"
-                                : "change-down"
-                            }
-                          >
-                            {peReferenceUpsidePercent >= 0 ? "+" : ""}
-                            {peReferenceUpsidePercent.toFixed(1)}%
-                          </em>
-                        )}
-                      </span>
-                    )}
-                  </p>
-                  {(forwardEps != null || trailingPE != null) && (
-                    <p className="dash-metric-sub">
-                      {forwardEps != null && `EPS ${forwardEps.toFixed(2)}`}
-                      {forwardEps != null && trailingPE != null && " · "}
-                      {trailingPE != null && `Trail ${trailingPE.toFixed(1)}x`}
-                    </p>
-                  )}
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="dash-metric dash-metric-wide">
-              <p className="dash-metric-label">
-                {isEtf ? "ETF" : "ข้อมูลพื้นฐาน"}
+          <div className="dash-metric dash-metric-wide">
+            <p className="dash-metric-label">
+              {isGoldSpot ? "XAU/USD" : "ETF ทอง"}
+            </p>
+            <p className="dash-metric-value">{formatPrice(currentPrice)}</p>
+            {range52w && (
+              <p className="dash-metric-sub">
+                52W {formatPrice(range52w.low)} – {formatPrice(range52w.high)}
               </p>
-              <p className="dash-metric-value">{formatPrice(currentPrice)}</p>
-              {range52w && weekPos != null && (
-                <div className="dash-mini-range">
-                  <div className="fv-range-labels dash-range-labels">
-                    <span>{formatPrice(range52w.low)}</span>
-                    <span>{formatPrice(range52w.high)}</span>
-                  </div>
-                  <div className="fv-range-track">
-                    <span
-                      className="fv-range-marker"
-                      style={{ left: `${weekPos}%` }}
-                    />
-                  </div>
+            )}
+          </div>
+          {range52w && weekPos != null && (
+            <div className="dash-metric dash-metric-wide">
+              <p className="dash-metric-label">52 สัปดาห์</p>
+              <div className="dash-mini-range">
+                <div className="fv-range-track">
+                  <span
+                    className="fv-range-marker"
+                    style={{ left: `${weekPos}%` }}
+                  />
                 </div>
-              )}
+              </div>
             </div>
           )}
         </div>
-      </div>
+      ) : showFundamentals ? (
+        <div className="dash-metrics">
+          <div className="dash-metric dash-metric-fv">
+            <p className="dash-metric-label">ราคายุติธรรม</p>
+            <div className="dash-metric-head">
+              <p className="dash-metric-value">{formatPrice(target)}</p>
+              {upsidePercent != null && (
+                <p
+                  className={
+                    upsidePercent >= 0
+                      ? "dash-metric-pct change-up"
+                      : "dash-metric-pct change-down"
+                  }
+                >
+                  {upsidePercent >= 0 ? "+" : ""}
+                  {upsidePercent.toFixed(1)}%
+                </p>
+              )}
+            </div>
+            {analystRange && analystPos != null && (
+              <div className="dash-mini-range">
+                <div className="fv-range-labels dash-range-labels">
+                  <span>{formatPrice(analystRange.low)}</span>
+                  <span>{formatPrice(analystRange.high)}</span>
+                </div>
+                <div className="fv-range-track fv-range-track-analyst">
+                  <span
+                    className="fv-range-marker"
+                    style={{ left: `${analystPos}%` }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="dash-metrics-cols">
+            <div className="dash-metric">
+              <p className="dash-metric-label">FCF Yield</p>
+              <p
+                className={`dash-metric-value${
+                  fcfYieldPercent != null && fcfYieldPercent < 0
+                    ? " change-down"
+                    : ""
+                }`}
+              >
+                {fcfYieldPercent != null
+                  ? `${fcfYieldPercent.toFixed(2)}%`
+                  : "—"}
+              </p>
+            </div>
+
+            <div className="dash-metric">
+              <p className="dash-metric-label">อัตราปันผล</p>
+              <p className="dash-metric-value">
+                {formatDividendDisplay(
+                  dividendRate,
+                  dividendYieldPercent,
+                  market
+                )}
+              </p>
+            </div>
+
+            <div className="dash-metric dash-metric-supplement">
+              <p className="dash-metric-label">ข้อมูลเสริม</p>
+              {forwardPE != null && (
+                <p className="dash-sup-line">
+                  <span>Fwd P/E</span>
+                  <span>{forwardPE.toFixed(1)}x</span>
+                </p>
+              )}
+              {peReference != null && (
+                <p className="dash-sup-line">
+                  <span>P/E อ้างอิง</span>
+                  <span>
+                    {formatPrice(peReference)}
+                    {peReferenceUpsidePercent != null && (
+                      <em
+                        className={
+                          peReferenceUpsidePercent >= 0
+                            ? "change-up"
+                            : "change-down"
+                        }
+                      >
+                        {peReferenceUpsidePercent >= 0 ? "+" : ""}
+                        {peReferenceUpsidePercent.toFixed(1)}%
+                      </em>
+                    )}
+                  </span>
+                </p>
+              )}
+              {(forwardEps != null || trailingPE != null) && (
+                <p className="dash-metric-sub">
+                  {forwardEps != null && `EPS ${forwardEps.toFixed(2)}`}
+                  {forwardEps != null && trailingPE != null && " · "}
+                  {trailingPE != null && `Trail ${trailingPE.toFixed(1)}x`}
+                </p>
+              )}
+              {forwardPE == null &&
+                peReference == null &&
+                forwardEps == null &&
+                trailingPE == null && (
+                  <p className="dash-metric-value">—</p>
+                )}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="dash-metrics">
+          <div className="dash-metric dash-metric-wide">
+            <p className="dash-metric-label">
+              {isEtf ? "ETF" : "ข้อมูลพื้นฐาน"}
+            </p>
+            <p className="dash-metric-value">{formatPrice(currentPrice)}</p>
+            {range52w && weekPos != null && (
+              <div className="dash-mini-range">
+                <div className="fv-range-labels dash-range-labels">
+                  <span>{formatPrice(range52w.low)}</span>
+                  <span>{formatPrice(range52w.high)}</span>
+                </div>
+                <div className="fv-range-track">
+                  <span
+                    className="fv-range-marker"
+                    style={{ left: `${weekPos}%` }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="dash-trade-grid">
         <div className="trade-plan-box trade-plan-buy">
