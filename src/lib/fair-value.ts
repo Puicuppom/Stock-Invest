@@ -1,4 +1,5 @@
 import { getYahooAuth, USER_AGENT } from "./yahoo-auth";
+import { fetchYahooQuoteDividends } from "./yahoo-quote";
 import type { FairValueData } from "./types";
 
 export const revalidate = 900;
@@ -83,7 +84,7 @@ export async function fetchFundamentals(
     const row = json.quoteSummary?.result?.[0];
     if (!row) return null;
 
-    return {
+    const base: FairValueData = {
       analyst: num(row.financialData?.targetMeanPrice),
       analystLow: num(row.financialData?.targetLowPrice),
       analystHigh: num(row.financialData?.targetHighPrice),
@@ -107,6 +108,19 @@ export async function fetchFundamentals(
       dividendYield: num(row.summaryDetail?.dividendYield),
       dividendRate: num(row.summaryDetail?.dividendRate),
     };
+
+    if (base.dividendYield == null || base.dividendRate == null) {
+      const quoteDiv = await fetchYahooQuoteDividends(resolvedSymbol);
+      if (quoteDiv) {
+        return {
+          ...base,
+          dividendYield: base.dividendYield ?? quoteDiv.dividendYield,
+          dividendRate: base.dividendRate ?? quoteDiv.dividendRate,
+        };
+      }
+    }
+
+    return base;
   } catch {
     return null;
   }
@@ -634,9 +648,15 @@ function fcfYieldPercent(data: FairValueData): number | null {
   return (freeCashflow / marketCap) * 100;
 }
 
-function dividendYieldPercent(data: FairValueData): number | null {
-  if (data.dividendYield == null) return null;
-  return data.dividendYield * 100;
+function dividendYieldPercent(
+  data: FairValueData,
+  currentPrice: number
+): number | null {
+  if (data.dividendYield != null) return data.dividendYield * 100;
+  if (data.dividendRate != null && data.dividendRate > 0 && currentPrice > 0) {
+    return (data.dividendRate / currentPrice) * 100;
+  }
+  return null;
 }
 
 function upsidePercent(
@@ -767,7 +787,7 @@ export function calculateFairValue(
     peReferenceUpsidePercent: upsidePercent(peReference, currentPrice),
     analystUpsidePercent: upsidePercent(analystTarget, currentPrice),
     fcfYieldPercent: fcfYieldPercent(data),
-    dividendYieldPercent: dividendYieldPercent(data),
+    dividendYieldPercent: dividendYieldPercent(data, currentPrice),
     dividendRate: data.dividendRate,
     source,
   };

@@ -97,6 +97,10 @@ export default function StockDashboard({
   const showFundamentals =
     !isGold && target != null && !isEtf;
 
+  const hasDividendDisplay =
+    (dividendYieldPercent != null && dividendYieldPercent > 0) ||
+    (dividendRate != null && dividendRate > 0);
+
   const hasSupplement =
     forwardPE != null ||
     peReference != null ||
@@ -301,12 +305,52 @@ export default function StockDashboard({
             </div>
           </div>
         </div>
+      ) : isEtf ? (
+        <div className="dash-metrics">
+          <div className="dash-metric dash-metric-wide">
+            <p className="dash-metric-label">ETF</p>
+            <p className="dash-metric-value">{formatPrice(currentPrice)}</p>
+            {range52w && weekPos != null && (
+              <div className="dash-mini-range">
+                <div className="fv-range-labels dash-range-labels">
+                  <span>{formatPrice(range52w.low)}</span>
+                  <span>{formatPrice(range52w.high)}</span>
+                </div>
+                <div className="fv-range-track">
+                  <span
+                    className="fv-range-marker"
+                    style={{ left: `${weekPos}%` }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="dash-metrics-cols">
+            <div className="dash-metric">
+              <p className="dash-metric-label">FCF Yield</p>
+              <p className="dash-metric-value">—</p>
+              <p className="dash-metric-sub">ไม่ใช้กับ ETF</p>
+            </div>
+
+            <div className="dash-metric">
+              <p className="dash-metric-label">อัตราปันผล</p>
+              <p className="dash-metric-value">
+                {hasDividendDisplay
+                  ? formatDividendDisplay(
+                      dividendRate,
+                      dividendYieldPercent,
+                      market
+                    )
+                  : "—"}
+              </p>
+            </div>
+          </div>
+        </div>
       ) : (
         <div className="dash-metrics">
           <div className="dash-metric dash-metric-wide">
-            <p className="dash-metric-label">
-              {isEtf ? "ETF" : "ข้อมูลพื้นฐาน"}
-            </p>
+            <p className="dash-metric-label">ข้อมูลพื้นฐาน</p>
             <p className="dash-metric-value">{formatPrice(currentPrice)}</p>
             {range52w && weekPos != null && (
               <div className="dash-mini-range">

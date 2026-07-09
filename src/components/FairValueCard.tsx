@@ -304,12 +304,33 @@ export default function FairValueCard({
       ) : !isEtf ? (
         <p className="hint-text">ไม่มีข้อมูลราคายุติธรรมสำหรับหุ้นนี้</p>
       ) : (
-        <div className="fv-main">
-          <div>
-            <p className="fv-label">ราคาปัจจุบัน</p>
-            <p className="fv-price">{formatPrice(currentPrice, market)}</p>
+        <>
+          <div className="fv-main">
+            <div>
+              <p className="fv-label">ราคาปัจจุบัน</p>
+              <p className="fv-price">{formatPrice(currentPrice, market)}</p>
+            </div>
           </div>
-        </div>
+
+          {(dividendYieldPercent != null && dividendYieldPercent > 0) ||
+          (dividendRate != null && dividendRate > 0) ? (
+            <div className="fv-yield-row">
+              <div className="fv-yield-box">
+                <p className="fv-yield-label">อัตราปันผล</p>
+                <p className="fv-yield-value">
+                  {dividendYieldPercent != null
+                    ? `${dividendYieldPercent.toFixed(2)}%`
+                    : "—"}
+                </p>
+                {dividendRate != null && dividendRate > 0 && (
+                  <p className="fv-yield-sub">
+                    {formatPrice(dividendRate, market)}/หน่วย/ปี
+                  </p>
+                )}
+              </div>
+            </div>
+          ) : null}
+        </>
       )}
 
       {range52w && weekPos != null && (
