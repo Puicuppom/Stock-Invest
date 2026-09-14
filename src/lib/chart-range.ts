@@ -1,0 +1,75 @@
+export type ChartTimeRange = "1D" | "5D" | "1M" | "6M" | "1Y" | "5Y" | "MAX";
+
+export const CHART_TIME_RANGES: ChartTimeRange[] = [
+  "1D",
+  "5D",
+  "1M",
+  "6M",
+  "1Y",
+  "5Y",
+  "MAX",
+];
+
+export const DEFAULT_CHART_RANGE: ChartTimeRange = "6M";
+
+export interface ChartFetchConfig {
+  interval: string;
+  range: string;
+  intraday: boolean;
+  label: string;
+}
+
+/** Yahoo interval + range per timeline button */
+export function chartFetchConfig(timeRange: ChartTimeRange): ChartFetchConfig {
+  switch (timeRange) {
+    case "1D":
+      return {
+        interval: "5m",
+        range: "1d",
+        intraday: true,
+        label: "ราย 5 นาที",
+      };
+    case "5D":
+      return {
+        interval: "15m",
+        range: "5d",
+        intraday: true,
+        label: "ราย 15 นาที",
+      };
+    case "1M":
+      return {
+        interval: "1h",
+        range: "1mo",
+        intraday: true,
+        label: "รายชั่วโมง",
+      };
+    case "6M":
+      return {
+        interval: "1d",
+        range: "6mo",
+        intraday: false,
+        label: "รายวัน",
+      };
+    case "1Y":
+      return {
+        interval: "1d",
+        range: "1y",
+        intraday: false,
+        label: "รายวัน",
+      };
+    case "5Y":
+      return {
+        interval: "1wk",
+        range: "5y",
+        intraday: false,
+        label: "รายสัปดาห์",
+      };
+    case "MAX":
+      return {
+        interval: "1d",
+        range: "10y",
+        intraday: false,
+        label: "รายวัน · 10 ปี",
+      };
+  }
+}
