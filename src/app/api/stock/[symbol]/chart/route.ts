@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   CHART_TIME_RANGES,
+  DEFAULT_CHART_RANGE,
   type ChartTimeRange,
 } from "@/lib/chart-range";
 import { fetchChartCandles } from "@/lib/chart-service";
@@ -10,7 +11,7 @@ function parseTimeRange(value: string | null): ChartTimeRange {
   if (value && CHART_TIME_RANGES.includes(value as ChartTimeRange)) {
     return value as ChartTimeRange;
   }
-  return "6M";
+  return DEFAULT_CHART_RANGE;
 }
 
 export async function GET(

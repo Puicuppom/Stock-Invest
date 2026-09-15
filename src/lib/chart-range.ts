@@ -10,7 +10,7 @@ export const CHART_TIME_RANGES: ChartTimeRange[] = [
   "MAX",
 ];
 
-export const DEFAULT_CHART_RANGE: ChartTimeRange = "6M";
+export const DEFAULT_CHART_RANGE: ChartTimeRange = "1Y";
 
 export interface ChartFetchConfig {
   interval: string;
@@ -46,14 +46,14 @@ export function chartFetchConfig(timeRange: ChartTimeRange): ChartFetchConfig {
     case "6M":
       return {
         interval: "1d",
-        range: "6mo",
+        range: "5y",
         intraday: false,
         label: "รายวัน",
       };
     case "1Y":
       return {
         interval: "1d",
-        range: "1y",
+        range: "5y",
         intraday: false,
         label: "รายวัน",
       };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   CandlestickSeries,
   ColorType,
@@ -17,6 +17,7 @@ import {
   DEFAULT_CHART_RANGE,
   type ChartTimeRange,
 } from "@/lib/chart-range";
+import { priceHistoryExtremes } from "@/lib/price-history";
 import { buildEmaSeries, EMA_PERIODS } from "@/lib/ema";
 import type { Candle, PivotLevels, PriceZone, SrMode } from "@/lib/types";
 
@@ -108,7 +109,7 @@ export default function StockChart({
         const json = await res.json();
 
         if (!res.ok) {
-          throw new Error(json.error ?? "โหลดกรafไม่สำเร็จ");
+          throw new Error(json.error ?? "โหลดกราฟไม่สำเร็จ");
         }
 
         if (!cancelled) {
@@ -118,7 +119,7 @@ export default function StockChart({
         if (!cancelled) {
           setCandles([]);
           setChartError(
-            err instanceof Error ? err.message : "โหลดกรafไม่สำเร็จ"
+            err instanceof Error ? err.message : "โหลดกราฟไม่สำเร็จ"
           );
         }
       } finally {
@@ -135,13 +136,26 @@ export default function StockChart({
     };
   }, [symbol, market, timeRange]);
 
+  const visibleCandles = useMemo(() => {
+    if (!candles.length) return [];
+    const cutoff = new Date(candles[candles.length - 1].date);
+    if (timeRange === "1Y") cutoff.setUTCFullYear(cutoff.getUTCFullYear() - 1);
+    if (timeRange === "6M") cutoff.setUTCMonth(cutoff.getUTCMonth() - 6);
+    return timeRange === "1Y" || timeRange === "6M"
+      ? candles.filter(c => new Date(c.date) >= cutoff) : candles;
+  }, [candles, timeRange]);
+  const extremes = useMemo(() => {
+    try { return priceHistoryExtremes(visibleCandles); } catch { return null; }
+  }, [visibleCandles]);
+
   const applyChartData = useCallback(() => {
     const series = seriesRef.current;
     const chart = chartRef.current;
     if (!series || !chart || candles.length === 0) return;
 
+    const visibleStart = visibleCandles[0]?.date;
     series.setData(
-      candles.map((c) => ({
+      visibleCandles.map((c) => ({
         time: toChartTime(c.date),
         open: c.open,
         high: c.high,
@@ -157,7 +171,7 @@ export default function StockChart({
       if (candles.length >= period) {
         const points = buildEmaSeries(candles, period);
         emaSeries.setData(
-          points.map((point) => ({
+          points.filter(point => !visibleStart || point.date >= visibleStart).map((point) => ({
             time: toChartTime(point.date),
             value: point.value,
           }))
@@ -217,7 +231,7 @@ export default function StockChart({
 
     chart.timeScale().applyOptions(spacing);
     chart.timeScale().fitContent();
-  }, [candles, pivot, zones, mode, timeRange]);
+  }, [candles, visibleCandles, pivot, zones, mode, timeRange]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -266,8 +280,8 @@ export default function StockChart({
         color: emaColors[period],
         lineWidth: 2,
         priceLineVisible: false,
-        lastValueVisible: false,
-        crosshairMarkerVisible: false,
+        lastValueVisible: true,
+        crosshairMarkerVisible: true,
       });
     }
 
@@ -309,20 +323,28 @@ export default function StockChart({
         <div className="chart-legend">
           {activeEmaPeriods.map((period) => (
             <span key={period} className={`chart-legend-item chart-legend-ema${period}`}>
-              {EMA_LABELS[period]}
+              {EMA_LABELS[period]} {buildEmaSeries(candles, period).at(-1)?.value.toFixed(2)}
             </span>
           ))}
         </div>
         <span className="chart-interval-badge">{intervalLabel}</span>
       </div>
+      <div className="chart-period-extremes" aria-live="polite">
+        <span>{timeRange === "MAX" ? "10Y" : timeRange}</span>
+        {chartLoading ? <span>กำลังโหลด…</span> : chartError || !extremes ? <span>ไม่มีข้อมูลต่ำสุด–สูงสุด</span> : <>
+          <span title={"วันที่ " + extremes.lowDate}>ต่ำสุด <b>{extremes.low.toLocaleString("en-US", {maximumFractionDigits: 4})}</b></span>
+          <span title={"วันที่ " + extremes.highDate}>สูงสุด <b>{extremes.high.toLocaleString("en-US", {maximumFractionDigits: 4})}</b></span>
+          <span>{market === "TH" ? "THB" : "USD"}</span>
+        </>}
+      </div>
       <div className="chart-canvas-wrap">
-        {chartLoading && <div className="chart-loading">กำลังโหลดกรaf...</div>}
+        {chartLoading && <div className="chart-loading">กำลังโหลดกราฟ...</div>}
         {chartError && !chartLoading && (
           <div className="chart-loading chart-loading-error">{chartError}</div>
         )}
         <div ref={containerRef} className="chart-canvas" />
       </div>
-      <div className="chart-range-bar" role="toolbar" aria-label="ช่วงเวลากรaf">
+      <div className="chart-range-bar" role="toolbar" aria-label="ช่วงเวลากราฟ">
         {CHART_TIME_RANGES.map((range) => (
           <button
             key={range}

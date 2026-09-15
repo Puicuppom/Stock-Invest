@@ -1,0 +1,18 @@
+/* Shared visual tokens for the Next.js pages and the embedded portfolio. */
+:root {
+  color-scheme: dark;
+  --ui-bg: #020617;
+  --ui-surface: #0f172a;
+  --ui-raised: #1e293b;
+  --ui-border: #334155;
+  --ui-text: #f8fafc;
+  --ui-muted: #94a3b8;
+  --ui-accent: #38bdf8;
+  --ui-selected: #0c2940;
+  --ui-success: #4ade80;
+  --ui-danger: #f87171;
+  --ui-warning: #fbbf24;
+  --ui-radius: 14px;
+  --ui-control-radius: 10px;
+  --ui-font: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans Thai", sans-serif;
+}

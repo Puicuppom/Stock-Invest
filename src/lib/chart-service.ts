@@ -49,7 +49,12 @@ export async function fetchYahooCandles(
     `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(resolvedSymbol)}`
   );
   url.searchParams.set("interval", interval);
-  url.searchParams.set("range", range);
+  if (range === "full") {
+    url.searchParams.set("period1", "0");
+    url.searchParams.set("period2", String(Math.floor(Date.now() / 1000)));
+  } else {
+    url.searchParams.set("range", range);
+  }
 
   const res = await fetch(url.toString(), {
     headers: {

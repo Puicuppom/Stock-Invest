@@ -2456,3 +2456,58 @@ body.watchlist-dragging {
   font-size: var(--t-label);
   line-height: 1.35;
 }
+
+.screener h1 { font-size: 24px; font-weight: 700; }
+.screener h2 { font-size: 18px; font-weight: 700; }
+.screener p { color: var(--muted); font-size: 13px; line-height: 1.7; }
+.screen-styles { display: flex; gap: 8px; }
+.screener button, .screener select, .screener textarea { border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2); color: var(--text); padding: 10px 12px; }
+.screener button { cursor: pointer; }
+.screener button:disabled { opacity: .5; cursor: default; }
+.screen-styles button { flex: 1; }
+.screen-styles button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); background: #0c2940; }
+.screen-panel { display: flex; flex-direction: column; gap: 12px; padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; }
+.screen-panel textarea { resize: vertical; width: 100%; }
+.screen-actions { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; }
+.screen-checks { list-style: none; padding: 0; margin: 0; }
+.screen-checks li { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+.screen-checks li span:last-child { flex-shrink: 0; }
+.screener small { color: var(--muted); font-size: 12px; }
+.screener :is(button,textarea,select):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.screen-entry { padding: 14px; border: 1px solid #155e75; border-radius: 12px; background: #082f4938; }
+.screen-entry > span { color: var(--muted); font-size: 12px; }
+.screen-entry > strong { display: block; font-size: 22px; color: var(--accent); margin: 5px 0; }
+
+.chart-period-extremes { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; padding: 4px 10px 8px; color: var(--muted); font-size: 11px; }
+.chart-period-extremes b { color: var(--text); font-weight: 600; }
+
+/* Common page and control language */
+:root { --bg: var(--ui-bg); --surface: var(--ui-surface); --surface-2: var(--ui-raised); --border: var(--ui-border); --text: var(--ui-text); --muted: var(--ui-muted); --accent: var(--ui-accent); }
+html, body { font-family: var(--ui-font); }
+.app-shell, .rebalance-shell { max-width: 720px; padding: max(16px, env(safe-area-inset-top)) 16px 24px; gap: 16px; }
+.rebalance-shell .app-navigation { margin: 0; }
+.rebalance-frame { border-radius: 0; }
+.app-navigation { position: sticky; top: 8px; z-index: 20; border-radius: 14px; gap: 4px; padding: 5px; box-shadow: 0 6px 20px #02061760; }
+.app-navigation a { min-height: 44px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; border: 1px solid transparent; padding: 8px 4px; }
+.app-navigation a[aria-current="page"] { color: var(--accent); background: var(--ui-selected); border-color: #155e75; }
+.app-navigation a:hover { color: var(--text); background: var(--surface-2); }
+.app-navigation a[aria-current="page"]:hover { color: var(--accent); }
+button, input, select, textarea { font-family: inherit; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.screen-panel, .chart-collapse, .watchlist-section { border-radius: var(--ui-radius); }
+.screener h1 { font-size: 22px; line-height: 1.4; }
+.screener header p { font-size: 12px; }
+.screener button, .screener select { min-height: 44px; font-size: 13px; }
+.screen-panel > button:not(:disabled) { background: var(--accent); color: var(--bg); font-weight: 700; border-color: var(--accent); }
+.screen-panel > button:not(:disabled):hover { filter: brightness(1.1); }
+.screener [role="status"]:empty { display: none; }
+.screen-entry > strong { font-size: 20px; }
+.screen-panel details { font-size: 12px; color: var(--muted); line-height: 1.7; }
+.screen-panel summary { cursor: pointer; color: var(--text); }
+.chart-range-btn { min-height: 36px; }
+.app-footer { font-size: 11px; line-height: 1.6; }
+@media (max-width: 420px) { .app-shell, .rebalance-shell { padding-left: 12px; padding-right: 12px; gap: 12px; } .screen-panel { padding: 12px; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; } }
+
+.watchlist-section { top: 76px; z-index: 15; margin: 0; padding: 8px 0; }

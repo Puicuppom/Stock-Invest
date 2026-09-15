@@ -27,6 +27,7 @@ export default function StockApp() {
     removeStock,
     reorderStock,
     loaded,
+    syncStatus,
   } = useWatchlist();
 
   const { mode: srMode, setMode: setSrMode } = useSrMode();
@@ -193,6 +194,7 @@ export default function StockApp() {
   return (
     <div className="app-shell">
       <AppNavigation active="stocks" />
+      <p className="dash-metric-sub" role="status">{syncStatus}</p>
       {loading && !selectedData && (
         <div className="state-banner">กำลังโหลด...</div>
       )}

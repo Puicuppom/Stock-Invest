@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useWatchlistSync, WATCHLIST_DIRTY } from "./useWatchlistSync";
 import { watchlistId } from "@/lib/watchlist-id";
 import { normalizeInput } from "@/lib/symbol";
 import type { WatchlistItem } from "@/lib/types";
@@ -26,14 +27,16 @@ export function useWatchlist() {
   );
   const [loaded, setLoaded] = useState(false);
 
+  const syncStatus = useWatchlistSync(loaded, setItems);
+
   useEffect(() => {
     try {
       const raw = localStorage.getItem(WATCHLIST_KEY);
       if (raw) {
         const parsed = (JSON.parse(raw) as WatchlistItem[]).map(normalizeItem);
-        if (parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           setItems(parsed);
-          setSelected(watchlistId(parsed[0]));
+          if (parsed[0]) setSelected(watchlistId(parsed[0]));
         }
       }
     } catch {
@@ -61,6 +64,7 @@ export function useWatchlist() {
         return true;
       }
 
+      localStorage.setItem(WATCHLIST_DIRTY, "1");
       setItems((prev) => [nextItem, ...prev]);
       setSelected(nextId);
       return true;
@@ -70,6 +74,7 @@ export function useWatchlist() {
 
   const removeStock = useCallback(
     (id: string) => {
+      localStorage.setItem(WATCHLIST_DIRTY, "1");
       setItems((prev) => {
         const next = prev.filter((item) => watchlistId(item) !== id);
         if (selected === id && next.length > 0) {
@@ -83,6 +88,7 @@ export function useWatchlist() {
 
   const reorderStock = useCallback((fromId: string, toId: string) => {
     if (fromId === toId) return;
+    localStorage.setItem(WATCHLIST_DIRTY, "1");
 
     setItems((prev) => {
       const fromIndex = prev.findIndex((item) => watchlistId(item) === fromId);
@@ -108,5 +114,6 @@ export function useWatchlist() {
     removeStock,
     reorderStock,
     loaded,
+    syncStatus,
   };
 }
