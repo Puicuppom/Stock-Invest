@@ -194,6 +194,17 @@ export default function StockApp() {
   return (
     <div className="app-shell">
       <AppNavigation active="stocks" />
+      <section className="watchlist-section">
+        <Watchlist
+          items={items}
+          selected={selected}
+          srTags={mergedWatchlistTags}
+          onSelect={setSelected}
+          onRemove={removeStock}
+          onReorder={reorderStock}
+          onAddClick={() => setAddOpen(true)}
+        />
+      </section>
       <p className="dash-metric-sub" role="status">{syncStatus}</p>
       {loading && !selectedData && (
         <div className="state-banner">กำลังโหลด...</div>
@@ -220,17 +231,7 @@ export default function StockApp() {
         />
       )}
 
-      <section className="watchlist-section">
-        <Watchlist
-          items={items}
-          selected={selected}
-          srTags={mergedWatchlistTags}
-          onSelect={setSelected}
-          onRemove={removeStock}
-          onReorder={reorderStock}
-          onAddClick={() => setAddOpen(true)}
-        />
-      </section>
+
 
       {toast && <div className="toast-banner">{toast}</div>}
 

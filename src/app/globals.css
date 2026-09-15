@@ -1060,7 +1060,7 @@ body.watchlist-dragging {
   background: #a78bfa;
 }
 
-.chart-legend-ema200::before {
+.chart-legend-sma200::before {
   background: #fb923c;
 }
 

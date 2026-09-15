@@ -18,7 +18,7 @@ import {
   type ChartTimeRange,
 } from "@/lib/chart-range";
 import { priceHistoryExtremes } from "@/lib/price-history";
-import { buildEmaSeries, EMA_PERIODS } from "@/lib/ema";
+import { buildChartMovingAverage, CHART_MA_PERIODS } from "@/lib/chart-moving-average";
 import type { Candle, PivotLevels, PriceZone, SrMode } from "@/lib/types";
 
 interface StockChartProps {
@@ -40,13 +40,13 @@ const CHART_COLORS = {
   support: "#4ade80",
   ema20: "#38bdf8",
   ema50: "#a78bfa",
-  ema200: "#fb923c",
+  sma200: "#fb923c",
 };
 
-const EMA_LABELS: Record<(typeof EMA_PERIODS)[number], string> = {
+const MA_LABELS: Record<(typeof CHART_MA_PERIODS)[number], string> = {
   20: "EMA 20",
   50: "EMA 50",
-  200: "EMA 200",
+  200: "SMA 200",
 };
 
 function toChartTime(date: string): UTCTimestamp {
@@ -73,8 +73,8 @@ export default function StockChart({
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
-  const emaSeriesRef = useRef<
-    Record<(typeof EMA_PERIODS)[number], ISeriesApi<"Line"> | null>
+  const maSeriesRef = useRef<
+    Record<(typeof CHART_MA_PERIODS)[number], ISeriesApi<"Line"> | null>
   >({ 20: null, 50: null, 200: null });
   const priceLinesRef = useRef<ReturnType<ISeriesApi<"Candlestick">["createPriceLine"]>[]>([]);
   const [timeRange, setTimeRange] = useState<ChartTimeRange>(DEFAULT_CHART_RANGE);
@@ -164,20 +164,20 @@ export default function StockChart({
       }))
     );
 
-    for (const period of EMA_PERIODS) {
-      const emaSeries = emaSeriesRef.current[period];
-      if (!emaSeries) continue;
+    for (const period of CHART_MA_PERIODS) {
+      const maSeries = maSeriesRef.current[period];
+      if (!maSeries) continue;
 
       if (candles.length >= period) {
-        const points = buildEmaSeries(candles, period);
-        emaSeries.setData(
+        const points = buildChartMovingAverage(candles, period);
+        maSeries.setData(
           points.filter(point => !visibleStart || point.date >= visibleStart).map((point) => ({
             time: toChartTime(point.date),
             value: point.value,
           }))
         );
       } else {
-        emaSeries.setData([]);
+        maSeries.setData([]);
       }
     }
 
@@ -269,16 +269,16 @@ export default function StockChart({
       wickDownColor: CHART_COLORS.down,
     });
 
-    const emaColors: Record<(typeof EMA_PERIODS)[number], string> = {
+    const maColors: Record<(typeof CHART_MA_PERIODS)[number], string> = {
       20: CHART_COLORS.ema20,
       50: CHART_COLORS.ema50,
-      200: CHART_COLORS.ema200,
+      200: CHART_COLORS.sma200,
     };
 
-    for (const period of EMA_PERIODS) {
-      emaSeriesRef.current[period] = chart.addSeries(LineSeries, {
-        color: emaColors[period],
-        lineWidth: 2,
+    for (const period of CHART_MA_PERIODS) {
+      maSeriesRef.current[period] = chart.addSeries(LineSeries, {
+        color: maColors[period],
+        lineWidth: 1,
         priceLineVisible: false,
         lastValueVisible: true,
         crosshairMarkerVisible: true,
@@ -303,7 +303,7 @@ export default function StockChart({
       chart.remove();
       chartRef.current = null;
       seriesRef.current = null;
-      emaSeriesRef.current = { 20: null, 50: null, 200: null };
+      maSeriesRef.current = { 20: null, 50: null, 200: null };
       priceLinesRef.current = [];
       setChartReady(false);
     };
@@ -314,16 +314,16 @@ export default function StockChart({
     applyChartData();
   }, [chartReady, applyChartData]);
 
-  const activeEmaPeriods = EMA_PERIODS.filter((period) => candles.length >= period);
+  const activeMaPeriods = CHART_MA_PERIODS.filter((period) => candles.length >= period);
   const intervalLabel = chartFetchConfig(timeRange).label;
 
   return (
     <div className="chart-shell">
       <div className="chart-top-bar">
         <div className="chart-legend">
-          {activeEmaPeriods.map((period) => (
-            <span key={period} className={`chart-legend-item chart-legend-ema${period}`}>
-              {EMA_LABELS[period]} {buildEmaSeries(candles, period).at(-1)?.value.toFixed(2)}
+          {activeMaPeriods.map((period) => (
+            <span key={period} className={`chart-legend-item chart-legend-${period === 200 ? "sma" : "ema"}${period}`}>
+              {MA_LABELS[period]} ({buildChartMovingAverage(candles, period).at(-1)?.value.toFixed(2)})
             </span>
           ))}
         </div>
