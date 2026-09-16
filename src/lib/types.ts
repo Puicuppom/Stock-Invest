@@ -34,6 +34,18 @@ export interface PriceZone {
 }
 
 export interface FairValueData {
+  peerForward?: { low:number; median:number; high:number; peers:{symbol:string; pe:number}[]; asOf:string } | null;
+  industry?: string | null;
+  operatingMargins?: number | null;
+  returnOnEquity?: number | null;
+  cashflowCurrency?: string | null;
+  historicalPE?: import("./historical-valuation").HistoricalPE | null;
+  normalizationNotes?: string[];
+  sector?: string | null;
+  financialCurrency?: string | null;
+  quoteCurrency?: string | null;
+  totalDebt?: number | null;
+  totalCash?: number | null;
   analyst: number | null;
   analystLow: number | null;
   analystHigh: number | null;
@@ -60,7 +72,13 @@ export interface FairValueData {
 }
 
 export interface FairValueResult {
-  /** Primary: simple average of valuation models (Investing.com Pro style) */
+  modelFairValue?: number | null;
+  analystWeight?: number;
+  trailingEps?: number | null;
+  confidence?: "low" | "medium" | "unavailable";
+  warnings?: string[];
+  models?: import("./valuation-engine").ValuationModel[];
+  /** Primary: median of available independent valuation approaches */
   fairValue: number | null;
   fairValueLow: number | null;
   fairValueHigh: number | null;
@@ -83,7 +101,7 @@ export interface FairValueResult {
   fcfYieldPercent: number | null;
   dividendYieldPercent: number | null;
   dividendRate: number | null;
-  source: "multi-model" | "pe-fallback" | "unknown";
+  source: "multi-model" | "pe-fallback" | "single-model" | "unknown";
 }
 
 export interface StockData {

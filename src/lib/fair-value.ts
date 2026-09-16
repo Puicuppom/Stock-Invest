@@ -1,3 +1,5 @@
+import { PRIMARY_LISTINGS, convertPrimaryFundamentals, fetchFx } from "./valuation-currency";
+import { evaluateValuation } from "./valuation-engine";
 import { getYahooAuth, USER_AGENT } from "./yahoo-auth";
 import { fetchYahooQuoteDividends } from "./yahoo-quote";
 import type { FairValueData } from "./types";
@@ -12,6 +14,8 @@ interface YahooRaw {
 interface QuoteSummaryResponse {
   quoteSummary?: {
     result?: Array<{
+      assetProfile?: { sector?: string; industry?: string };
+      price?: { currency?: string };
       summaryDetail?: {
         trailingPE?: YahooRaw;
         forwardPE?: YahooRaw;
@@ -22,6 +26,11 @@ interface QuoteSummaryResponse {
         dividendRate?: YahooRaw;
       };
       financialData?: {
+        operatingMargins?: YahooRaw;
+        returnOnEquity?: YahooRaw;
+        financialCurrency?: string;
+        totalDebt?: YahooRaw;
+        totalCash?: YahooRaw;
         targetMeanPrice?: YahooRaw;
         targetLowPrice?: YahooRaw;
         targetHighPrice?: YahooRaw;
@@ -46,15 +55,12 @@ interface QuoteSummaryResponse {
 }
 
 function num(value?: YahooRaw): number | null {
-  if (value?.raw == null || Number.isNaN(value.raw)) return null;
+  if (value?.raw == null || !Number.isFinite(value.raw)) return null;
   return value.raw;
 }
 
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
-}
 
-export async function fetchFundamentals(
+async function fetchRawFundamentals(
   resolvedSymbol: string
 ): Promise<FairValueData | null> {
   try {
@@ -64,7 +70,7 @@ export async function fetchFundamentals(
     );
     url.searchParams.set(
       "modules",
-      "financialData,defaultKeyStatistics,summaryDetail"
+      "financialData,defaultKeyStatistics,summaryDetail,assetProfile,price"
     );
     url.searchParams.set("crumb", crumb);
 
@@ -74,6 +80,7 @@ export async function fetchFundamentals(
         Cookie: cookie,
       },
       next: { revalidate },
+      signal: AbortSignal.timeout(10000),
     });
 
     if (!res.ok) {
@@ -85,6 +92,14 @@ export async function fetchFundamentals(
     if (!row) return null;
 
     const base: FairValueData = {
+      industry: row.assetProfile?.industry ?? null,
+      operatingMargins: num(row.financialData?.operatingMargins),
+      returnOnEquity: num(row.financialData?.returnOnEquity),
+      sector: row.assetProfile?.sector ?? null,
+      financialCurrency: row.financialData?.financialCurrency ?? null,
+      quoteCurrency: row.price?.currency ?? null,
+      totalDebt: num(row.financialData?.totalDebt),
+      totalCash: num(row.financialData?.totalCash),
       analyst: num(row.financialData?.targetMeanPrice),
       analystLow: num(row.financialData?.targetLowPrice),
       analystHigh: num(row.financialData?.targetHighPrice),
@@ -126,524 +141,26 @@ export async function fetchFundamentals(
   }
 }
 
-const BASE_PE: Record<"TH" | "US", number> = {
-  US: 18,
-  TH: 14,
-};
-
-const BASE_PS: Record<"TH" | "US", number> = {
-  US: 5,
-  TH: 3.5,
-};
-
-/** P/E Multiples — Forward EPS × blended fair P/E (Investing.com style) */
-function modelPEMultiples(
-  market: "TH" | "US",
-  data: FairValueData
-): number | null {
-  const eps = data.forwardEps ?? data.trailingEps;
-  if (eps == null || eps <= 0) return null;
-
-  const trailingPE = data.trailingPE;
-  const base = BASE_PE[market];
-  const fairPE =
-    trailingPE != null && trailingPE > 0
-      ? clamp((base + trailingPE * 0.65) / 2, 8, 45)
-      : base;
-
-  return eps * fairPE;
-}
-
-function modelPETrailing(
-  market: "TH" | "US",
-  data: FairValueData
-): number | null {
-  if (data.trailingEps == null || data.trailingEps <= 0) return null;
-  const base = BASE_PE[market];
-  const ref = data.forwardPE ?? data.trailingPE ?? base;
-  const fairPE = clamp((base + ref * 0.75) / 2, 8, 35);
-  return data.trailingEps * fairPE;
-}
-
-function modelPSMultiples(
-  market: "TH" | "US",
-  currentPrice: number,
-  data: FairValueData
-): number | null {
-  if (data.revenuePerShare == null || data.revenuePerShare <= 0) return null;
-  const currentPS = currentPrice / data.revenuePerShare;
-  const base = BASE_PS[market];
-  // High P/S names: partial reversion toward fair multiple (avoids extreme low values)
-  if (currentPS > 10) {
-    const fairPS = clamp((base + currentPS * 0.72) / 2, 4, 18);
-    const ratio = clamp(fairPS / currentPS, 0.55, 1.05);
-    return currentPrice * ratio;
-  }
-  const fairPS = clamp((base + currentPS * 0.55) / 2, 2.5, 12);
-  return data.revenuePerShare * fairPS;
-}
-
-function modelPBMultiples(
-  market: "TH" | "US",
-  data: FairValueData
-): number | null {
-  if (data.bookValue == null || data.bookValue <= 0) return null;
-  if (
-    data.priceToBook != null &&
-    (data.priceToBook < 0.5 || data.priceToBook > 15)
-  ) {
-    return null;
-  }
-  const base = market === "US" ? 2.5 : 1.5;
-  const ptb = data.priceToBook ?? base;
-  const fairPB = clamp((base + Math.min(ptb, 8) * 0.45) / 2, 1, 6);
-  return data.bookValue * fairPB;
-}
-
-function modelEvEbitdaReversion(
-  currentPrice: number,
-  data: FairValueData
-): number | null {
-  if (
-    data.enterpriseValue == null ||
-    data.ebitda == null ||
-    data.ebitda <= 0
-  ) {
-    return null;
-  }
-  const evEbitda = data.enterpriseValue / data.ebitda;
-  if (evEbitda < 8 || evEbitda > 40) return null;
-  const fairEvEbitda = clamp((14 + evEbitda * 0.45) / 2, 8, 22);
-  const ratio = clamp(fairEvEbitda / evEbitda, 0.65, 1.45);
-  return currentPrice * ratio;
-}
-
-function modelDcfFcf(
-  years: 5 | 10,
-  currentPrice: number,
-  data: FairValueData
-): number | null {
-  const shares = data.sharesOutstanding;
-  if (shares == null || shares <= 0 || data.freeCashflow == null) return null;
-  const fcfPerShare = data.freeCashflow / shares;
-  const fcfYield = fcfPerShare / currentPrice;
-  if (fcfYield <= 0.005 || fcfYield > 0.12) return null;
-
-  const revGrowth = clamp(data.revenueGrowth ?? 0.08, 0, 0.35);
-  const growth =
-    years === 5
-      ? clamp(revGrowth * 0.4 + 0.05, 0.04, 0.12)
-      : clamp(revGrowth * 0.35 + 0.04, 0.03, 0.1);
-  const discount = years === 5 ? 0.095 : 0.09;
-  const terminal = 0.03;
-
-  let pv = 0;
-  let fcf = fcfPerShare;
-  for (let year = 1; year <= years; year++) {
-    fcf *= 1 + growth;
-    pv += fcf / Math.pow(1 + discount, year);
-  }
-  const terminalValue = (fcf * (1 + terminal)) / (discount - terminal);
-  pv += terminalValue / Math.pow(1 + discount, years);
-  return pv > 0 ? pv : null;
-}
-
-function modelDcfOcf(
-  currentPrice: number,
-  data: FairValueData
-): number | null {
-  const shares = data.sharesOutstanding;
-  if (shares == null || shares <= 0 || data.operatingCashflow == null) {
-    return null;
-  }
-  const ocfPerShare = data.operatingCashflow / shares;
-  const ocfYield = ocfPerShare / currentPrice;
-  if (ocfYield <= 0.02 || ocfYield > 0.15) return null;
-
-  const revGrowth = clamp(data.revenueGrowth ?? 0.08, 0, 0.35);
-  const growth = clamp(revGrowth * 0.35 + 0.04, 0.03, 0.11);
-  const discount = 0.095;
-  const terminal = 0.03;
-  const years = 5;
-
-  let pv = 0;
-  let cash = ocfPerShare * 0.85;
-  for (let year = 1; year <= years; year++) {
-    cash *= 1 + growth;
-    pv += cash / Math.pow(1 + discount, year);
-  }
-  const terminalValue = (cash * (1 + terminal)) / (discount - terminal);
-  pv += terminalValue / Math.pow(1 + discount, years);
-  return pv > 0 ? pv : null;
-}
-
-function modelDividendStableGrowth(data: FairValueData): number | null {
-  if (data.dividendRate == null || data.dividendRate <= 0) return null;
-  const revGrowth = clamp(data.revenueGrowth ?? 0.03, 0, 0.08);
-  const growth = clamp(revGrowth * 0.5 + 0.025, 0.025, 0.055);
-  const requiredReturn = 0.082;
-  if (requiredReturn <= growth) return null;
-  const value = (data.dividendRate * (1 + growth)) / (requiredReturn - growth);
-  return value > 0 && value < 5000 ? value : null;
-}
-
-/** Dividend yield reversion — mature dividend payers (KO-style) */
-function modelDividendYieldReversion(
-  currentPrice: number,
-  data: FairValueData
-): number | null {
-  if (data.dividendRate == null || data.dividendRate <= 0 || currentPrice <= 0) {
-    return null;
-  }
-  const currentYield = data.dividendRate / currentPrice;
-  if (currentYield < 0.012 || currentYield > 0.07) return null;
-  const fairYield = clamp(currentYield * 0.92 + 0.028 * 0.08, 0.026, 0.042);
-  return data.dividendRate / fairYield;
-}
-
-function modelEarningsGrowthValue(
-  currentPrice: number,
-  data: FairValueData
-): number | null {
-  const eps = data.forwardEps ?? data.trailingEps;
-  if (eps == null || eps <= 0 || data.forwardPE == null || data.forwardPE <= 0) {
-    return null;
-  }
-  const earnGrowth = clamp(data.earningsGrowth ?? 0.1, 0, 0.35);
-  return eps * data.forwardPE * (1 + earnGrowth * 0.22);
-}
-
-function modelRevenueGrowthValue(
-  currentPrice: number,
-  data: FairValueData
-): number | null {
-  const revGrowth = clamp(data.revenueGrowth ?? 0.08, 0, 0.35);
-  return currentPrice * (1 + revGrowth * 0.28);
-}
-
-function hasPositiveEarnings(data: FairValueData): boolean {
-  return (
-    (data.forwardEps != null && data.forwardEps > 0) ||
-    (data.trailingEps != null && data.trailingEps > 0)
-  );
-}
-
-/** Mega-cap / quality compounder — forward P/E near consensus growth premium */
-function isDecliningForwardEarnings(data: FairValueData): boolean {
-  if (
-    data.forwardEps == null ||
-    data.trailingEps == null ||
-    data.trailingEps <= 0
-  ) {
-    return false;
-  }
-  return data.trailingEps > data.forwardEps * 1.08;
-}
-
-function isQualityCompounder(data: FairValueData): boolean {
-  if (!hasPositiveEarnings(data)) return false;
-  if (isDecliningForwardEarnings(data)) return false;
-  if (data.trailingPE == null || data.trailingPE > 30) return false;
-  if (data.forwardPE == null || data.forwardPE > 32) return false;
-  if (data.marketCap == null || data.marketCap < 200_000_000_000) return false;
-  const earnG = clamp(data.earningsGrowth ?? 0, 0, 0.5);
-  const revG = clamp(data.revenueGrowth ?? 0, 0, 0.5);
-  return earnG >= 0.12 || revG >= 0.1;
-}
-
-function modelPEQualityGrowth(data: FairValueData): number | null {
-  const eps = data.forwardEps ?? data.trailingEps;
-  if (eps == null || eps <= 0 || data.forwardPE == null || data.forwardPE <= 0) {
-    return null;
-  }
-  const trailing = data.trailingPE ?? data.forwardPE;
-  const avgPE = (data.forwardPE + trailing) / 2;
-  const fairPE = clamp(avgPE * 1.13, 16, 30);
-  return eps * fairPE;
-}
-
-/** Cyclical ramp — forward EPS surge, low forward P/E (memory semis e.g. MU) */
-function isCyclicalEarningsRamp(data: FairValueData): boolean {
-  if (!hasPositiveEarnings(data)) return false;
-  if (data.forwardPE == null || data.forwardPE <= 0 || data.forwardPE > 15) {
-    return false;
-  }
-  if (
-    data.forwardEps == null ||
-    data.trailingEps == null ||
-    data.trailingEps <= 0
-  ) {
-    return false;
-  }
-  return data.forwardEps >= data.trailingEps * 1.8;
-}
-
-function modelCyclicalForwardAnchor(data: FairValueData): number | null {
-  if (!isCyclicalEarningsRamp(data)) return null;
-  if (data.forwardEps == null || data.forwardPE == null) return null;
-  return data.forwardEps * data.forwardPE * 0.985;
-}
-
-/** Mature dividend payers only — skip high-growth names that also pay a yield (BLK-style) */
-function isMatureDividendPayer(data: FairValueData): boolean {
-  const earnG = data.earningsGrowth ?? 0;
-  const revG = data.revenueGrowth ?? 0;
-  if (earnG >= 0.25 || revG >= 0.15) return false;
-  if (
-    data.forwardEps != null &&
-    data.trailingEps != null &&
-    data.trailingEps > 0 &&
-    data.forwardEps >= data.trailingEps * 1.45
-  ) {
-    return false;
-  }
-  return true;
-}
-
-/** Moderate forward earnings ramp — forward EPS surge + low forward P/E (asset mgrs e.g. BLK) */
-function isModerateForwardEarningsRamp(data: FairValueData): boolean {
-  if (!hasPositiveEarnings(data)) return false;
-  if (isCyclicalEarningsRamp(data)) return false;
-  if (data.forwardPE == null || data.forwardPE <= 0 || data.forwardPE > 18) {
-    return false;
-  }
-  if (
-    data.forwardEps == null ||
-    data.trailingEps == null ||
-    data.trailingEps <= 0
-  ) {
-    return false;
-  }
-  return data.forwardEps >= data.trailingEps * 1.45;
-}
-
-/** Pre-revenue / loss-making — conservative haircut from price */
-function modelUnprofitableFairValue(
-  currentPrice: number,
-  data: FairValueData
-): number | null {
-  if (hasPositiveEarnings(data)) return null;
-  const revGrowth = clamp(data.revenueGrowth ?? 0.12, 0, 1);
-  const haircut = clamp(0.05 + revGrowth * 0.025, 0.05, 0.09);
-  return currentPrice * (1 - haircut);
-}
-
-function isReasonableModelValue(value: number, currentPrice: number): boolean {
-  return value > 0 && value >= currentPrice * 0.35 && value <= currentPrice * 2.2;
-}
-
-function median(values: number[]): number {
-  const sorted = [...values].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 1
-    ? sorted[mid]
-    : (sorted[mid - 1] + sorted[mid]) / 2;
-}
-
-/** Drop outliers far from median, then trimmed mean (Investing.com-style robust average) */
-function robustAverage(values: number[]): number {
-  if (values.length === 1) return values[0];
-  if (values.length === 2) return (values[0] + values[1]) / 2;
-
-  const med = median(values);
-  const withinMedian = values.filter(
-    (v) => v >= med * 0.62 && v <= med * 1.38
-  );
-  const pool = withinMedian.length >= 2 ? withinMedian : values;
-  const sorted = [...pool].sort((a, b) => a - b);
-  const trim =
-    sorted.length >= 6 ? Math.floor(sorted.length * 0.15) : sorted.length >= 4 ? 1 : 0;
-  const trimmed = sorted.slice(trim, sorted.length - trim || sorted.length);
-  return trimmed.reduce((sum, v) => sum + v, 0) / trimmed.length;
-}
-
-function collectModelCandidates(
-  market: "TH" | "US",
-  currentPrice: number,
-  data: FairValueData
-): number[] {
-  const profitable = hasPositiveEarnings(data);
-  const highTrailingPE =
-    data.trailingPE != null && data.trailingPE > 30;
-  const currentPS =
-    data.revenuePerShare != null && data.revenuePerShare > 0
-      ? currentPrice / data.revenuePerShare
-      : null;
-  const skipPS =
-    !profitable && currentPS != null && currentPS > 15;
-
-  const raw = [
-    modelPEMultiples(market, data),
-    modelPETrailing(market, data),
-    skipPS ? null : modelPSMultiples(market, currentPrice, data),
-    modelPBMultiples(market, data),
-    modelEvEbitdaReversion(currentPrice, data),
-    modelDcfFcf(5, currentPrice, data),
-    modelDcfFcf(10, currentPrice, data),
-    modelDcfOcf(currentPrice, data),
-    modelDividendStableGrowth(data),
-    modelDividendYieldReversion(currentPrice, data),
-    profitable && !highTrailingPE
-      ? modelEarningsGrowthValue(currentPrice, data)
-      : null,
-    profitable && !highTrailingPE
-      ? modelRevenueGrowthValue(currentPrice, data)
-      : null,
-    profitable ? null : modelUnprofitableFairValue(currentPrice, data),
-  ];
-
-  return raw.filter(
-    (value): value is number =>
-      value != null && isReasonableModelValue(value, currentPrice)
-  );
-}
-
-function blendFairValueFromCandidates(
-  market: "TH" | "US",
-  candidates: number[],
-  currentPrice: number,
-  data: FairValueData,
-  peReference: number | null
-): number {
-  const divYield =
-    data.dividendRate != null && currentPrice > 0
-      ? data.dividendRate / currentPrice
-      : 0;
-  const divModel = modelDividendYieldReversion(currentPrice, data);
-
-  if (divYield >= 0.018 && divModel != null && isMatureDividendPayer(data)) {
-    const others = candidates.filter(
-      (v) => v >= divModel * 0.72 && Math.abs(v - divModel) / divModel > 0.04
-    );
-    const otherAvg =
-      others.length > 0 ? robustAverage(others) : divModel;
-    return 0.52 * divModel + 0.48 * otherAvg;
-  }
-
-  if (
-    !hasPositiveEarnings(data) &&
-    candidates.length === 1 &&
-    candidates[0] != null
-  ) {
-    return candidates[0];
-  }
-
-  const cyclicalAnchor = modelCyclicalForwardAnchor(data);
-  if (
-    cyclicalAnchor != null &&
-    isReasonableModelValue(cyclicalAnchor, currentPrice)
-  ) {
-    const dcfO = modelDcfOcf(currentPrice, data);
-    const psModel = modelPSMultiples(market, currentPrice, data);
-    const support = [dcfO, psModel].filter(
-      (v): v is number =>
-        v != null && isReasonableModelValue(v, currentPrice)
-    );
-    if (support.length === 0) return cyclicalAnchor;
-    return 0.92 * cyclicalAnchor + 0.08 * robustAverage(support);
-  }
-
-  if (isModerateForwardEarningsRamp(data) && peReference != null) {
-    if (isReasonableModelValue(peReference, currentPrice)) {
-      const support = candidates.filter(
-        (v) =>
-          Math.abs(v - peReference) / peReference > 0.08 &&
-          isReasonableModelValue(v, currentPrice)
-      );
-      if (support.length === 0) return peReference;
-      return 0.9 * peReference + 0.1 * robustAverage(support);
-    }
-  }
-
-  if (isQualityCompounder(data)) {
-    const peQuality = modelPEQualityGrowth(data);
-    if (peQuality != null && isReasonableModelValue(peQuality, currentPrice)) {
-      const dcfO = modelDcfOcf(currentPrice, data);
-      const earnG = modelEarningsGrowthValue(currentPrice, data);
-      const revG = modelRevenueGrowthValue(currentPrice, data);
-      const support = [dcfO, earnG, revG].filter(
-        (v): v is number =>
-          v != null && isReasonableModelValue(v, currentPrice)
-      );
-      if (support.length === 0) return peQuality;
-      return 0.88 * peQuality + 0.12 * robustAverage(support);
-    }
-  }
-
-  if (isDecliningForwardEarnings(data)) {
-    const peTrail = modelPETrailing(market, data);
-    if (peTrail != null && isReasonableModelValue(peTrail, currentPrice)) {
-      const others = candidates.filter(
-        (v) =>
-          Math.abs(v - peTrail) / peTrail > 0.08 &&
-          isReasonableModelValue(v, currentPrice)
-      );
-      if (others.length === 0) return peTrail;
-      return 0.72 * peTrail + 0.28 * robustAverage(others);
-    }
-  }
-
-  if (
-    data.trailingPE != null &&
-    data.trailingPE > 28 &&
-    peReference != null
-  ) {
-    const psModel = modelPSMultiples(market, currentPrice, data);
-    if (psModel != null && isReasonableModelValue(psModel, currentPrice)) {
-      return 0.74 * peReference + 0.26 * psModel;
-    }
-  }
-
-  return robustAverage(candidates);
-}
-
-/** Simple average of valuation models (Investing.com Pro methodology) */
-function blendModelFairValue(
-  market: "TH" | "US",
-  currentPrice: number,
-  data: FairValueData
-): {
-  fairValue: number | null;
-  fairValueLow: number | null;
-  fairValueHigh: number | null;
-  modelCount: number;
-  peReference: number | null;
-} {
-  const candidates = collectModelCandidates(market, currentPrice, data);
-
-  const peReference = modelPEMultiples(market, data);
-
-  if (candidates.length === 0) {
-    return {
-      fairValue: peReference,
-      fairValueLow: peReference != null ? peReference * 0.85 : null,
-      fairValueHigh: peReference != null ? peReference * 1.15 : null,
-      modelCount: peReference != null ? 1 : 0,
-      peReference,
+export async function fetchFundamentals(resolvedSymbol: string): Promise<FairValueData | null> {
+  const listed = await fetchRawFundamentals(resolvedSymbol);
+  if (!listed || listed.financialCurrency === listed.quoteCurrency) return listed;
+  const mapping = PRIMARY_LISTINGS[resolvedSymbol.toUpperCase()];
+  if (!mapping || listed.financialCurrency !== mapping.currency || listed.quoteCurrency !== mapping.quote) {
+    const fx = listed.financialCurrency && listed.quoteCurrency ? await fetchFx(listed.financialCurrency, listed.quoteCurrency) : null;
+    return { ...listed,
+      freeCashflow: fx && listed.freeCashflow != null ? listed.freeCashflow * fx.rate : listed.freeCashflow,
+      cashflowCurrency: fx ? listed.quoteCurrency : listed.financialCurrency,
+      normalizationNotes: ["ยังไม่ยืนยันหน่วยหุ้น/อัตราส่วน ADR สำหรับการแปลงสกุลเงินของหุ้นนี้", ...(fx ? ["แปลงเฉพาะ FCF รวม " + listed.financialCurrency + " → " + listed.quoteCurrency + " อัตรา " + fx.rate.toFixed(6) + " วันที่ " + new Date(fx.timestamp*1000).toISOString().slice(0,10) + " จาก Yahoo; ยังไม่ประเมินมูลค่าต่อหุ้น"] : ["ไม่มีอัตราแลกเปลี่ยนล่าสุดที่ยืนยันได้"])],
     };
   }
-
-  const fairValue = blendFairValueFromCandidates(
-    market,
-    candidates,
-    currentPrice,
-    data,
-    peReference
-  );
-  const fairValueLow = Math.min(...candidates);
-  const fairValueHigh = Math.max(...candidates);
-
-  return {
-    fairValue,
-    fairValueLow,
-    fairValueHigh,
-    modelCount: candidates.length,
-    peReference,
-  };
+  const [primary, fx] = await Promise.all([fetchRawFundamentals(mapping.symbol), fetchFx(mapping.currency, mapping.quote)]);
+  const normalized = primary && fx ? convertPrimaryFundamentals(primary, listed, fx, Date.now(), mapping) : null;
+  return normalized ?? { ...listed, normalizationNotes: ["แปลงสกุลเงินไม่สำเร็จ: ข้อมูลงบต้นทาง อัตราแลกเปลี่ยนล่าสุด หรือจำนวนหุ้นยังยืนยันไม่ได้"] };
 }
 
 function fcfYieldPercent(data: FairValueData): number | null {
   const { freeCashflow, marketCap } = data;
+  if (!(data.cashflowCurrency ?? data.financialCurrency) || (data.cashflowCurrency ?? data.financialCurrency) !== data.quoteCurrency) return null;
   if (freeCashflow == null || marketCap == null || marketCap <= 0) return null;
   return (freeCashflow / marketCap) * 100;
 }
@@ -681,6 +198,11 @@ export function calculateFairValue(
   currentPrice: number,
   data: FairValueData | null
 ): {
+  modelFairValue?: number | null;
+  analystWeight?: number;
+  confidence?: "low" | "medium" | "unavailable";
+  warnings?: string[];
+  models?: import("./valuation-engine").ValuationModel[];
   fairValue: number | null;
   fairValueLow: number | null;
   fairValueHigh: number | null;
@@ -694,16 +216,20 @@ export function calculateFairValue(
   modelRange: { low: number; high: number } | null;
   modelCount: number;
   range52w: { low: number; high: number } | null;
+  trailingEps?: number | null;
   forwardEps: number | null;
   peReferenceUpsidePercent: number | null;
   analystUpsidePercent: number | null;
   fcfYieldPercent: number | null;
   dividendYieldPercent: number | null;
   dividendRate: number | null;
-  source: "multi-model" | "pe-fallback" | "unknown";
+  source: "multi-model" | "pe-fallback" | "single-model" | "unknown";
 } {
-  if (!data) {
+  if (!data || !Number.isFinite(currentPrice) || currentPrice <= 0) {
     return {
+      confidence: "unavailable",
+      warnings: ["ข้อมูลพื้นฐานไม่พอหรือโหลดไม่สำเร็จ ลองรีเฟรชอีกครั้ง"],
+      models: [],
       fairValue: null,
       fairValueLow: null,
       fairValueHigh: null,
@@ -727,12 +253,12 @@ export function calculateFairValue(
     };
   }
 
-  const blended = blendModelFairValue(market, currentPrice, data);
-  const { fairValue, fairValueLow, fairValueHigh, modelCount, peReference } =
+  const blended = evaluateValuation(market, data);
+  const { fairValue: modelFairValue, fairValueLow: modelLow, fairValueHigh: modelHigh, modelCount, peReference } =
     blended;
 
   const analystTarget =
-    data.analyst != null && data.analyst > 0 ? data.analyst : null;
+    data.analyst != null && Number.isFinite(data.analyst) && data.analyst > 0 ? data.analyst : null;
 
   const analystRange =
     data.analystLow != null &&
@@ -744,6 +270,13 @@ export function calculateFairValue(
           high: Math.max(data.analystLow, data.analystHigh),
         }
       : null;
+
+  const analystWeight = modelFairValue != null && analystTarget != null && data.quoteCurrency === (market === "TH" ? "THB" : "USD") ? 0.5 : 0;
+  const fairValue = modelFairValue != null ? modelFairValue*(1-analystWeight)+(analystTarget ?? 0)*analystWeight : null;
+  // Hold the analyst mean fixed in scenario bounds; analyst dispersion is shown separately.
+  const fairValueLow = modelLow != null ? modelLow*(1-analystWeight)+(analystTarget ?? 0)*analystWeight : null;
+  const fairValueHigh = modelHigh != null ? modelHigh*(1-analystWeight)+(analystTarget ?? 0)*analystWeight : null;
+  blended.warnings.push(analystWeight ? "ราคาที่แสดง = โมเดล 50% + เป้านักวิเคราะห์เฉลี่ย 50%; น้ำหนักสมมติ ยังไม่ผ่าน backtest และเป้านักวิเคราะห์อาจมีกรอบเวลาแตกต่างจากมูลค่าปัจจุบัน" : "ไม่มีข้อมูลสองด้านที่ยืนยันสกุลเงินได้ครบ จึงไม่ถ่วงน้ำหนักนักวิเคราะห์; ไม่ใช้เป้านักวิเคราะห์แทนโมเดลที่ไม่มีข้อมูล");
 
   const modelRange =
     fairValueLow != null &&
@@ -766,10 +299,15 @@ export function calculateFairValue(
     modelCount >= 2
       ? "multi-model"
       : fairValue != null
-        ? "pe-fallback"
+        ? "single-model"
         : "unknown";
 
   return {
+    modelFairValue,
+    analystWeight,
+    confidence: blended.confidence,
+    warnings: blended.warnings,
+    models: blended.models,
     fairValue,
     fairValueLow,
     fairValueHigh,
@@ -783,6 +321,7 @@ export function calculateFairValue(
     modelRange,
     modelCount,
     range52w,
+    trailingEps: data.trailingEps,
     forwardEps: data.forwardEps,
     peReferenceUpsidePercent: upsidePercent(peReference, currentPrice),
     analystUpsidePercent: upsidePercent(analystTarget, currentPrice),

@@ -140,7 +140,7 @@ export default function FairValueCard({
           <p className="fv-subtitle">
             {isEtf
               ? "ช่วงราคา · Yahoo"
-              : `เฉลี่ย ${modelCount || "หลาย"} โมเดล · DCF · Multiples · Dividend`}
+              : `มัธยฐาน ${modelCount || "หลาย"} วิธี · ดูสมมติฐานประกอบ`}
           </p>
         </div>
         {kindLabel ? (
@@ -294,11 +294,11 @@ export default function FairValueCard({
             </div>
           )}
 
-          {source === "pe-fallback" && (
-            <p className="fv-note">โมเดลไม่ครบ — ใช้ P/E เป็นหลัก</p>
+          {(source === "pe-fallback" || source === "single-model") && (
+            <p className="fv-note">มีเพียงวิธีเดียว — ความน่าเชื่อถือต่ำ</p>
           )}
           {source === "multi-model" && (
-            <p className="fv-note">เฉลี่ยจากหลายโมเดล (คล้าย Investing.com Pro)</p>
+            <p className="fv-note">มัธยฐานจากหลายวิธี · ช่วงราคาเป็นกรณีสมมติฐาน</p>
           )}
         </>
       ) : !isEtf ? (

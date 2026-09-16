@@ -1,3 +1,4 @@
+import ValuationDetails from "./ValuationDetails";
 import type { StockData } from "@/lib/types";
 import type { ScreeningStyle } from "@/lib/screener";
 import { screeningEntry } from "@/lib/screening-entry";
@@ -14,5 +15,6 @@ export default function ScreeningEntryCard({data, style}: {data: StockData; styl
     <p>{entry.basis}</p>
     {entry.stopLoss != null && <p>จุดตัดขาดทุนอ้างอิง {format(entry.stopLoss)} {unit}</p>}
     <p>เป็นราคาตามสูตร ไม่ใช่คำสั่งซื้อหรือการรับรองว่าหุ้นผ่านเกณฑ์ ราคาแสดงปัดทศนิยม 2 ตำแหน่ง</p>
+    {style === "long" && <ValuationDetails value={data.fairValue} />}
   </section>;
 }

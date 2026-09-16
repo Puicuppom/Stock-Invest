@@ -1,3 +1,4 @@
+import FundamentalMetrics from "./FundamentalMetrics";
 import type { TradePlan } from "@/lib/trade-plan";
 import { assetKindLabel } from "@/lib/instrument";
 import type { AssetKind, FairValueResult } from "@/lib/types";
@@ -65,23 +66,7 @@ export default function StockDashboard({
   onRefresh,
 }: StockDashboardProps) {
   const changePositive = change >= 0;
-  const {
-    fairValue: target,
-    upsidePercent,
-    modelRange,
-    analystTarget,
-    analystUpsidePercent,
-    range52w,
-    peReference,
-    peReferenceUpsidePercent,
-    modelCount,
-    trailingPE,
-    forwardPE,
-    forwardEps,
-    fcfYieldPercent,
-    dividendYieldPercent,
-    dividendRate,
-  } = fairValue;
+  const { range52w, dividendYieldPercent, dividendRate } = fairValue;
 
   const isGoldSpot = assetKind === "gold-spot";
   const isGoldEtf = assetKind === "gold-etf";
@@ -89,28 +74,18 @@ export default function StockDashboard({
   const isEtf = assetKind === "etf" || isGoldEtf;
   const kindLabel = assetKindLabel(assetKind);
 
-  const modelPos =
-    modelRange && rangeMarker(currentPrice, modelRange.low, modelRange.high);
   const weekPos =
     range52w && rangeMarker(currentPrice, range52w.low, range52w.high);
 
-  const showFundamentals =
-    !isGold && target != null && !isEtf;
 
   const hasDividendDisplay =
     (dividendYieldPercent != null && dividendYieldPercent > 0) ||
     (dividendRate != null && dividendRate > 0);
 
-  const hasSupplement =
-    forwardPE != null ||
-    peReference != null ||
-    forwardEps != null ||
-    trailingPE != null ||
-    analystTarget != null;
 
   return (
     <section className="stock-dashboard">
-      <div className="dash-top">
+      <div className={`dash-top${!isGold && !isEtf ? " dash-top-with-metrics" : ""}`}>
         <div className="dash-quote">
           <p className="eyebrow">InvestPui.com</p>
           <h1 className="dash-symbol">{symbol}</h1>
@@ -147,6 +122,7 @@ export default function StockDashboard({
         >
           ↻
         </button>
+        {!isGold && !isEtf && <FundamentalMetrics value={fairValue} market={market} />}
       </div>
 
       {isGold ? (
@@ -176,135 +152,8 @@ export default function StockDashboard({
             </div>
           )}
         </div>
-      ) : showFundamentals ? (
-        <div className="dash-metrics">
-          <div className={`dash-fv-row${hasSupplement ? "" : " dash-fv-row-solo"}`}>
-            <div className="dash-metric dash-metric-fv">
-              <p className="dash-metric-label">
-                ราคายุติธรรม
-                {modelCount >= 2 && (
-                  <span className="dash-metric-tag">{modelCount} โมเดล</span>
-                )}
-              </p>
-              <div className="dash-metric-head">
-                <p className="dash-metric-value">{formatPrice(target)}</p>
-                {upsidePercent != null && (
-                  <p
-                    className={
-                      upsidePercent >= 0
-                        ? "dash-metric-pct change-up"
-                        : "dash-metric-pct change-down"
-                    }
-                  >
-                    {upsidePercent >= 0 ? "+" : ""}
-                    {upsidePercent.toFixed(1)}%
-                  </p>
-                )}
-              </div>
-              {modelRange && modelPos != null && (
-                <div className="dash-mini-range">
-                  <div className="fv-range-labels dash-range-labels">
-                    <span>{formatPrice(modelRange.low)}</span>
-                    <span>{formatPrice(modelRange.high)}</span>
-                  </div>
-                  <div className="fv-range-track fv-range-track-analyst">
-                    <span
-                      className="fv-range-marker"
-                      style={{ left: `${modelPos}%` }}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {hasSupplement && (
-              <div className="dash-metric dash-metric-supplement">
-                <p className="dash-metric-label">ข้อมูลเสริม</p>
-                {analystTarget != null && (
-                  <p className="dash-sup-line">
-                    <span>เป้านักวิเคราะห์</span>
-                    <span className="dash-sup-value">
-                      {formatPrice(analystTarget)}
-                      {analystUpsidePercent != null && (
-                        <em
-                          className={
-                            analystUpsidePercent >= 0
-                              ? "change-up"
-                              : "change-down"
-                          }
-                        >
-                          {analystUpsidePercent >= 0 ? "+" : ""}
-                          {analystUpsidePercent.toFixed(1)}%
-                        </em>
-                      )}
-                    </span>
-                  </p>
-                )}
-                {forwardPE != null && (
-                  <p className="dash-sup-line">
-                    <span>Fwd P/E</span>
-                    <span>{forwardPE.toFixed(1)}x</span>
-                  </p>
-                )}
-                {peReference != null && (
-                  <p className="dash-sup-line">
-                    <span>P/E อ้างอิง</span>
-                    <span className="dash-sup-value">
-                      {formatPrice(peReference)}
-                      {peReferenceUpsidePercent != null && (
-                        <em
-                          className={
-                            peReferenceUpsidePercent >= 0
-                              ? "change-up"
-                              : "change-down"
-                          }
-                        >
-                          {peReferenceUpsidePercent >= 0 ? "+" : ""}
-                          {peReferenceUpsidePercent.toFixed(1)}%
-                        </em>
-                      )}
-                    </span>
-                  </p>
-                )}
-                {(forwardEps != null || trailingPE != null) && (
-                  <p className="dash-metric-sub dash-sup-meta">
-                    {forwardEps != null && `EPS ${forwardEps.toFixed(2)}`}
-                    {forwardEps != null && trailingPE != null && " · "}
-                    {trailingPE != null && `Trail ${trailingPE.toFixed(1)}x`}
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-
-          <div className="dash-metrics-cols">
-            <div className="dash-metric">
-              <p className="dash-metric-label">FCF Yield</p>
-              <p
-                className={`dash-metric-value${
-                  fcfYieldPercent != null && fcfYieldPercent < 0
-                    ? " change-down"
-                    : ""
-                }`}
-              >
-                {fcfYieldPercent != null
-                  ? `${fcfYieldPercent.toFixed(2)}%`
-                  : "—"}
-              </p>
-            </div>
-
-            <div className="dash-metric">
-              <p className="dash-metric-label">อัตราปันผล</p>
-              <p className="dash-metric-value">
-                {formatDividendDisplay(
-                  dividendRate,
-                  dividendYieldPercent,
-                  market
-                )}
-              </p>
-            </div>
-          </div>
-        </div>
+      ) : !isEtf ? (
+        null
       ) : isEtf ? (
         <div className="dash-metrics">
           <div className="dash-metric dash-metric-wide">
@@ -413,4 +262,4 @@ export default function StockDashboard({
       </div>
     </section>
   );
-}
+}

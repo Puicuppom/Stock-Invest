@@ -2511,3 +2511,24 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; } }
 
 .watchlist-section { top: 76px; z-index: 15; margin: 0; padding: 8px 0; }
+
+.valuation-details { font-size: 12px; color: var(--muted); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; line-height: 1.7; }
+.valuation-details summary { cursor: pointer; color: var(--text); }
+.valuation-details p { margin: 8px 0; font-size: 12px; }
+.valuation-details strong { color: var(--text); }
+.valuation-details ul { padding-left: 18px; list-style: disc; }
+
+.fundamental-metrics{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:6px;min-width:0}
+.fundamental-metrics>.dash-metric{grid-column:span 2;padding:8px;min-width:0}
+.fundamental-metrics>.dash-metric:nth-child(-n+2){grid-column:span 5}
+.fundamental-value{display:flex;align-items:baseline;gap:5px;flex-wrap:wrap}
+.fundamental-value small,.fundamental-unavailable{color:#94a3b8;font-size:10px}
+.fundamental-value .dash-metric-value{font-size:14px}
+.fundamental-metrics .dash-metric-label{font-size:11px}
+.dash-top-with-metrics{display:grid;grid-template-columns:minmax(160px,1fr) minmax(0,2.8fr) auto;gap:12px;align-items:start}
+.dash-top-with-metrics>.fundamental-metrics{grid-column:2;grid-row:1}
+.dash-top-with-metrics>.dash-refresh{grid-column:3;grid-row:1}
+@media(max-width:1000px){.dash-top-with-metrics{grid-template-columns:minmax(0,1fr) auto}.dash-top-with-metrics>.dash-refresh{grid-column:2}.dash-top-with-metrics>.fundamental-metrics{grid-column:1/-1;grid-row:2}}
+@media(max-width:540px){.fundamental-metrics{grid-template-columns:repeat(6,minmax(0,1fr))}.fundamental-metrics>.dash-metric:nth-child(-n+2){grid-column:span 3}.fundamental-metrics>.dash-metric:nth-last-child(-n+2){grid-column:span 3}.fundamental-value small{display:none}}
+
+.fundamental-metrics>.forecast-scenarios{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px 12px;padding:7px 9px;border:1px solid #334155;border-radius:9px;color:#94a3b8;font-size:11px}.forecast-scenarios b{color:#e2e8f0}.forecast-scenarios small{font-size:10px}

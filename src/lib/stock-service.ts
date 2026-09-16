@@ -1,3 +1,6 @@
+import { fetchPeerValuation } from "./peer-valuation";
+import { fetchAnnualEps, historicalPE } from "./historical-valuation";
+import { PRIMARY_LISTINGS } from "./valuation-currency";
 import { fetchDailyCandles } from "./chart-service";
 import { calculateFairValue, fetchFundamentals } from "./fair-value";
 import { classifyInstrument } from "./instrument";
@@ -67,10 +70,20 @@ export async function getStockData(
     throw new Error("Stock not found");
   }
 
-  const [daily, fundamentals] = await Promise.all([
+  const primary = PRIMARY_LISTINGS[resolvedSymbol];
+  const [daily, fundamentals, earnings, primaryDaily] = await Promise.all([
     fetchDailyCandles(resolvedSymbol),
     fetchFundamentals(resolvedSymbol),
+    fetchAnnualEps(primary?.symbol ?? resolvedSymbol),
+    primary ? fetchDailyCandles(primary.symbol).catch(() => null) : Promise.resolve(null),
   ]);
+
+  if (fundamentals) fundamentals.historicalPE = historicalPE(
+    primary ? primaryDaily?.candles ?? [] : daily.candles, earnings,
+    primary?.currency ?? fundamentals.quoteCurrency ?? ""
+  );
+
+  if (fundamentals) fundamentals.peerForward = await fetchPeerValuation(resolvedSymbol, fundamentals);
 
   if (daily.candles.length < 10) {
     throw new Error("Stock not found");
