@@ -149,6 +149,7 @@ export default function StockScreener() {
         <details><summary>ขอบเขตการค้นหา</summary><p>ค้นหาต่อเนื่องตามตัวกรอง เรียง Market Cap จากมากไปน้อย จนพบหุ้นผ่านครบ 30 ตัวต่อชุด หรือหมดขอบเขตที่แหล่งข้อมูลส่งให้ หุ้นที่ไม่ผ่านหรือข้อมูลไม่ครบไม่นับรวม 30 ตัว ตัดรายการที่ Yahoo ระบุว่าเป็น DR/วอร์แรนต์ไทย รวมถึงรหัส -R/-F ออก กลุ่มธุรกิจใช้การจัดประเภทของ Yahoo และอาจมีข้อมูลขาดหรือคลาดเคลื่อน ขนาดบริษัทเป็นเกณฑ์ของแอปในสกุลเงินตลาด</p></details>
       </>}
       <button disabled={!restored || busy || (source === "watchlist" && !loaded)} onClick={()=>scan()}>{busy ? "กำลังค้นหา… ผ่าน " + total + "/30 · ตรวจ " + rows.length + " ตัว" : rows.length > 0 || nextOffset !== null ? "↻ รีเฟรช · เริ่มค้นหาใหม่" : "ค้นหาหุ้นให้ฉัน"}</button>
+      {nextOffset !== null && <button disabled={busy} onClick={()=>scan(true)}>ค้นหาต่ออีก 30 ตัวที่ผ่านครบ</button>}
       {busy && <button onClick={()=>{controller.current?.abort();setMessage("หยุดค้นหาแล้ว แสดงเฉพาะผลที่ตรวจเสร็จ");}}>หยุดค้นหา</button>}
     </section>
     {discoveryNote && <p>{discoveryNote}</p>}
@@ -165,7 +166,6 @@ export default function StockScreener() {
       {row.error && <p role="alert">{row.error}</p>}
       {row.data && <button disabled={!loaded||items.some(item=>item.symbol===row.symbol && item.market===scannedMarket)} onClick={()=>{if(addStock(row.symbol,scannedMarket))setMessage(`เพิ่ม ${row.symbol} ใน Watchlist แล้ว`);}}>{items.some(item=>item.symbol===row.symbol && item.market===scannedMarket)?"อยู่ใน Watchlist แล้ว":"+ เพิ่ม Watchlist"}</button>}
     </article>)}
-    {nextOffset !== null && <button disabled={busy} onClick={()=>scan(true)}>ค้นหาต่ออีก 30 ตัวที่ผ่านครบ</button>}
     <footer className="app-footer">เกณฑ์เริ่มต้นสำหรับคัดไปศึกษาต่อ ไม่ใช่คะแนนรับรองคุณภาพหรือคำสั่งซื้อ ข้อมูลที่ขาดจะไม่นับว่าผ่าน</footer>
   </main>;
 }
