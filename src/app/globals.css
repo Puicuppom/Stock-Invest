@@ -2525,10 +2525,12 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .fundamental-value small,.fundamental-unavailable{color:#94a3b8;font-size:10px}
 .fundamental-value .dash-metric-value{font-size:14px}
 .fundamental-metrics .dash-metric-label{font-size:11px}
-.dash-top-with-metrics{display:grid;grid-template-columns:minmax(160px,1fr) minmax(0,2.8fr) auto;gap:12px;align-items:start}
+.dash-top-with-metrics{padding-right:0;display:grid;grid-template-columns:minmax(160px,1fr) minmax(0,2.8fr) auto;gap:12px;align-items:start}
 .dash-top-with-metrics>.fundamental-metrics{grid-column:2;grid-row:1}
-.dash-top-with-metrics>.dash-refresh{grid-column:3;grid-row:1}
+.dash-top-with-metrics>.dash-refresh{position:static;grid-column:3;grid-row:1}
 @media(max-width:1000px){.dash-top-with-metrics{grid-template-columns:minmax(0,1fr) auto}.dash-top-with-metrics>.dash-refresh{grid-column:2}.dash-top-with-metrics>.fundamental-metrics{grid-column:1/-1;grid-row:2}}
 @media(max-width:540px){.fundamental-metrics{grid-template-columns:repeat(6,minmax(0,1fr))}.fundamental-metrics>.dash-metric:nth-child(-n+2){grid-column:span 3}.fundamental-metrics>.dash-metric:nth-last-child(-n+2){grid-column:span 3}.fundamental-value small{display:none}}
 
 .fundamental-metrics>.forecast-scenarios{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px 12px;padding:7px 9px;border:1px solid #334155;border-radius:9px;color:#94a3b8;font-size:11px}.forecast-scenarios b{color:#e2e8f0}.forecast-scenarios small{font-size:10px}
+
+@media(max-width:1000px){.fundamental-metrics>.dash-metric{text-align:center}.fundamental-metrics .fundamental-value{justify-content:center}.fundamental-metrics .dash-metric-label{justify-content:center}}
