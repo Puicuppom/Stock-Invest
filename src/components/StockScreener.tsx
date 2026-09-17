@@ -160,6 +160,7 @@ export default function StockScreener() {
     {evaluated.filter(row=>row.passed).map((row,index)=><article className="screen-panel" key={row.symbol}>
       <div className="screen-actions"><h2>#{index+1} {row.symbol} <small>{scannedMarket==="TH"?"BKK":"US"}</small></h2><strong>{row.error?"โหลดไม่ได้":row.passed?"ผ่านครบ":row.incomplete?`ข้อมูลไม่ครบ · ผ่าน ${row.count}/${row.checks.length}`:`ผ่าน ${row.count}/${row.checks.length}`}</strong></div>
       {row.data && <p>{row.data.longName} · ราคาปิด {row.data.lastClose.toFixed(2)} {row.data.market==="TH"?"THB":"USD"} · {row.data.candles.at(-1)?.date}</p>}
+      {row.data && <p title={RANKING_DESCRIPTION[style]}>คะแนนความน่าสนใจ <strong style={{color: "var(--accent)"}}>{row.score}/100</strong></p>}
       {row.data && <ScreeningEntryCard data={row.data} style={style} />}
       {row.error && <p role="alert">{row.error}</p>}
       {row.data && <button disabled={!loaded||items.some(item=>item.symbol===row.symbol && item.market===scannedMarket)} onClick={()=>{if(addStock(row.symbol,scannedMarket))setMessage(`เพิ่ม ${row.symbol} ใน Watchlist แล้ว`);}}>{items.some(item=>item.symbol===row.symbol && item.market===scannedMarket)?"อยู่ใน Watchlist แล้ว":"+ เพิ่ม Watchlist"}</button>}
