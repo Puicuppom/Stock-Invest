@@ -1,3 +1,4 @@
+import { hasValuationSupport } from "./screener";
 import type { StockData } from "./types";
 import type { ScreeningStyle } from "./screener";
 
@@ -14,8 +15,8 @@ export function screeningEntry(data: StockData, style: ScreeningStyle): Screenin
   if (data.assetKind !== "stock") return { price: null, basis: "ยังไม่คำนวณราคาเข้าซื้อสำหรับสินทรัพย์ประเภทนี้" };
   const f = data.fairValue;
   if (style === "long") {
-    if (!positive(f.fairValue) || f.modelCount < 2 || f.source !== "multi-model")
-      return { price: null, basis: "ต้องมี Fair Value จากอย่างน้อย 2 โมเดล" };
+    if (!positive(f.fairValue) || !hasValuationSupport(f))
+      return { price: null, basis: "ต้องมี 2 โมเดล หรือ 1 โมเดลพร้อมเป้านักวิเคราะห์ที่ใช้ถ่วง" };
     return { price: f.fairValue * 0.8, basis: "เพดานราคาซื้อ = Fair Value × 80% (เผื่อส่วนต่าง 20% ตามสมมติฐานเริ่มต้น)" };
   }
   if (style === "dividend") {

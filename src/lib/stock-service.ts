@@ -63,7 +63,8 @@ function buildStockData(
 
 export async function getStockData(
   input: string,
-  market: "TH" | "US" = "US"
+  market: "TH" | "US" = "US",
+  options: { screening?: boolean } = {}
 ): Promise<StockData> {
   const resolvedSymbol = resolveSymbol(input, market);
   if (!resolvedSymbol) {
@@ -83,7 +84,7 @@ export async function getStockData(
     primary?.currency ?? fundamentals.quoteCurrency ?? ""
   );
 
-  if (fundamentals) fundamentals.peerForward = await fetchPeerValuation(resolvedSymbol, fundamentals);
+  if (fundamentals && !options.screening) fundamentals.peerForward = await fetchPeerValuation(resolvedSymbol, fundamentals);
 
   if (daily.candles.length < 10) {
     throw new Error("Stock not found");

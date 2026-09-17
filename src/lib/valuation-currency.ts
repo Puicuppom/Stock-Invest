@@ -34,6 +34,7 @@ export function convertPrimaryFundamentals(
     const value = primary[key];
     converted[key] = value != null && Number.isFinite(value) ? value * fx.rate * (["trailingEps", "forwardEps", "revenuePerShare", "bookValue", "dividendRate"].includes(key) ? ratio : 1) : null;
   }
+  converted.bookValueVerified = false; // Cross-listing P/B and BVPS require a separate unit check.
   converted.sharesOutstanding = a / ratio;
   // These are observations/estimates for the actual US listing, already in USD.
   for (const key of ["analyst", "analystLow", "analystHigh", "fiftyTwoWeekHigh", "fiftyTwoWeekLow", "trailingPE", "forwardPE", "priceToBook", "marketCap", "enterpriseValue", "dividendYield"] as const) converted[key] = listed[key];

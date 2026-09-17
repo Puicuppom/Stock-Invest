@@ -6,6 +6,9 @@ export const screeningStyles = {
   short: { label: "เทรดสั้น", description: "คัดจากแนวโน้มและปริมาณซื้อขายรายวัน ใช้ราคาปิด ไม่ใช่ราคาสด" },
 };
 export interface ScreeningCheck { label: string; value: string; passed: boolean | null }
+export function hasValuationSupport(f: StockData["fairValue"]): boolean {
+  return f.modelCount >= 2 || (f.modelCount >= 1 && f.analystWeight === 0.5 && f.analystTarget != null && Number.isFinite(f.analystTarget) && f.analystTarget > 0);
+}
 export function screenStock(data: StockData, style: ScreeningStyle): ScreeningCheck[] {
   const f = data.fairValue;
   const check = (label: string, value: number | null | undefined, predicate: (n: number) => boolean, suffix = ""): ScreeningCheck => ({
@@ -17,7 +20,7 @@ export function screenStock(data: StockData, style: ScreeningStyle): ScreeningCh
     check("Forward EPS > 0", f.forwardEps, n => n > 0),
     check("FCF Yield > 0%", f.fcfYieldPercent, n => n > 0, "%"),
     check("Upside ถึง Fair Value ≥ 10%", f.upsidePercent, n => n >= 10, "%"),
-    check("โมเดลมูลค่า ≥ 2 โมเดล", f.modelCount, n => n >= 2),
+    {label:"มี 2 โมเดล หรือ 1 โมเดล + เป้านักวิเคราะห์", value: f.modelCount + " โมเดล" + (f.analystWeight === 0.5 ? " + นักวิเคราะห์" : ""), passed:hasValuationSupport(f)},
   ];
   if (style === "dividend") return [
     check("Dividend Yield 2–8%", f.dividendYieldPercent, n => n >= 2 && n <= 8, "%"),

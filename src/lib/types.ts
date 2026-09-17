@@ -34,6 +34,7 @@ export interface PriceZone {
 }
 
 export interface FairValueData {
+  bookValueVerified?: boolean;
   peerForward?: { low:number; median:number; high:number; peers:{symbol:string; pe:number}[]; asOf:string } | null;
   industry?: string | null;
   operatingMargins?: number | null;

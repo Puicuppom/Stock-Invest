@@ -8,6 +8,14 @@ import { interestScore, RANKING_DESCRIPTION } from "@/lib/screener-ranking";
 import { DISCOVERY_SECTORS } from "@/lib/discovery";
 import type { StockData } from "@/lib/types";
 type Row = { symbol: string; data?: StockData; error?: string };
+type Snapshot = {
+  style: ScreeningStyle; market: "US" | "TH"; source: "discover" | "watchlist";
+  sector: string; cap: string; nextOffset: number | null; discoveryNote: string;
+  total: number; rows: Row[]; message: string; scannedMarket: "US" | "TH";
+  pending: string[]; cursor: number | null; seen: string[];
+};
+// Retain the current search across client-side navigation without refetching.
+let savedSearch: Snapshot | null = null;
 export default function StockScreener() {
   const [style,setStyle] = useState<ScreeningStyle>("long");
   const [market,setMarket] = useState<"US"|"TH">("US");
@@ -27,7 +35,32 @@ export default function StockScreener() {
   const [scannedMarket,setScannedMarket] = useState<"US"|"TH">("US");
   const controller = useRef<AbortController | null>(null);
   const {items,addStock,loaded,syncStatus} = useWatchlist();
-  useEffect(()=>()=>controller.current?.abort(),[]);
+  const [restored,setRestored] = useState(false);
+  useEffect(()=>{
+    if (savedSearch) {
+      const s=savedSearch;
+      setStyle(s.style);setMarket(s.market);setSource(s.source);setSector(s.sector);setCap(s.cap);
+      setNextOffset(s.nextOffset);setDiscoveryNote(s.discoveryNote);setTotal(s.total);
+      setRows(s.rows);setMessage(s.message);setScannedMarket(s.scannedMarket);
+      pending.current=[...s.pending];cursor.current=s.cursor;seen.current=new Set(s.seen);
+    }
+    setRestored(true);
+    return ()=>controller.current?.abort();
+  },[]);
+  useEffect(()=>{
+    if (!restored) return;
+    savedSearch={style,market,source,sector,cap,nextOffset,discoveryNote,total,rows,
+      message:busy ? "เก็บผลค้นหาไว้แล้ว · กดค้นหาต่อได้" : message,scannedMarket,
+      pending:[...pending.current],cursor:cursor.current,seen:[...seen.current]};
+    return ()=>{
+      // Include candidates currently loading so leaving the page never skips them.
+      if (savedSearch) {
+        savedSearch.pending=[...pending.current];savedSearch.cursor=cursor.current;
+        savedSearch.seen=[...seen.current];
+        savedSearch.nextOffset=pending.current.length ? cursor.current ?? 0 : cursor.current;
+      }
+    };
+  },[restored,style,market,source,sector,cap,nextOffset,discoveryNote,total,rows,message,scannedMarket,busy]);
   async function scan(append = false) {
     controller.current?.abort();
     const abort = new AbortController(); controller.current=abort;
@@ -56,16 +89,17 @@ export default function StockScreener() {
           updateContinuation();
           if (!pending.current.length) continue;
         }
-        const batch=pending.current.splice(0,Math.min(3,30-passedInBatch));
+        const batch=pending.current.slice(0,Math.min(5,30-passedInBatch));
         const results=await Promise.all(batch.map(async(symbol):Promise<Row>=>{
           try {
-            const response=await fetch("/api/stock/"+encodeURIComponent(symbol)+"?market="+market,{signal:AbortSignal.any([abort.signal,AbortSignal.timeout(30000)])});
+            const response=await fetch("/api/stock/"+encodeURIComponent(symbol)+"?market="+market+"&mode=screen",{signal:AbortSignal.any([abort.signal,AbortSignal.timeout(30000)])});
             const data=await response.json();
             if (!response.ok) throw new Error();
             return {symbol,data};
           } catch {return {symbol,error:"โหลดข้อมูลไม่สำเร็จ ลองค้นหาใหม่เพื่อทดสอบอีกครั้ง"};}
         }));
-        if (abort.signal.aborted) {pending.current.unshift(...batch);return;}
+        if (abort.signal.aborted) return;
+        pending.current.splice(0,batch.length);
         for (const row of results) {
           if (seen.current.has(row.symbol)) continue;
           seen.current.add(row.symbol);
@@ -95,7 +129,7 @@ export default function StockScreener() {
     <p className="dash-metric-sub" role="status">{syncStatus}</p>
     <header><h1>คัดหุ้น</h1><p>เลือกตลาดและแนวทาง แล้วกดค้นหาได้เลย</p></header>
     <div className="screen-styles" role="group" aria-label="แนวทางคัดหุ้น">
-      {(Object.keys(screeningStyles) as ScreeningStyle[]).map(key=><button key={key} aria-pressed={style===key} disabled={busy} onClick={()=>{setStyle(key);clearResults();}}>{screeningStyles[key].label}</button>)}
+      {(Object.keys(screeningStyles) as ScreeningStyle[]).map(key=><button key={key} aria-pressed={style===key} disabled={busy} onClick={()=>{if (key !== style) {setStyle(key);clearResults();}}}>{screeningStyles[key].label}</button>)}
     </div>
     <p>{screeningStyles[style].description}</p>
     <section className="screen-panel">
@@ -114,7 +148,7 @@ export default function StockScreener() {
         <p>{market === "US" ? "ใหญ่ ≥ 10 พันล้าน USD · กลาง 2–ต่ำกว่า 10 พันล้าน · เล็ก < 2 พันล้าน" : "ใหญ่ ≥ 100 พันล้าน THB · กลาง 10–ต่ำกว่า 100 พันล้าน · เล็ก < 10 พันล้าน"}</p>
         <details><summary>ขอบเขตการค้นหา</summary><p>ค้นหาต่อเนื่องตามตัวกรอง เรียง Market Cap จากมากไปน้อย จนพบหุ้นผ่านครบ 30 ตัวต่อชุด หรือหมดขอบเขตที่แหล่งข้อมูลส่งให้ หุ้นที่ไม่ผ่านหรือข้อมูลไม่ครบไม่นับรวม 30 ตัว ตัดรายการที่ Yahoo ระบุว่าเป็น DR/วอร์แรนต์ไทย รวมถึงรหัส -R/-F ออก กลุ่มธุรกิจใช้การจัดประเภทของ Yahoo และอาจมีข้อมูลขาดหรือคลาดเคลื่อน ขนาดบริษัทเป็นเกณฑ์ของแอปในสกุลเงินตลาด</p></details>
       </>}
-      <button disabled={busy || (source === "watchlist" && !loaded)} onClick={()=>scan()}>{busy ? "กำลังค้นหา… ผ่าน " + total + "/30 · ตรวจ " + rows.length + " ตัว" : "ค้นหาหุ้นให้ฉัน"}</button>
+      <button disabled={!restored || busy || (source === "watchlist" && !loaded)} onClick={()=>scan()}>{busy ? "กำลังค้นหา… ผ่าน " + total + "/30 · ตรวจ " + rows.length + " ตัว" : rows.length > 0 || nextOffset !== null ? "↻ รีเฟรช · เริ่มค้นหาใหม่" : "ค้นหาหุ้นให้ฉัน"}</button>
       {busy && <button onClick={()=>{controller.current?.abort();setMessage("หยุดค้นหาแล้ว แสดงเฉพาะผลที่ตรวจเสร็จ");}}>หยุดค้นหา</button>}
     </section>
     {discoveryNote && <p>{discoveryNote}</p>}
@@ -126,10 +160,8 @@ export default function StockScreener() {
     {evaluated.filter(row=>row.passed).map((row,index)=><article className="screen-panel" key={row.symbol}>
       <div className="screen-actions"><h2>#{index+1} {row.symbol} <small>{scannedMarket==="TH"?"BKK":"US"}</small></h2><strong>{row.error?"โหลดไม่ได้":row.passed?"ผ่านครบ":row.incomplete?`ข้อมูลไม่ครบ · ผ่าน ${row.count}/${row.checks.length}`:`ผ่าน ${row.count}/${row.checks.length}`}</strong></div>
       {row.data && <p>{row.data.longName} · ราคาปิด {row.data.lastClose.toFixed(2)} {row.data.market==="TH"?"THB":"USD"} · {row.data.candles.at(-1)?.date}</p>}
-      <p>คะแนนความน่าสนใจ <strong>{row.score}/100</strong></p>
       {row.data && <ScreeningEntryCard data={row.data} style={style} />}
       {row.error && <p role="alert">{row.error}</p>}
-      <ul className="screen-checks">{row.checks.map(check=><li key={check.label}><span>{check.passed===null?"?":check.passed?"✓":"✗"} {check.label}</span><span>{check.value}</span></li>)}</ul>
       {row.data && <button disabled={!loaded||items.some(item=>item.symbol===row.symbol && item.market===scannedMarket)} onClick={()=>{if(addStock(row.symbol,scannedMarket))setMessage(`เพิ่ม ${row.symbol} ใน Watchlist แล้ว`);}}>{items.some(item=>item.symbol===row.symbol && item.market===scannedMarket)?"อยู่ใน Watchlist แล้ว":"+ เพิ่ม Watchlist"}</button>}
     </article>)}
     {nextOffset !== null && <button disabled={busy} onClick={()=>scan(true)}>ค้นหาต่ออีก 30 ตัวที่ผ่านครบ</button>}

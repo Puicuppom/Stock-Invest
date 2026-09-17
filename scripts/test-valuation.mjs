@@ -89,7 +89,7 @@ const nvda=engine.evaluateValuation('US',{...base,trailingEps:7.96,forwardEps:15
 assert(Math.abs(nvda.fairValue-218.9)<1e-8);
 assert(nvda.models.find(m=>m.name==='P/E เทียบประวัติของหุ้น').referenceOnly);
 assert.equal(nvda.fairValue,engine.evaluateValuation('US',{...base,trailingEps:7.96,forwardEps:500,analyst:1000,historicalPE:extreme}).fairValue,'targets and adjusted forward EPS cannot inflate value');
-for(const roe of [.01,.1,.2]){const result=engine.evaluateValuation('US',{...base,sector:'Financial Services',bookValue:50,returnOnEquity:roe});const pb=result.models.find(m=>m.name.startsWith('P/BV'));assert(pb.low<=pb.base && pb.base<=pb.high);assert(Number.isFinite(pb.base));}
+for(const roe of [.01,.1,.2]){const result=engine.evaluateValuation('US',{...base,sector:'Financial Services',bookValue:50,bookValueVerified:true,returnOnEquity:roe});const pb=result.models.find(m=>m.name.startsWith('P/BV'));assert(pb.low<=pb.base && pb.base<=pb.high);assert(Number.isFinite(pb.base));}
 assert.equal(engine.evaluateValuation('US',{...base,sector:'Financial Services',bookValue:-1,returnOnEquity:.1}).models.some(m=>m.name.startsWith('P/BV')),false);
 console.log('Extreme historical multiples and P/BV checks passed');
 
@@ -125,3 +125,19 @@ assert.equal(calculateFairValue('US',100,{...base,analyst:NaN}).analystWeight,0)
 assert.equal(calculateFairValue('US',100,{...base,financialCurrency:'EUR',analyst:200}).fairValue,null);
 assert(weighted.fairValueLow<=weighted.fairValue && weighted.fairValue<=weighted.fairValueHigh);
 console.log('Analyst blend checks passed');
+
+const brokenBook=engine.evaluateValuation('US',{...base,sector:'Financial Services',bookValue:522225.9,returnOnEquity:.121});
+assert(!brokenBook.models.some(m=>m.name.startsWith('P/BV')));
+assert(brokenBook.fairValue<1000);
+const {screeningEntry}=load('src/lib/screening-entry.ts',()=>load('src/lib/screener.ts'));
+assert.equal(screeningEntry({assetKind:'stock',fairValue:{...brokenBook,source:'single-model'}},'long').price,null);
+console.log('Unverified share-class BVPS cannot enter P/BV or long entry checks passed');
+
+const {hasValuationSupport,screenStock}=load('src/lib/screener.ts');
+assert(hasValuationSupport({modelCount:1,analystWeight:.5,analystTarget:200}));
+assert(!hasValuationSupport({modelCount:1,analystWeight:0,analystTarget:200}));
+assert(!hasValuationSupport({modelCount:0,analystWeight:.5,analystTarget:200}));
+const eligible={assetKind:'stock',fairValue:{modelCount:1,analystWeight:.5,analystTarget:200,fairValue:150,forwardEps:3,fcfYieldPercent:5,upsidePercent:15}};
+assert(screenStock(eligible,'long').every(c=>c.passed));
+assert.equal(screeningEntry(eligible,'long').price,120);
+console.log('Screening valuation support checks passed');

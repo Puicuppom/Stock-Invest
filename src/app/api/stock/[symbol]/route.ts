@@ -11,9 +11,10 @@ export async function GET(
   try {
     const data = await getStockData(
       decodeURIComponent(symbol),
-      market ?? "US"
+      market ?? "US",
+      {screening:request.nextUrl.searchParams.get("mode")==="screen"}
     );
-    return NextResponse.json(data);
+    return NextResponse.json(request.nextUrl.searchParams.get("mode")==="screen" ? {...data,candles:data.candles.slice(-252)} : data);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to fetch stock data";

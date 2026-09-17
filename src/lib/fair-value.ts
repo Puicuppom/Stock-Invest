@@ -15,7 +15,7 @@ interface QuoteSummaryResponse {
   quoteSummary?: {
     result?: Array<{
       assetProfile?: { sector?: string; industry?: string };
-      price?: { currency?: string };
+      price?: { currency?: string; regularMarketPrice?: YahooRaw };
       summaryDetail?: {
         trailingPE?: YahooRaw;
         forwardPE?: YahooRaw;
@@ -123,6 +123,12 @@ async function fetchRawFundamentals(
       dividendYield: num(row.summaryDetail?.dividendYield),
       dividendRate: num(row.summaryDetail?.dividendRate),
     };
+
+    const quotePrice = num(row.price?.regularMarketPrice);
+    // BVPS × reported P/B should reconstruct the quote, not a different share class.
+    base.bookValueVerified = quotePrice != null && quotePrice > 0 && base.bookValue != null && base.bookValue > 0 && base.priceToBook != null && base.priceToBook > 0 && Math.abs(base.bookValue * base.priceToBook / quotePrice - 1) <= 0.1;
+    // Berkshire is a diversified insurer/conglomerate, not a bank with stable ROE.
+    if (resolvedSymbol === "BRK-B" || resolvedSymbol === "BRK-A") base.bookValueVerified = false;
 
     if (base.dividendYield == null || base.dividendRate == null) {
       const quoteDiv = await fetchYahooQuoteDividends(resolvedSymbol);

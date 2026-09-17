@@ -47,7 +47,8 @@ export function evaluateValuation(market: "TH"|"US", data: FairValueData) {
     const forecast=data.forwardEps;
     models.push({name:"Forward P/E กรณีคาดการณ์",referenceOnly:true,low:forecast*.8*anchor*.8,base:forecast*anchor,high:forecast*1.2*anchor*1.2,assumption:"EPS คาดการณ์จาก Yahoo " + forecast.toFixed(2) + " × Forward P/E สมมติ " + anchor.toFixed(1) + "; กรณีต่ำ/สูงปรับทั้ง EPS และ P/E −20%/+20%; ไม่ใช้ P/E ย้อนหลังคูณกำไรคาดการณ์ ไม่เพิ่มพรีเมียมเพราะป้าย AI; ยังไม่ยืนยันงวดประมาณการและฐาน GAAP/adjusted หรือ Forward P/E ของคู่เทียบ จึงไม่รวมราคาหลัก"});
   }
-  if (financial && positive(data.bookValue) && positive(data.returnOnEquity) && data.returnOnEquity<=0.3) {
+  if (financial && !data.bookValueVerified) warnings.push("งด P/BV: ยังยืนยันหน่วย BVPS/P/B ไม่ได้ หรือธุรกิจไม่เหมาะกับสูตร ROE คงที่");
+  if (financial && data.bookValueVerified === true && positive(data.bookValue) && positive(data.returnOnEquity) && data.returnOnEquity<=0.3) {
     const roe=data.returnOnEquity;
     const r=market === "TH"?.12:.11;
     // Sustainable growth requires retention g/ROE; keep g below ROE and r.
