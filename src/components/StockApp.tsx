@@ -50,6 +50,7 @@ export default function StockApp() {
   const [error, setError] = useState("");
   const [addOpen, setAddOpen] = useState(false);
   const [toast, setToast] = useState("");
+  const [toastError, setToastError] = useState(false);
   const [chartOpen, setChartOpen] = useState(false);
   const [liveTagCache, setLiveTagCache] = useState<WatchlistSrTags>({});
 
@@ -141,6 +142,7 @@ export default function StockApp() {
       if (!ok) return false;
 
       window.scrollTo({ top: 0, behavior: "smooth" });
+      setToastError(false);
       setToast(
         exists
           ? `เลือก ${normalized} (${marketLabel(market)}) แล้ว`
@@ -153,37 +155,58 @@ export default function StockApp() {
 
   useEffect(() => {
     if (!toast) return;
-    const timer = window.setTimeout(() => setToast(""), 2200);
+    const timer = window.setTimeout(() => {
+      setToast("");
+      setToastError(false);
+    }, 2400);
     return () => window.clearTimeout(timer);
   }, [toast]);
 
-  const fetchStock = useCallback(async () => {
-    if (!selectedItem) return;
+  const fetchStock = useCallback(
+    async (manual = false) => {
+      if (!selectedItem) return;
 
-    setLoading(true);
-    setError("");
+      setLoading(true);
+      setError("");
+      if (manual) setToastError(false);
 
-    try {
-      const params = new URLSearchParams({
-        market: selectedItem.market,
-      });
-      const res = await fetch(
-        `/api/stock/${encodeURIComponent(selectedItem.symbol)}?${params}`
-      );
-      const json = await res.json();
+      try {
+        const params = new URLSearchParams({
+          market: selectedItem.market,
+        });
+        const res = await fetch(
+          `/api/stock/${encodeURIComponent(selectedItem.symbol)}?${params}`
+        );
+        const json = await res.json();
 
-      if (!res.ok) {
-        throw new Error(json.error ?? "ไม่พบข้อมูลหุ้น");
+        if (!res.ok) {
+          throw new Error(json.error ?? "ไม่พบข้อมูลหุ้น");
+        }
+
+        setData(json as StockData);
+        if (manual) {
+          const time = new Date().toLocaleTimeString("th-TH", {
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+          setToast(`อัปเดต ${normalizeInput(selectedItem.symbol)} แล้ว · ${time}`);
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "โหลดข้อมูลไม่สำเร็จ";
+        if (manual) {
+          // กดรีเฟรชเองแล้วพลาด: เก็บข้อมูลเดิมไว้ แจ้งเตือนแทนการล้างหน้า
+          setToastError(true);
+          setToast(`อัปเดตไม่สำเร็จ: ${message}`);
+        } else {
+          setData(null);
+          setError(message);
+        }
+      } finally {
+        setLoading(false);
       }
-
-      setData(json as StockData);
-    } catch (err) {
-      setData(null);
-      setError(err instanceof Error ? err.message : "โหลดข้อมูลไม่สำเร็จ");
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedItem]);
+    },
+    [selectedItem]
+  );
 
   useEffect(() => {
     if (loaded && selectedItem) {
@@ -227,13 +250,17 @@ export default function StockApp() {
           nearSupport={nearSupport}
           nearResistance={nearResistance}
           loading={loading}
-          onRefresh={fetchStock}
+          onRefresh={() => fetchStock(true)}
         />
       )}
 
 
 
-      {toast && <div className="toast-banner">{toast}</div>}
+      {toast && (
+        <div className={`toast-banner${toastError ? " error" : ""}`} role="status">
+          {toast}
+        </div>
+      )}
 
       {data && selectedData && selectedItem && (
         <>

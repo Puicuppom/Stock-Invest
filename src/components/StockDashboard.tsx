@@ -115,12 +115,14 @@ export default function StockDashboard({
 
         <button
           type="button"
-          className="refresh-btn dash-refresh"
+          className={`refresh-btn dash-refresh${loading ? " is-loading" : ""}`}
           onClick={onRefresh}
           disabled={loading}
           aria-label="รีเฟรช"
+          aria-busy={loading}
+          title="อัปเดตราคา"
         >
-          ↻
+          <span className="refresh-icon" aria-hidden="true">↻</span>
         </button>
         {!isGold && !isEtf && <FundamentalMetrics value={fairValue} market={market} />}
       </div>
@@ -262,4 +264,4 @@ export default function StockDashboard({
       </div>
     </section>
   );
-}
+}

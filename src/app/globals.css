@@ -2541,3 +2541,13 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .screen-entry-prices strong { display: block; margin-top: 4px; font-size: clamp(16px, 3.5vw, 22px); color: var(--accent); overflow-wrap: anywhere; }
 .screen-entry-upside { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px; font-size: 13px; }
 .screen-entry-upside b { font-size: 17px; }
+
+/* Refresh feedback */
+.refresh-icon { display: inline-block; line-height: 1; }
+.refresh-btn.is-loading { opacity: 1; cursor: wait; }
+.refresh-btn.is-loading .refresh-icon { animation: refresh-spin 0.8s linear infinite; }
+@keyframes refresh-spin { to { transform: rotate(360deg); } }
+.toast-banner.error {
+  border-color: var(--ui-danger, #f87171);
+  color: var(--ui-danger, #f87171);
+}
