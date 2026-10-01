@@ -315,12 +315,12 @@ async function fetchPrices(fullRender = false) {
     const fxPromise = fetchUsdThbRate();
     if (priceFetching) {
         await fxPromise;
-        return;
+        return { busy: true, total: 0, failed: 0 };
     }
     const symbols = myPortfolio.filter(a => !isCashAsset(a)).map(a => a.name).filter(Boolean);
     if (!symbols.length) {
         await fxPromise;
-        return;
+        return { total: 0, failed: 0 };
     }
 
     priceFetching = true;
@@ -360,9 +360,50 @@ async function fetchPrices(fullRender = false) {
     } else {
         recalculate();
     }
+    return { total: symbols.length, failed: symbols.filter(sym => priceCache[sym]?.error).length };
 }
 
-document.getElementById('btn-refresh').addEventListener('click', () => fetchPrices());
+let toastTimer = null;
+function showToast(msg, kind = '') {
+    const el = document.getElementById('toast');
+    if (!el) return;
+    el.textContent = msg;
+    el.className = 'toast show' + (kind ? ' ' + kind : '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { el.className = 'toast'; }, 2600);
+}
+
+async function refreshAll() {
+    const btn = document.getElementById('btn-refresh');
+    if (btn.disabled) return;
+    btn.disabled = true;
+    btn.classList.add('spinning');
+    try {
+        // รอรอบที่กำลังโหลดอยู่ (เช่น ตอนเปิดหน้า) ให้จบก่อน แล้วค่อยดึงใหม่
+        let tries = 0;
+        while (priceFetching && tries++ < 50) await new Promise(r => setTimeout(r, 200));
+        const [result] = await Promise.all([
+            fetchPrices(true),
+            sb ? loadFromCloud().catch(() => setSyncStatus('error')) : null
+        ]);
+        renderAndCalculate();
+        const time = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+        if (!result || result.total === 0) {
+            showToast('ยังไม่มีหุ้นในพอร์ตนี้ให้อัปเดตราคา');
+        } else if (result.failed === result.total) {
+            showToast('อัปเดตราคาไม่สำเร็จ ลองใหม่อีกครั้ง', 'error');
+        } else if (result.failed) {
+            showToast(`อัปเดตแล้ว ${result.total - result.failed}/${result.total} ตัว · ${time}`, 'warn');
+        } else {
+            showToast(`อัปเดตราคา ${result.total} ตัวแล้ว · ${time}`);
+        }
+    } finally {
+        btn.disabled = false;
+        btn.classList.remove('spinning');
+    }
+}
+
+document.getElementById('btn-refresh').addEventListener('click', refreshAll);
 
 /* ── Supabase cloud sync (no login) ── */
 const sb = SUPABASE_URL && SUPABASE_ANON_KEY && SYNC_KEY
