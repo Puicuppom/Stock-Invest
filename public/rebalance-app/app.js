@@ -2,6 +2,75 @@ const SUPABASE_URL = window.REBALANCE_CONFIG?.SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = window.REBALANCE_CONFIG?.SUPABASE_ANON_KEY || '';
 const SYNC_KEY = window.REBALANCE_CONFIG?.SYNC_KEY || '';
 
+/* ── หลายพอร์ต ──
+ * พอร์ตหลัก (id "main") ใช้คีย์ localStorage และ sync_key เดิมทุกอย่าง ข้อมูลเก่าจึงไม่ต้องย้าย
+ * พอร์ตอื่นเก็บคีย์แบบ "pf:<id>:<key>" และซิงค์เป็นแถวของตัวเอง "<SYNC_KEY>__pf_<id>"
+ * รายชื่อพอร์ตซิงค์ในแถว "<SYNC_KEY>__portfolios" */
+const PF_MAIN_ID = 'main';
+const PF_INDEX_KEY = 'rbPortfolioIndex';
+const PF_ACTIVE_KEY = 'rbActivePortfolio';
+const PF_INDEX_SYNC_KEY = SYNC_KEY ? SYNC_KEY + '__portfolios' : '';
+
+function pfStorageKey(id, key) {
+    return id === PF_MAIN_ID ? key : `pf:${id}:${key}`;
+}
+
+function pfSyncKey(id) {
+    if (!SYNC_KEY) return '';
+    return id === PF_MAIN_ID ? SYNC_KEY : `${SYNC_KEY}__pf_${id}`;
+}
+
+function normalizePortfolioIndex(raw) {
+    const list = Array.isArray(raw?.list) ? raw.list : [];
+    const seen = new Set();
+    const clean = [];
+    for (const p of list) {
+        const id = String(p?.id || '').replace(/[^a-z0-9]/gi, '');
+        if (!id || seen.has(id)) continue;
+        seen.add(id);
+        clean.push({ id, name: String(p.name || '').trim() || 'พอร์ต' });
+    }
+    if (!seen.has(PF_MAIN_ID)) clean.unshift({ id: PF_MAIN_ID, name: 'พอร์ตหลัก' });
+    const deleted = (Array.isArray(raw?.deleted) ? raw.deleted : [])
+        .map(String).filter(id => id !== PF_MAIN_ID);
+    return {
+        list: clean.filter(p => !deleted.includes(p.id)),
+        deleted,
+        updatedAt: Number(raw?.updatedAt) || 0
+    };
+}
+
+function loadPortfolioIndex() {
+    try {
+        return normalizePortfolioIndex(JSON.parse(localStorage.getItem(PF_INDEX_KEY) || 'null'));
+    } catch {
+        return normalizePortfolioIndex(null);
+    }
+}
+
+let portfolioIndex = loadPortfolioIndex();
+
+function savePortfolioIndexLocal() {
+    localStorage.setItem(PF_INDEX_KEY, JSON.stringify(portfolioIndex));
+}
+
+const activePortfolioId = (() => {
+    const saved = localStorage.getItem(PF_ACTIVE_KEY);
+    return portfolioIndex.list.some(p => p.id === saved) ? saved : PF_MAIN_ID;
+})();
+const ACTIVE_SYNC_KEY = pfSyncKey(activePortfolioId);
+
+/* localStorage ที่แยกตามพอร์ตที่เปิดอยู่ */
+const store = {
+    getItem: key => localStorage.getItem(pfStorageKey(activePortfolioId, key)),
+    setItem: (key, val) => localStorage.setItem(pfStorageKey(activePortfolioId, key), val),
+    removeItem: key => localStorage.removeItem(pfStorageKey(activePortfolioId, key))
+};
+
+function getActivePortfolioName() {
+    return portfolioIndex.list.find(p => p.id === activePortfolioId)?.name || 'พอร์ตหลัก';
+}
+
 const DEFAULT_PORTFOLIO_GROUPS = [
     { id: 'income', name: 'ปันผล', hint: 'Income · ปันผล Reinvest ซ่อมพอร์ต', kind: 'etf', profitTaking: false },
     { id: 'growth', name: 'เติบโต', hint: 'Tech Growth · เสาหลักหุ้นรายตัว', kind: 'stock', profitTaking: true },
@@ -16,11 +85,11 @@ function normalizePortfolioGroup(g) {
 }
 
 function loadPortfolioGroups() {
-    const saved = JSON.parse(localStorage.getItem('portfolioGroups') || 'null');
+    const saved = JSON.parse(store.getItem('portfolioGroups') || 'null');
     if (Array.isArray(saved) && saved.length) {
         return saved.map(normalizePortfolioGroup);
     }
-    const legacy = JSON.parse(localStorage.getItem('groupConfig') || 'null');
+    const legacy = JSON.parse(store.getItem('groupConfig') || 'null');
     return DEFAULT_PORTFOLIO_GROUPS.map(g => normalizePortfolioGroup({
         ...g,
         name: legacy?.labels?.[g.id] || g.name,
@@ -31,7 +100,7 @@ function loadPortfolioGroups() {
 let portfolioGroups = loadPortfolioGroups();
 
 function savePortfolioGroups() {
-    localStorage.setItem('portfolioGroups', JSON.stringify(portfolioGroups));
+    store.setItem('portfolioGroups', JSON.stringify(portfolioGroups));
     scheduleCloudSave();
 }
 
@@ -138,18 +207,18 @@ function markAssetDeleted(name) {
     const sym = String(name).toUpperCase();
     if (!deletedAssets.includes(sym)) {
         deletedAssets.push(sym);
-        localStorage.setItem('deletedAssets', JSON.stringify(deletedAssets));
+        store.setItem('deletedAssets', JSON.stringify(deletedAssets));
     }
 }
 
 function unmarkAssetDeleted(name) {
     const sym = String(name).toUpperCase();
     deletedAssets = deletedAssets.filter(n => n !== sym);
-    localStorage.setItem('deletedAssets', JSON.stringify(deletedAssets));
+    store.setItem('deletedAssets', JSON.stringify(deletedAssets));
 }
 
 function applyStrategyMigration(list) {
-    if (localStorage.getItem('strategyTargets') === '2') return list;
+    if (store.getItem('strategyTargets') === '2') return list;
     list.forEach(a => {
         if (a.kind === 'cash' || a.group === 'cash' || isCashGroup(a.group)) {
             a.kind = 'cash';
@@ -166,7 +235,7 @@ function applyStrategyMigration(list) {
             a.group = inferGroup(a.name, a.kind || inferKind(a.name, a.group));
         }
     });
-    localStorage.setItem('strategyTargets', '2');
+    store.setItem('strategyTargets', '2');
     return list;
 }
 
@@ -181,10 +250,18 @@ function sortPortfolioByGroup() {
 let priceCache = {};
 let priceFetching = false;
 
-let deletedAssets = JSON.parse(localStorage.getItem('deletedAssets') || '[]');
+/* พอร์ตย่อยที่ยังไม่มีข้อมูลในเครื่องนี้ (เช่น สร้างจากอีกเครื่อง) — เริ่มว่าง แล้วรอโหลดจากคลาวด์ */
+if (activePortfolioId !== PF_MAIN_ID && !store.getItem('myPortfolio')) {
+    store.setItem('deletedAssets', JSON.stringify(defaultAssets.filter(a => a.kind !== 'cash').map(a => a.name.toUpperCase())));
+    store.setItem('myPortfolio', JSON.stringify(defaultAssets.filter(a => a.kind === 'cash')));
+    store.setItem('strategyTargets', '2');
+    store.setItem('localUpdatedAt', '0');
+}
+
+let deletedAssets = JSON.parse(store.getItem('deletedAssets') || '[]');
 let pendingPortfolioRepairSync = false;
 
-let myPortfolio = JSON.parse(localStorage.getItem('myPortfolio')) || defaultAssets;
+let myPortfolio = JSON.parse(store.getItem('myPortfolio')) || defaultAssets;
 pendingPortfolioRepairSync = isPortfolioBroken(myPortfolio);
 myPortfolio = mergeDefaultPortfolio(myPortfolio);
 myPortfolio = applyStrategyMigration(myPortfolio);
@@ -388,42 +465,42 @@ function applyCloudData(cloud) {
     if (!cloud) return;
     if (Array.isArray(cloud.portfolioGroups) && cloud.portfolioGroups.length) {
         portfolioGroups = cloud.portfolioGroups.map(normalizePortfolioGroup);
-        localStorage.setItem('portfolioGroups', JSON.stringify(portfolioGroups));
+        store.setItem('portfolioGroups', JSON.stringify(portfolioGroups));
     } else if (cloud.groupConfig) {
         portfolioGroups.forEach(g => {
             if (cloud.groupConfig.labels?.[g.id]) g.name = cloud.groupConfig.labels[g.id];
             if (cloud.groupConfig.hints?.[g.id]) g.hint = cloud.groupConfig.hints[g.id];
         });
-        localStorage.setItem('portfolioGroups', JSON.stringify(portfolioGroups));
+        store.setItem('portfolioGroups', JSON.stringify(portfolioGroups));
     }
     if (Array.isArray(cloud.deletedAssets)) {
         deletedAssets = cloud.deletedAssets.map(n => String(n).toUpperCase());
-        localStorage.setItem('deletedAssets', JSON.stringify(deletedAssets));
+        store.setItem('deletedAssets', JSON.stringify(deletedAssets));
     }
     if (Array.isArray(cloud.portfolio)) {
         if (isPortfolioBroken(cloud.portfolio)) pendingPortfolioRepairSync = true;
         myPortfolio = normalizePortfolioList(cloud.portfolio, true);
         sortPortfolioByGroup();
-        localStorage.setItem('myPortfolio', JSON.stringify(myPortfolio));
+        store.setItem('myPortfolio', JSON.stringify(myPortfolio));
     }
     if (Array.isArray(cloud.profitTiers) && cloud.profitTiers.length === 3) {
         profitTiers = cloud.profitTiers;
-        localStorage.setItem('profitTiers', JSON.stringify(profitTiers));
+        store.setItem('profitTiers', JSON.stringify(profitTiers));
         renderTierSettings();
     }
     if (typeof cloud.dipBuyPct === 'number') {
         dipBuyPct = cloud.dipBuyPct;
-        localStorage.setItem('dipBuyPct', String(dipBuyPct));
+        store.setItem('dipBuyPct', String(dipBuyPct));
     }
     if (portfolioGroups.some(g => g.id === cloud.activeTab)) {
         activeTab = cloud.activeTab;
-        localStorage.setItem('activeTab', activeTab);
+        store.setItem('activeTab', activeTab);
         updateTabUI();
     }
     if (cloud.strategyTargets) {
-        localStorage.setItem('strategyTargets', cloud.strategyTargets);
+        store.setItem('strategyTargets', cloud.strategyTargets);
     }
-    localStorage.setItem('localUpdatedAt', String(cloud.updatedAt || Date.now()));
+    store.setItem('localUpdatedAt', String(cloud.updatedAt || Date.now()));
 }
 
 function getCloudPayload() {
@@ -442,7 +519,7 @@ function getCloudPayload() {
         profitTiers,
         dipBuyPct,
         activeTab,
-        strategyTargets: localStorage.getItem('strategyTargets') || '2',
+        strategyTargets: store.getItem('strategyTargets') || '2',
         portfolioGroups,
         deletedAssets,
         updatedAt: Date.now()
@@ -466,7 +543,7 @@ async function saveToCloud() {
     const syncDelay = setTimeout(() => setSyncStatus('syncing'), 600);
     const payload = getCloudPayload();
     const { error } = await sb.from('portfolios').upsert({
-        sync_key: SYNC_KEY,
+        sync_key: ACTIVE_SYNC_KEY,
         data: payload,
         updated_at: new Date().toISOString()
     }, { onConflict: 'sync_key' });
@@ -476,7 +553,7 @@ async function saveToCloud() {
         console.warn('cloud save', error);
         setSyncStatus('error');
     } else {
-        localStorage.setItem('localUpdatedAt', String(payload.updatedAt));
+        store.setItem('localUpdatedAt', String(payload.updatedAt));
         setSyncStatus('synced');
     }
 }
@@ -486,7 +563,7 @@ async function loadFromCloud() {
     const { data, error } = await sb
         .from('portfolios')
         .select('data, updated_at')
-        .eq('sync_key', SYNC_KEY)
+        .eq('sync_key', ACTIVE_SYNC_KEY)
         .maybeSingle();
 
     if (error) {
@@ -495,7 +572,7 @@ async function loadFromCloud() {
         return;
     }
 
-    const localUpdated = parseInt(localStorage.getItem('localUpdatedAt') || '0', 10);
+    const localUpdated = parseInt(store.getItem('localUpdatedAt') || '0', 10);
     if (!data) {
         await saveToCloud();
         return;
@@ -521,17 +598,17 @@ function setupRealtime() {
         realtimeChannel = null;
     }
     realtimeChannel = sb
-        .channel('portfolio-sync')
+        .channel('portfolio-sync-' + activePortfolioId)
         .on('postgres_changes', {
             event: 'UPDATE',
             schema: 'public',
             table: 'portfolios',
-            filter: 'sync_key=eq.' + SYNC_KEY
+            filter: 'sync_key=eq.' + ACTIVE_SYNC_KEY
         }, payload => {
             if (!payload.new?.data) return;
             const cloud = payload.new.data;
             const incomingAt = cloud.updatedAt || 0;
-            const localUpdated = parseInt(localStorage.getItem('localUpdatedAt') || '0', 10);
+            const localUpdated = parseInt(store.getItem('localUpdatedAt') || '0', 10);
             if (incomingAt <= localUpdated) return;
             if (isUserEditing()) return;
             applyCloudData(cloud);
@@ -569,7 +646,7 @@ async function fetchUsdThbRate() {
 }
 
 function loadActiveTab() {
-    const saved = localStorage.getItem('activeTab');
+    const saved = store.getItem('activeTab');
     if (portfolioGroups.some(g => g.id === saved)) return saved;
     return portfolioGroups[0]?.id || 'income';
 }
@@ -590,7 +667,7 @@ function updateProfitGroupsMeta() {
 function setTab(tab) {
     if (!portfolioGroups.some(g => g.id === tab)) return;
     activeTab = tab;
-    localStorage.setItem('activeTab', activeTab);
+    store.setItem('activeTab', activeTab);
     updateTabUI();
     renderAndCalculate();
     scheduleCloudSave();
@@ -749,7 +826,7 @@ function deletePortfolioGroup(id) {
     portfolioGroups = portfolioGroups.filter(g => g.id !== id);
     if (activeTab === id) {
         activeTab = portfolioGroups[0].id;
-        localStorage.setItem('activeTab', activeTab);
+        store.setItem('activeTab', activeTab);
     }
     savePortfolioGroups();
     persistPortfolio();
@@ -834,10 +911,10 @@ const defaultTiers = [
     { type: 'profit', profitPct: 25, sellPct: 30 },
     { type: 'trailing', trailingPct: 10 }
 ];
-let profitTiers = JSON.parse(localStorage.getItem('profitTiers')) || defaultTiers;
+let profitTiers = JSON.parse(store.getItem('profitTiers')) || defaultTiers;
 if (!profitTiers[2] || profitTiers[2].type !== 'trailing') {
     profitTiers = defaultTiers;
-    localStorage.setItem('profitTiers', JSON.stringify(profitTiers));
+    store.setItem('profitTiers', JSON.stringify(profitTiers));
 }
 
 function renderTierSettings() {
@@ -884,8 +961,8 @@ function persistPortfolio() {
         peakValue: a.peakValue || 0,
         tiersDone: a.tiersDone || [false, false, false]
     }));
-    localStorage.setItem('myPortfolio', JSON.stringify(data));
-    localStorage.setItem('localUpdatedAt', String(Date.now()));
+    store.setItem('myPortfolio', JSON.stringify(data));
+    store.setItem('localUpdatedAt', String(Date.now()));
     scheduleCloudSave();
 }
 
@@ -1076,7 +1153,7 @@ function getTradeSignal(asset, diff, ideal) {
 
 function updateTier(index, field, val) {
     profitTiers[index][field] = parseFloat(val) || 0;
-    localStorage.setItem('profitTiers', JSON.stringify(profitTiers));
+    store.setItem('profitTiers', JSON.stringify(profitTiers));
     scheduleCloudSave();
     scheduleRecalculate();
 }
@@ -1084,11 +1161,11 @@ function updateTier(index, field, val) {
 
 renderTierSettings();
 
-let dipBuyPct = parseFloat(localStorage.getItem('dipBuyPct')) || 10;
+let dipBuyPct = parseFloat(store.getItem('dipBuyPct')) || 10;
 
 function updateDipBuy(val) {
     dipBuyPct = parseFloat(val) || 0;
-    localStorage.setItem('dipBuyPct', dipBuyPct);
+    store.setItem('dipBuyPct', dipBuyPct);
     scheduleCloudSave();
 }
 
@@ -1854,10 +1931,250 @@ btnInstall.addEventListener('click', async () => {
 
 
 
+
+/* ── จัดการหลายพอร์ต ── */
+function escapePfHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function newPortfolioId() {
+    let id;
+    do {
+        id = 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    } while (portfolioIndex.list.some(p => p.id === id) || portfolioIndex.deleted.includes(id));
+    return id;
+}
+
+function readPortfolioAssets(id) {
+    try {
+        const list = JSON.parse(localStorage.getItem(pfStorageKey(id, 'myPortfolio')) || 'null');
+        return Array.isArray(list) ? list : null;
+    } catch {
+        return null;
+    }
+}
+
+function renderPortfolioSwitcher() {
+    const label = document.getElementById('portfolio-current-name');
+    if (label) label.textContent = getActivePortfolioName();
+    document.title = `${getActivePortfolioName()} · ReBalance Stock`;
+}
+
+function renderPortfolioList() {
+    const wrap = document.getElementById('portfolio-list');
+    if (!wrap) return;
+    wrap.innerHTML = portfolioIndex.list.map(p => {
+        const active = p.id === activePortfolioId;
+        const assets = active ? myPortfolio : readPortfolioAssets(p.id);
+        const count = assets ? assets.filter(a => a.kind !== 'cash').length : null;
+        const meta = count === null ? 'ยังไม่ได้เปิดในเครื่องนี้' : `${count} สินทรัพย์`;
+        return `
+        <div class="pf-row${active ? ' active' : ''}">
+            <button type="button" class="pf-pick" onclick="switchPortfolio('${p.id}')">
+                <span class="pf-check">${active ? '✓' : ''}</span>
+                <span class="pf-info">
+                    <span class="pf-name">${escapePfHtml(p.name)}</span>
+                    <span class="pf-meta">${meta}${p.id === PF_MAIN_ID ? ' · พอร์ตหลัก' : ''}</span>
+                </span>
+            </button>
+            <button type="button" class="pf-icon-btn" title="เปลี่ยนชื่อ" aria-label="เปลี่ยนชื่อ ${escapePfHtml(p.name)}" onclick="renamePortfolio('${p.id}')">✎</button>
+            ${p.id === PF_MAIN_ID ? '<span class="pf-icon-spacer"></span>' : `<button type="button" class="pf-icon-btn danger" title="ลบพอร์ต" aria-label="ลบ ${escapePfHtml(p.name)}" onclick="deletePortfolio('${p.id}')">🗑</button>`}
+        </div>`;
+    }).join('');
+}
+
+function openPortfolioSheet() {
+    renderPortfolioList();
+    document.getElementById('new-portfolio-name').value = '';
+    document.getElementById('portfolio-overlay').classList.add('open');
+}
+
+function closePortfolioSheet(e) {
+    if (e && e.target !== document.getElementById('portfolio-overlay')) return;
+    document.getElementById('portfolio-overlay').classList.remove('open');
+}
+
+async function waitCloudIdle(timeoutMs = 4000) {
+    const start = Date.now();
+    while (cloudSaving && Date.now() - start < timeoutMs) {
+        await new Promise(r => setTimeout(r, 120));
+    }
+}
+
+/* บันทึกพอร์ตปัจจุบันให้ครบก่อนออกจากหน้า */
+async function flushActivePortfolio() {
+    clearTimeout(persistDebounce);
+    persistPortfolio();
+    await waitCloudIdle();
+    await flushCloudSave();
+}
+
+async function switchPortfolio(id) {
+    if (id === activePortfolioId) {
+        closePortfolioSheet();
+        return;
+    }
+    if (!portfolioIndex.list.some(p => p.id === id)) return;
+    await flushActivePortfolio();
+    localStorage.setItem(PF_ACTIVE_KEY, id);
+    location.reload();
+}
+
+async function createPortfolio() {
+    const input = document.getElementById('new-portfolio-name');
+    const name = input.value.trim();
+    if (!name) {
+        input.focus();
+        return;
+    }
+    const copyGroups = document.getElementById('new-portfolio-copy-groups').checked;
+    const id = newPortfolioId();
+
+    // เริ่มต้นพอร์ตใหม่: เหลือแค่เงินสด USD ไม่ดึงหุ้นตั้งต้นของพอร์ตหลักมา
+    const groups = copyGroups
+        ? portfolioGroups.map(g => ({ ...g }))
+        : DEFAULT_PORTFOLIO_GROUPS.map(normalizePortfolioGroup);
+    const cashGroup = groups.find(g => g.kind === 'cash')?.id || 'cash';
+    const set = (k, v) => localStorage.setItem(pfStorageKey(id, k), v);
+    set('portfolioGroups', JSON.stringify(groups));
+    set('myPortfolio', JSON.stringify([
+        { name: 'USD', kind: 'cash', group: cashGroup, shares: 0, avgCost: 1, target: 0, peakValue: 0, tiersDone: [false, false, false] }
+    ]));
+    set('deletedAssets', JSON.stringify(defaultAssets.filter(a => a.kind !== 'cash').map(a => a.name.toUpperCase())));
+    set('strategyTargets', '2');
+    set('profitTiers', JSON.stringify(profitTiers));
+    set('dipBuyPct', String(dipBuyPct));
+    set('activeTab', groups.find(g => g.kind !== 'cash')?.id || groups[0].id);
+    set('localUpdatedAt', String(Date.now()));
+
+    portfolioIndex.list.push({ id, name });
+    portfolioIndex.updatedAt = Date.now();
+    savePortfolioIndexLocal();
+    await savePortfolioIndexToCloud();
+    await switchPortfolio(id);
+}
+
+async function renamePortfolio(id) {
+    const p = portfolioIndex.list.find(x => x.id === id);
+    if (!p) return;
+    const name = prompt('ชื่อพอร์ต', p.name);
+    if (name === null) return;
+    const trimmed = name.trim();
+    if (!trimmed || trimmed === p.name) return;
+    p.name = trimmed;
+    portfolioIndex.updatedAt = Date.now();
+    savePortfolioIndexLocal();
+    renderPortfolioList();
+    renderPortfolioSwitcher();
+    await savePortfolioIndexToCloud();
+}
+
+async function deletePortfolio(id) {
+    if (id === PF_MAIN_ID) return;
+    const p = portfolioIndex.list.find(x => x.id === id);
+    if (!p) return;
+    if (!confirm(`ลบพอร์ต "${p.name}" และข้อมูลทั้งหมดในพอร์ตนี้?\nลบแล้วกู้คืนไม่ได้`)) return;
+
+    portfolioIndex.list = portfolioIndex.list.filter(x => x.id !== id);
+    if (!portfolioIndex.deleted.includes(id)) portfolioIndex.deleted.push(id);
+    portfolioIndex.updatedAt = Date.now();
+    savePortfolioIndexLocal();
+    removePortfolioLocalData(id);
+    await savePortfolioIndexToCloud();
+    if (sb) {
+        const { error } = await sb.from('portfolios').delete().eq('sync_key', pfSyncKey(id));
+        if (error) console.warn('cloud delete portfolio', error);
+    }
+
+    if (id === activePortfolioId) {
+        localStorage.setItem(PF_ACTIVE_KEY, PF_MAIN_ID);
+        location.reload();
+        return;
+    }
+    renderPortfolioList();
+}
+
+function removePortfolioLocalData(id) {
+    const prefix = pfStorageKey(id, '');
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith(prefix)) localStorage.removeItem(k);
+    }
+}
+
+async function savePortfolioIndexToCloud() {
+    if (!sb || !PF_INDEX_SYNC_KEY) return;
+    const { error } = await sb.from('portfolios').upsert({
+        sync_key: PF_INDEX_SYNC_KEY,
+        data: { version: 1, ...portfolioIndex },
+        updated_at: new Date().toISOString()
+    }, { onConflict: 'sync_key' });
+    if (error) console.warn('cloud save portfolio list', error);
+}
+
+/* โหลดรายชื่อพอร์ตจากคลาวด์ — ชุดที่แก้ล่าสุดชนะ ส่วนพอร์ตที่ถูกลบจะถูกลบทุกเครื่อง */
+async function syncPortfolioIndex() {
+    if (!sb || !PF_INDEX_SYNC_KEY) return;
+    const { data, error } = await sb
+        .from('portfolios')
+        .select('data')
+        .eq('sync_key', PF_INDEX_SYNC_KEY)
+        .maybeSingle();
+    if (error) {
+        console.warn('cloud load portfolio list', error);
+        return;
+    }
+    const cloud = data?.data ? normalizePortfolioIndex(data.data) : null;
+    if (!cloud) {
+        if (portfolioIndex.list.length > 1 || portfolioIndex.deleted.length) await savePortfolioIndexToCloud();
+        return;
+    }
+    const deleted = [...new Set([...cloud.deleted, ...portfolioIndex.deleted])];
+    const newer = cloud.updatedAt > portfolioIndex.updatedAt ? cloud : portfolioIndex;
+    const older = newer === cloud ? portfolioIndex : cloud;
+    const list = newer.list.map(p => ({ ...p }));
+    // พอร์ตที่มีแค่อีกฝั่ง (สร้างคนละเครื่องพร้อมกัน) ยังเก็บไว้
+    for (const p of older.list) {
+        if (!list.some(x => x.id === p.id)) list.push({ ...p });
+    }
+    const merged = normalizePortfolioIndex({
+        list,
+        deleted,
+        updatedAt: Math.max(cloud.updatedAt, portfolioIndex.updatedAt)
+    });
+    const changedLocal = JSON.stringify(merged) !== JSON.stringify(portfolioIndex);
+    const changedCloud = JSON.stringify(merged) !== JSON.stringify(cloud);
+    portfolioIndex = merged;
+    savePortfolioIndexLocal();
+    merged.deleted.forEach(id => {
+        if (id !== activePortfolioId) removePortfolioLocalData(id);
+    });
+    if (changedCloud) await savePortfolioIndexToCloud();
+    if (changedLocal) {
+        if (!portfolioIndex.list.some(p => p.id === activePortfolioId)) {
+            localStorage.setItem(PF_ACTIVE_KEY, PF_MAIN_ID);
+            location.reload();
+            return;
+        }
+        renderPortfolioSwitcher();
+        renderPortfolioList();
+    }
+}
+
+document.getElementById('new-portfolio-name').addEventListener('keydown', e => {
+    if (e.key === 'Enter') createPortfolio();
+});
+
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') syncPortfolioIndex();
+});
+
 async function bootstrap() {
+    renderPortfolioSwitcher();
     renderAndCalculate();
     fetchPrices(true);
     await initCloudSync();
+    await syncPortfolioIndex();
     applyPortfolioRepair();
     if (pendingPortfolioRepairSync) {
         persistPortfolio();

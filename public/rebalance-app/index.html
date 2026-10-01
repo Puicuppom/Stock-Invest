@@ -23,7 +23,9 @@
         <img class="header-icon" src="/icon.svg" alt="" width="36" height="36">
         <div class="header-text">
             <h1>ปรับพอร์ต</h1>
-            <p>ลาก ≡ เพื่อสลับลำดับ</p>
+            <button class="pf-switch" id="portfolio-switch" type="button" onclick="openPortfolioSheet()" title="สลับ / จัดการพอร์ต">
+                <span id="portfolio-current-name">พอร์ตหลัก</span><span class="pf-switch-caret">▾</span>
+            </button>
         </div>
         <button class="btn-sync synced" id="btn-sync" type="button" title="ซิงค์อัตโนมัติทุกอุปกรณ์">☁<span class="sync-dot"></span></button>
         <button class="btn-settings" id="btn-settings" type="button" title="ตั้งค่า" onclick="openSettingsSheet()">⚙</button>
@@ -131,6 +133,25 @@
             <button class="btn-sheet-close" type="button" aria-label="ปิด" onclick="closeAssetSheet()">×</button>
         </div>
         <div id="asset-sheet-body"></div>
+    </div>
+</div>
+
+<div class="overlay" id="portfolio-overlay" onclick="closePortfolioSheet(event)">
+    <div class="sheet portfolio-sheet" onclick="event.stopPropagation()">
+        <div class="sheet-head">
+            <h3>พอร์ตของฉัน</h3>
+            <button class="btn-sheet-close" type="button" aria-label="ปิด" onclick="closePortfolioSheet()">×</button>
+        </div>
+        <div class="pf-list" id="portfolio-list"></div>
+        <div class="pf-create">
+            <div class="pf-create-title">สร้างพอร์ตใหม่</div>
+            <input type="text" id="new-portfolio-name" placeholder="ชื่อพอร์ต เช่น พอร์ตเกษียณ, พอร์ตลูก" autocomplete="off" maxlength="40">
+            <label class="pf-copy-opt">
+                <input type="checkbox" id="new-portfolio-copy-groups" checked>
+                <span>ใช้กลุ่มและสัดส่วนกลุ่มเดียวกับพอร์ตนี้</span>
+            </label>
+            <button class="btn-settings-done" type="button" onclick="createPortfolio()">＋ สร้างและเปิดพอร์ต</button>
+        </div>
     </div>
 </div>
 

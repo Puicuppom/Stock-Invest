@@ -1082,3 +1082,125 @@ input, select, textarea { color: var(--ui-text); background: var(--ui-raised); b
 .sheet h3 { color: var(--ui-text); }
 .btn-sheet-close { color: var(--ui-muted); }
 .summary-label, .setting-title, .setting-hint { font-size: 12px; line-height: 1.5; }
+
+
+/* ── หลายพอร์ต ── */
+.pf-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    max-width: 100%;
+    margin: 1px 0 0;
+    padding: 1px 8px 1px 0;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 12px;
+    opacity: 0.85;
+    cursor: pointer;
+}
+.pf-switch:hover, .pf-switch:focus-visible { opacity: 1; text-decoration: underline; }
+.pf-switch #portfolio-current-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 600;
+}
+.pf-switch-caret { font-size: 10px; flex-shrink: 0; }
+
+.portfolio-sheet {
+    max-height: 88dvh;
+    display: flex;
+    flex-direction: column;
+}
+.pf-list {
+    overflow-y: auto;
+    min-height: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    -webkit-overflow-scrolling: touch;
+}
+.pf-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--ui-raised, var(--bg));
+}
+.pf-row.active { border-color: var(--accent); }
+.pf-pick {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 6px;
+    border: none;
+    background: transparent;
+    color: var(--ui-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.pf-check {
+    width: 18px;
+    flex-shrink: 0;
+    color: var(--accent);
+    font-weight: 700;
+}
+.pf-info { display: flex; flex-direction: column; min-width: 0; }
+.pf-name {
+    font-size: 15px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.pf-meta { font-size: 12px; color: var(--muted); }
+.pf-icon-btn, .pf-icon-spacer {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+}
+.pf-icon-btn {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 15px;
+    cursor: pointer;
+}
+.pf-icon-btn.danger { color: var(--red); }
+.pf-create {
+    flex-shrink: 0;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+}
+.pf-create-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 8px;
+}
+.sheet .pf-create input[type="text"] { margin-bottom: 8px; }
+.pf-copy-opt {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--muted);
+    cursor: pointer;
+}
+.sheet .pf-copy-opt input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    padding: 0;
+    accent-color: var(--accent);
+}
