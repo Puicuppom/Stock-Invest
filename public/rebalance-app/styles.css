@@ -1240,3 +1240,59 @@ input, select, textarea { color: var(--ui-text); background: var(--ui-raised); b
     .summary-item { flex: 1 1 calc(50% - 6px); }
     #target-box { flex-basis: 100%; }
 }
+
+/* ── การ์ดสินทรัพย์แบบกระชับ ── */
+.asset-name-wrap {
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 34%;
+    line-height: 1.2;
+}
+.asset-name-wrap .asset-name { max-width: none; font-size: 14px; }
+.asset-shares {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ui-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-variant-numeric: tabular-nums;
+}
+.asset-stats.compact {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.asset-stats.compact.cash { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.asset-stats.compact .stat-col { padding: 7px 10px; }
+.asset-stats.compact .stat-label { font-size: 10px; margin-bottom: 2px; }
+.asset-stats.compact .stat-num { font-size: 14px; }
+.asset-stats.compact .stat-sub {
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.asset-stats.compact .stat-sub:empty::before { content: "\00a0"; }
+.asset-stats.compact .stat-num.asset-value { color: var(--ui-text); }
+.asset-advice {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 6px;
+    margin-top: 7px;
+    padding: 0 2px;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+}
+.advice-label { font-size: 11px; font-weight: 600; color: var(--ui-muted); }
+.advice-text { font-weight: 700; }
+.advice-text.buy { color: var(--green); }
+.advice-text.sell { color: var(--red); }
+.advice-text.hold { color: var(--ui-muted); }
+.asset-advice { gap: 3px 14px; }
+.advice-item { white-space: nowrap; }
+@media (max-width: 420px) {
+    .asset-stats.compact .stat-col { padding: 6px 7px; }
+    .asset-stats.compact .stat-num { font-size: 13px; }
+    .asset-stats.compact .stat-sub { font-size: 10px; }
+}

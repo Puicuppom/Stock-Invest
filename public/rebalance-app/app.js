@@ -1417,25 +1417,31 @@ function recalculate() {
         if (targetPctEl) targetPctEl.textContent = fmtPct(asset.target || 0);
         const pctEl = card.querySelector('.asset-pct');
         if (pctEl) pctEl.textContent = fmtPct(curPct);
-        const idealEl = card.querySelector('.asset-ideal');
-        if (idealEl) idealEl.textContent = fmtUsd(ideal);
         const valEl = card.querySelector('.asset-value');
         if (valEl) valEl.textContent = fmtUsd(asset.value);
+        const sharesEl = card.querySelector('.asset-shares');
+        if (sharesEl) sharesEl.textContent = formatSharesLabel(asset);
+        const plEl = card.querySelector('.asset-pl');
+        if (plEl) {
+            const pl = formatValuePl(asset, cost, asset.value - cost, profitPct);
+            plEl.textContent = pl.text;
+            plEl.className = 'stat-sub asset-pl ' + pl.cls;
+        }
 
-        const costCell = formatCostCell(asset, profitPct, cost);
         if (!isCashAsset(asset)) {
-            updateCostLine(card, costCell);
+            const costEl = card.querySelector('.asset-cost');
+            if (costEl) costEl.textContent = asset.avgCost > 0 ? 'ทุน ' + fmtUsd(asset.avgCost) : 'ยังไม่ใส่ทุน';
             const price = getPrice(asset.name);
             const priceEl = card.querySelector('.asset-price');
             if (priceEl) {
                 priceEl.textContent = price > 0 ? fmtUsd(price) : (priceCache[asset.name]?.error ? 'ไม่พบ' : '…');
-                priceEl.className = 'stat-num asset-price hi';
             }
         }
 
         updateFvHeader(card, asset.name, asset);
 
-        updateAdviceRow(card, tradeSignal, action);
+        const adviceEl = card.querySelector('.asset-advice');
+        if (adviceEl) adviceEl.innerHTML = renderAdviceInner(tradeSignal, action);
     });
 
     if (assetSheetIndex != null) {
@@ -1600,46 +1606,60 @@ function renderAssetSheetBody({ index, asset, cost, profit, profitPct, tradeSign
         <button class="btn-settings-done" type="button" onclick="closeAssetSheet()">เสร็จสิ้น</button>`;
 }
 
+function fmtShares(n) {
+    return (n || 0).toLocaleString('en-US', { maximumFractionDigits: 4 });
+}
+
+function formatSharesLabel(asset) {
+    if (isCashAsset(asset)) return '';
+    return asset.shares > 0 ? `${fmtShares(asset.shares)} หุ้น` : 'ยังไม่มีหุ้น';
+}
+
+function formatValuePl(asset, cost, profit, profitPct) {
+    if (isCashAsset(asset) || !(cost > 0) || !(getPrice(asset.name) > 0)) return { text: '', cls: 'muted' };
+    const sign = profit > 0 ? '+' : profit < 0 ? '−' : '';
+    return {
+        text: `${sign}${fmt(Math.abs(profitPct), 2)}% (${sign}${fmtUsd(Math.abs(profit))})`,
+        cls: profit > 0 ? 'gain' : profit < 0 ? 'loss' : 'muted'
+    };
+}
+
+/* แถวคำแนะนำ — ถ้าสัญญาณกับการปรับสัดส่วนพูดเรื่องเดียวกัน แสดงครั้งเดียว */
+function renderAdviceInner(tradeSignal, action) {
+    const item = (label, text, cls) =>
+        `<span class="advice-item"><span class="advice-label">${label}</span> <span class="advice-text ${cls}">${text}</span></span>`;
+    const signalText = formatSignalLine(tradeSignal);
+    const same = signalText.replace(/\s+/g, ' ').trim() === action.text.replace(/\s+/g, ' ').trim();
+    if (same) return item('แนะนำ', action.text, tradeSignal.cls);
+    if (tradeSignal.text === '—') return item('ปรับสัดส่วน', action.text, action.cls);
+    return item('สัญญาณ', signalText, tradeSignal.cls) + item('ปรับสัดส่วน', action.text, action.cls);
+}
+
 function renderAssetCard(index, asset, curPct, ideal, cost, profit, profitPct, tradeSignal, action) {
     const cash = isCashAsset(asset);
-    const costCell = formatCostCell(asset, profitPct, cost);
     const price = getPrice(asset.name);
     const priceText = price > 0 ? fmtUsd(price) : '…';
+    const pl = formatValuePl(asset, cost, profit, profitPct);
     return `
-            <div class="asset-stats">
-                <div class="stat-pair">
-                    <div class="stat-col">
-                        <span class="stat-label">สัดส่วน · เป้า</span>
-                        <span class="stat-num asset-target-pct">${fmtPct(asset.target || 0)}</span>
-                    </div>
-                    <div class="stat-col">
-                        <span class="stat-label">สัดส่วน · จริง</span>
-                        <span class="stat-num asset-pct hi">${fmtPct(curPct)}</span>
-                    </div>
-                </div>
-                <div class="stat-pair">
-                    <div class="stat-col">
-                        <span class="stat-label">มูลค่า · เป้า</span>
-                        <span class="stat-num asset-ideal">${fmtUsd(ideal)}</span>
-                    </div>
-                    <div class="stat-col">
-                        <span class="stat-label">มูลค่า · จริง</span>
-                        <span class="stat-num asset-value hi">${fmtUsd(asset.value)}</span>
-                    </div>
-                </div>
+            <div class="asset-stats compact${cash ? ' cash' : ''}">
                 ${cash ? '' : `
-                <div class="stat-pair">
-                    <div class="stat-col">
-                        <span class="stat-label">ราคา · ทุน</span>
-                        ${renderCostLineHtml(costCell)}
-                    </div>
-                    <div class="stat-col">
-                        <span class="stat-label">ราคา · ปัจจุบัน</span>
-                        <span class="stat-num asset-price hi">${priceText}</span>
-                    </div>
+                <div class="stat-col">
+                    <span class="stat-label">ราคา</span>
+                    <span class="stat-num asset-price hi">${priceText}</span>
+                    <span class="stat-sub muted asset-cost">${asset.avgCost > 0 ? 'ทุน ' + fmtUsd(asset.avgCost) : 'ยังไม่ใส่ทุน'}</span>
                 </div>`}
-                ${renderAdviceRow(tradeSignal, action)}
-            </div>`;
+                <div class="stat-col">
+                    <span class="stat-label">มูลค่า</span>
+                    <span class="stat-num asset-value">${fmtUsd(asset.value)}</span>
+                    <span class="stat-sub asset-pl ${pl.cls}">${pl.text}</span>
+                </div>
+                <div class="stat-col">
+                    <span class="stat-label">สัดส่วน</span>
+                    <span class="stat-num asset-pct hi">${fmtPct(curPct)}</span>
+                    <span class="stat-sub muted">เป้า <span class="asset-target-pct">${fmtPct(asset.target || 0)}</span></span>
+                </div>
+            </div>
+            <div class="asset-advice">${renderAdviceInner(tradeSignal, action)}</div>`;
 }
 
 function renderAssetGrid(index, asset, curPct, ideal, profitFmt, cost, profit, profitPct, tradeSignal, action) {
@@ -1657,7 +1677,10 @@ function appendAssetCard(list, payload) {
         <div class="asset-header">
             <span class="drag-handle" aria-label="สลับลำดับ ${asset.name}">≡</span>
             <div class="asset-badge">${asset.name.slice(0, 4)}</div>
-            <div class="asset-name">${asset.name}</div>
+            <div class="asset-name-wrap">
+                <div class="asset-name">${asset.name}</div>
+                <div class="asset-shares">${formatSharesLabel(asset)}</div>
+            </div>
             ${renderFvHeaderHtml(asset.name, asset)}
             <button class="btn-card-gear" type="button" aria-label="ตั้งค่า ${asset.name}" onclick="openAssetSheet(${index})">⚙</button>
             <button class="btn-delete" type="button" aria-label="ลบ ${asset.name}" onclick="deleteAsset(${index})">×</button>
