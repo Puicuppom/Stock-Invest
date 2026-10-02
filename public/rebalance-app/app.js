@@ -1308,6 +1308,51 @@ function formatProfit(profit, profitPct) {
     return { text: `${sign}${fmtPct(profitPct)} (${fmtUsd(Math.abs(profit))})`, cls };
 }
 
+/* ต้นทุนและกำไร/ขาดทุนรวม — ไม่รวมเงินสด, ไม่รวมตัวที่ยังไม่มีราคาหรือยังไม่ได้ใส่ต้นทุน */
+function computeProfitSummary() {
+    let cost = 0, value = 0, pending = 0, noCost = 0;
+    myPortfolio.forEach(a => {
+        if (isCashAsset(a) || !(a.shares > 0)) return;
+        const price = getAssetPrice(a);
+        if (!(price > 0)) { pending++; return; }
+        if (!(a.avgCost > 0)) { noCost++; return; }
+        cost += a.shares * a.avgCost;
+        value += a.shares * price;
+    });
+    const profit = value - cost;
+    const pct = cost > 0 ? (profit / cost) * 100 : 0;
+    return { cost, value, profit, pct, pending, noCost };
+}
+
+function updateProfitSummary() {
+    const box = document.getElementById('pl-box');
+    const pctEl = document.getElementById('pl-pct');
+    const amountEl = document.getElementById('pl-amount');
+    const detailEl = document.getElementById('pl-detail');
+    const noteEl = document.getElementById('pl-note');
+    if (!box || !pctEl || !amountEl || !detailEl || !noteEl) return;
+    const { cost, profit, pct, pending, noCost } = computeProfitSummary();
+    const cls = cost > 0 ? (profit > 0 ? ' gain' : profit < 0 ? ' loss' : '') : '';
+    box.className = 'summary-item summary-pl' + cls;
+    if (cost > 0) {
+        const sign = profit > 0 ? '+' : profit < 0 ? '−' : '';
+        pctEl.textContent = `${sign}${fmt(Math.abs(pct), 2)}%`;
+        amountEl.textContent = `${sign}$${fmt(Math.abs(profit), 2)}`
+            + (usdThbRate > 0 ? ` · ${sign}฿${fmt(Math.abs(profit) * usdThbRate, 2)}` : '');
+        detailEl.textContent = `ต้นทุน $${fmt(cost, 2)}`;
+    } else {
+        pctEl.textContent = '—';
+        amountEl.textContent = '';
+        detailEl.textContent = 'ใส่จำนวนหุ้นและราคาทุนเพื่อดูกำไร';
+    }
+    const notes = [];
+    if (pending) notes.push(`รอราคา ${pending} ตัว`);
+    if (noCost) notes.push(`ไม่ได้ใส่ราคาทุน ${noCost} ตัว (ไม่นับรวม)`);
+    noteEl.textContent = notes.join(' · ');
+    noteEl.hidden = !notes.length;
+    box.title = 'คิดจากหุ้นที่มีจำนวนและราคาทุน ไม่รวมเงินสด';
+}
+
 function updateSummary(totalValue, totalTarget) {
     document.getElementById('total-value').textContent = fmt(totalValue, 2);
     const thbEl = document.getElementById('total-value-thb');
@@ -1316,6 +1361,8 @@ function updateSummary(totalValue, totalTarget) {
             ? '฿' + fmt(totalValue * usdThbRate, 2)
             : '฿…';
     }
+
+    updateProfitSummary();
 
     const targetBox = document.getElementById('target-box');
     const targetEl = document.getElementById('target-status');

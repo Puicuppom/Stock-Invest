@@ -1229,3 +1229,14 @@ input, select, textarea { color: var(--ui-text); background: var(--ui-raised); b
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 .toast.warn { border-color: var(--ui-warning, #fbbf24); }
 .toast.error { border-color: var(--red); color: var(--red); }
+
+/* ── กำไร/ขาดทุนรวม ── */
+.summary-pl.gain .summary-value { color: var(--green); }
+.summary-pl.loss .summary-value { color: var(--red); }
+.summary-pl #pl-amount { font-weight: 600; color: var(--ui-text); }
+.summary-pl .pl-note { color: var(--ui-warning, #fbbf24); }
+@media (max-width: 560px) {
+    .summary { flex-wrap: wrap; }
+    .summary-item { flex: 1 1 calc(50% - 6px); }
+    #target-box { flex-basis: 100%; }
+}
