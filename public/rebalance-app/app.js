@@ -680,8 +680,12 @@ async function fetchUsdThbRate() {
         const data = await res.json();
         if (res.ok && data.price > 0) {
             usdThbRate = data.price;
-            const { totalValue, totalTarget } = computePortfolio();
-            updateSummary(totalValue, totalTarget);
+            if (document.querySelector('.asset-card')) {
+                recalculate();
+            } else {
+                const { totalValue, totalTarget } = computePortfolio();
+                updateSummary(totalValue, totalTarget);
+            }
         }
     } catch { /* keep last rate */ }
 }
@@ -1119,22 +1123,37 @@ function formatSignalLine(tradeSignal) {
     return tradeSignal.sub ? `${tradeSignal.text} ${tradeSignal.sub}` : tradeSignal.text;
 }
 
+/* กำไร/ขาดทุนที่จะได้ถ้าราคาขึ้น (หรือลง) ไปถึงราคายุติธรรม คิดจากจำนวนหุ้นที่ถืออยู่ */
+function fvHeaderInnerHtml(symbol, asset) {
+    const h = formatFvHeader(symbol);
+    const oppHtml = h.opp ? ` <span class="asset-fv-opp ${h.oppCls}">${h.opp}</span>` : '';
+    let gainHtml = '';
+    const fv = getStockData(symbol).fairValue?.fairValue;
+    const price = getPrice(symbol);
+    const shares = asset?.shares || 0;
+    if (fv > 0 && price > 0 && shares > 0) {
+        const gain = (fv - price) * shares;
+        const sign = gain > 0 ? '+' : gain < 0 ? '−' : '';
+        const cls = gain > 0 ? 'gain' : gain < 0 ? 'loss' : 'muted';
+        const thb = usdThbRate > 0 ? ` · ${sign}฿${fmt(Math.abs(gain) * usdThbRate, 0)}` : '';
+        const label = gain >= 0 ? 'ถ้าถึงราคานี้' : 'ถ้าลงถึงราคานี้';
+        gainHtml = `<span class="asset-fv-gain"><span class="asset-fv-gain-label">${label}</span> <span class="${cls}">${sign}${fmtUsd(Math.abs(gain))}${thb}</span></span>`;
+    }
+    return `<span class="asset-fv-main">ราคายุติธรรม <span class="asset-fv-price">${h.fv}</span>${oppHtml}</span>${gainHtml}`;
+}
+
 function renderFvHeaderHtml(symbol, asset) {
     if (asset && isCashAsset(asset)) {
         return `<div class="asset-fv-head"><span class="asset-fv-inline muted">เงินสด</span></div>`;
     }
-    const h = formatFvHeader(symbol);
-    const oppHtml = h.opp ? `<span class="asset-fv-opp ${h.oppCls}">${h.opp}</span>` : '';
-    return `<div class="asset-fv-head"><span class="asset-fv-inline">ราคายุติธรรม <span class="asset-fv-price">${h.fv}</span> ${oppHtml}</span></div>`;
+    return `<div class="asset-fv-head"><span class="asset-fv-inline">${fvHeaderInnerHtml(symbol, asset)}</span></div>`;
 }
 
 function updateFvHeader(card, symbol, asset) {
     if (asset && isCashAsset(asset)) return;
     const el = card.querySelector('.asset-fv-inline');
     if (!el) return;
-    const h = formatFvHeader(symbol);
-    const oppHtml = h.opp ? `<span class="asset-fv-opp ${h.oppCls}">${h.opp}</span>` : '';
-    el.innerHTML = `ราคายุติธรรม <span class="asset-fv-price">${h.fv}</span> ${oppHtml}`;
+    el.innerHTML = fvHeaderInnerHtml(symbol, asset);
 }
 
 function updateCostLine(card, costCell) {
@@ -1440,6 +1459,8 @@ function recalculate() {
 
         updateFvHeader(card, asset.name, asset);
 
+        const levelsEl = card.querySelector('.asset-levels');
+        if (levelsEl) levelsEl.innerHTML = renderPriceLevelsInner(asset);
         const adviceEl = card.querySelector('.asset-advice');
         if (adviceEl) adviceEl.innerHTML = renderAdviceInner(tradeSignal, action);
     });
@@ -1635,6 +1656,46 @@ function renderAdviceInner(tradeSignal, action) {
     return item('สัญญาณ', signalText, tradeSignal.cls) + item('ปรับสัดส่วน', action.text, action.cls);
 }
 
+/* ราคาซื้อไม่เกิน (= ราคายุติธรรม) และราคาขายทำกำไรขั้นถัดไป (ทุน + % ตามตั้งค่าขายทำกำไร) */
+function computePriceLevels(asset) {
+    if (isCashAsset(asset)) return null;
+    const price = getPrice(asset.name);
+    const fv = getStockData(asset.name).fairValue?.fairValue || null;
+    const buy = fv > 0 ? { price: fv, inZone: price > 0 && price <= fv } : null;
+
+    let sell = null;
+    if (asset.avgCost > 0 && groupUsesProfitTaking(getAssetGroup(asset))) {
+        const steps = [profitTiers[0], profitTiers[1]]
+            .filter(t => t && t.profitPct > 0)
+            .map(t => ({ pct: t.profitPct, price: asset.avgCost * (1 + t.profitPct / 100) }));
+        const next = steps.find(st => !(price >= st.price));
+        if (next) sell = { price: next.price, pct: next.pct, reached: false };
+        else if (steps.length) {
+            const last = steps[steps.length - 1];
+            sell = { price: last.price, pct: last.pct, reached: true };
+        }
+    }
+    return { buy, sell };
+}
+
+function renderPriceLevelsInner(asset) {
+    const lv = computePriceLevels(asset);
+    if (!lv) return '';
+    const buyHtml = lv.buy
+        ? `<span class="lv-item lv-buy"><span class="lv-label">ซื้อไม่เกิน</span> <span class="lv-price">${fmtUsd(lv.buy.price)}</span>${lv.buy.inZone ? ' <span class="lv-tag">✓ ราคาอยู่ในโซนซื้อ</span>' : ''}</span>`
+        : `<span class="lv-item lv-buy"><span class="lv-label">ซื้อไม่เกิน</span> <span class="lv-price muted">—</span></span>`;
+    let sellHtml;
+    if (lv.sell) {
+        const tag = lv.sell.reached ? ' <span class="lv-tag">✓ ถึงแล้ว · ใช้ Trailing</span>' : '';
+        sellHtml = `<span class="lv-item lv-sell"><span class="lv-label">ขายทำกำไร</span> <span class="lv-price">${fmtUsd(lv.sell.price)}</span> <span class="lv-note">(+${fmt(lv.sell.pct, 0)}% จากทุน)</span>${tag}</span>`;
+    } else if (!(asset.avgCost > 0)) {
+        sellHtml = `<span class="lv-item lv-sell"><span class="lv-label">ขายทำกำไร</span> <span class="lv-note">ใส่ราคาทุนก่อน</span></span>`;
+    } else {
+        sellHtml = '';
+    }
+    return buyHtml + sellHtml;
+}
+
 function renderAssetCard(index, asset, curPct, ideal, cost, profit, profitPct, tradeSignal, action) {
     const cash = isCashAsset(asset);
     const price = getPrice(asset.name);
@@ -1659,6 +1720,7 @@ function renderAssetCard(index, asset, curPct, ideal, cost, profit, profitPct, t
                     <span class="stat-sub muted">เป้า <span class="asset-target-pct">${fmtPct(asset.target || 0)}</span></span>
                 </div>
             </div>
+            ${cash ? '' : `<div class="asset-levels">${renderPriceLevelsInner(asset)}</div>`}
             <div class="asset-advice">${renderAdviceInner(tradeSignal, action)}</div>`;
 }
 

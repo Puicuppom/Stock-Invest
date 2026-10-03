@@ -1296,3 +1296,46 @@ input, select, textarea { color: var(--ui-text); background: var(--ui-raised); b
     .asset-stats.compact .stat-num { font-size: 13px; }
     .asset-stats.compact .stat-sub { font-size: 10px; }
 }
+
+/* ── ราคายุติธรรมบนการ์ด (ใหญ่ขึ้น + กำไรถ้าถึงราคา) ── */
+.asset-fv-inline { font-size: 13px; line-height: 1.35; }
+.asset-fv-inline .asset-fv-main { display: block; }
+.asset-fv-inline .asset-fv-price { font-size: 15px; }
+.asset-fv-inline .asset-fv-opp { font-size: 14px; }
+.asset-fv-gain {
+    display: block;
+    margin-top: 1px;
+    font-size: 13px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+.asset-fv-gain-label { font-size: 11px; font-weight: 600; color: var(--ui-muted); }
+.asset-fv-gain .gain { color: var(--green); }
+.asset-fv-gain .loss { color: var(--red); }
+@media (max-width: 420px) {
+    .asset-fv-inline { font-size: 11px; }
+    .asset-fv-inline .asset-fv-price { font-size: 13px; }
+    .asset-fv-inline .asset-fv-opp { font-size: 12px; }
+    .asset-fv-gain { font-size: 12px; }
+    .asset-fv-gain-label { font-size: 10px; }
+}
+
+/* ── ราคาซื้อไม่เกิน / ขายทำกำไร ── */
+.asset-levels {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    margin-top: 7px;
+    padding: 0 2px;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+}
+.asset-levels:empty { display: none; }
+.lv-item { white-space: nowrap; }
+.lv-label { font-size: 11px; font-weight: 600; color: var(--ui-muted); }
+.lv-price { font-weight: 700; font-size: 14px; }
+.lv-buy .lv-price { color: var(--green); }
+.lv-sell .lv-price { color: var(--ui-warning, #fbbf24); }
+.lv-price.muted { color: var(--ui-muted); }
+.lv-note { font-size: 11px; color: var(--ui-muted); }
+.lv-tag { font-size: 11px; font-weight: 600; color: var(--ui-accent); }
