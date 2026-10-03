@@ -334,11 +334,13 @@ async function fetchPrices(fullRender = false) {
                     price: data.price,
                     at: Date.now(),
                     fairValue: data.fairValue || null,
+                    srLevels: data.srLevels || null,
                 };
             } else {
                 priceCache[symbol] = {
                     price: priceCache[symbol]?.price || 0,
                     fairValue: priceCache[symbol]?.fairValue || null,
+                    srLevels: priceCache[symbol]?.srLevels || null,
                     error: true,
                 };
             }
@@ -1135,7 +1137,8 @@ function fvHeaderInnerHtml(symbol, asset) {
         const gain = (fv - price) * shares;
         const sign = gain > 0 ? '+' : gain < 0 ? '−' : '';
         const cls = gain > 0 ? 'gain' : gain < 0 ? 'loss' : 'muted';
-        const thb = usdThbRate > 0 ? ` · ${sign}฿${fmt(Math.abs(gain) * usdThbRate, 0)}` : '';
+        const thbStr = thbText(gain, sign);
+        const thb = thbStr ? ` <span class="thb">(${thbStr})</span>` : '';
         const label = gain >= 0 ? 'ถ้าถึงราคานี้' : 'ถ้าลงถึงราคานี้';
         gainHtml = `<span class="asset-fv-gain"><span class="asset-fv-gain-label">${label}</span> <span class="${cls}">${sign}${fmtUsd(Math.abs(gain))}${thb}</span></span>`;
     }
@@ -1240,6 +1243,37 @@ function getBuyAlerts(asset, diff, curPct) {
         });
     }
     return alerts;
+}
+
+/* แปลงดอลลาร์เป็นข้อความเงินบาท เช่น "13,424 บาท" (ปัดเป็นบาทเต็ม) — ว่างถ้ายังไม่มีอัตราแลกเปลี่ยน */
+function thbText(usd, sign = '') {
+    if (!(usdThbRate > 0)) return '';
+    return `${sign}${fmt(Math.abs(usd) * usdThbRate, 0)} บาท`;
+}
+
+/* มือถือ: ตัวเลขเต็ม แต่ใช้สัญลักษณ์ ฿ แทนคำว่า "บาท" ให้สั้นพออยู่บรรทัดเดียวกับดอลลาร์ */
+function usdShortText(usd) {
+    return fmtUsd(Math.abs(usd));
+}
+
+function thbShortText(usd, sign = '') {
+    if (!(usdThbRate > 0)) return '';
+    return `${sign}฿${fmt(Math.abs(usd) * usdThbRate, 0)}`;
+}
+
+/* แสดงทั้งแบบเต็ม (จอคอม) และแบบย่อ (มือถือ) — CSS เลือกแสดงตามขนาดจอ */
+function dualText(full, short) {
+    return full === short ? full : `<span class="t-full">${full}</span><span class="t-short">${short}</span>`;
+}
+
+function usdDual(usd, sign = '') {
+    return dualText(sign + fmtUsd(Math.abs(usd)), sign + usdShortText(usd));
+}
+
+function thbDual(usd, sign = '') {
+    const full = thbText(usd, sign);
+    if (!full) return '';
+    return `(${dualText(full, thbShortText(usd, sign))})`;
 }
 
 function fmt(n, dec = 2) {
@@ -1347,48 +1381,50 @@ function updateProfitSummary() {
     const box = document.getElementById('pl-box');
     const pctEl = document.getElementById('pl-pct');
     const amountEl = document.getElementById('pl-amount');
-    const detailEl = document.getElementById('pl-detail');
     const noteEl = document.getElementById('pl-note');
-    if (!box || !pctEl || !amountEl || !detailEl || !noteEl) return;
+    const costEl = document.getElementById('cost-value');
+    const costThbEl = document.getElementById('cost-thb');
+    if (!box || !pctEl || !amountEl || !noteEl || !costEl || !costThbEl) return;
     const { cost, profit, pct, pending, noCost } = computeProfitSummary();
     const cls = cost > 0 ? (profit > 0 ? ' gain' : profit < 0 ? ' loss' : '') : '';
     box.className = 'summary-item summary-pl' + cls;
     if (cost > 0) {
         const sign = profit > 0 ? '+' : profit < 0 ? '−' : '';
         pctEl.textContent = `${sign}${fmt(Math.abs(pct), 2)}%`;
-        amountEl.textContent = `${sign}$${fmt(Math.abs(profit), 2)}`
-            + (usdThbRate > 0 ? ` · ${sign}฿${fmt(Math.abs(profit) * usdThbRate, 2)}` : '');
-        detailEl.textContent = `ต้นทุน $${fmt(cost, 2)}`;
+        const thbStr = thbText(profit, sign);
+        amountEl.innerHTML = `<span class="usd">${usdDual(profit, sign)}</span>`
+            + (thbStr ? ` <span class="thb">${thbDual(profit, sign)}</span>` : '');
+        costEl.innerHTML = usdDual(cost);
+        costThbEl.innerHTML = thbDual(cost);
     } else {
         pctEl.textContent = '—';
-        amountEl.textContent = '';
-        detailEl.textContent = 'ใส่จำนวนหุ้นและราคาทุนเพื่อดูกำไร';
+        amountEl.textContent = 'ใส่ราคาทุนเพื่อดูกำไร';
+        costEl.textContent = '—';
+        costThbEl.textContent = '';
     }
     const notes = [];
     if (pending) notes.push(`รอราคา ${pending} ตัว`);
-    if (noCost) notes.push(`ไม่ได้ใส่ราคาทุน ${noCost} ตัว (ไม่นับรวม)`);
+    if (noCost) notes.push(`ไม่ได้ใส่ทุน ${noCost} ตัว`);
     noteEl.textContent = notes.join(' · ');
     noteEl.hidden = !notes.length;
     box.title = 'คิดจากหุ้นที่มีจำนวนและราคาทุน ไม่รวมเงินสด';
 }
 
 function updateSummary(totalValue, totalTarget) {
-    document.getElementById('total-value').textContent = fmt(totalValue, 2);
+    document.getElementById('total-value').innerHTML = dualText(fmt(totalValue, 2), usdShortText(totalValue).slice(1));
     const thbEl = document.getElementById('total-value-thb');
     if (thbEl) {
-        thbEl.textContent = usdThbRate > 0
-            ? '฿' + fmt(totalValue * usdThbRate, 2)
-            : '฿…';
+        thbEl.innerHTML = thbDual(totalValue);
     }
 
     updateProfitSummary();
 
     const targetBox = document.getElementById('target-box');
     const targetEl = document.getElementById('target-status');
-    const breakdownEl = document.getElementById('target-breakdown');
     targetBox.className = 'summary-item' + (totalTarget === 100 ? ' ok' : ' warn');
     targetEl.textContent = fmtPct(totalTarget) + (totalTarget !== 100 ? ' ⚠' : ' ✓');
-    breakdownEl.textContent = portfolioGroups
+    // รายละเอียดแยกกลุ่มดูได้ที่แท็บด้านล่าง — เก็บไว้เป็น tooltip
+    targetBox.title = 'เป้าหมายรวม · ' + portfolioGroups
         .map(g => `${getGroupLabel(g.id)} ${fmtPct(getTargetByGroup(g.id))}`)
         .join(' · ');
     updateTabUI();
@@ -1436,26 +1472,14 @@ function recalculate() {
         if (targetPctEl) targetPctEl.textContent = fmtPct(asset.target || 0);
         const pctEl = card.querySelector('.asset-pct');
         if (pctEl) pctEl.textContent = fmtPct(curPct);
-        const valEl = card.querySelector('.asset-value');
-        if (valEl) valEl.textContent = fmtUsd(asset.value);
         const sharesEl = card.querySelector('.asset-shares');
         if (sharesEl) sharesEl.textContent = formatSharesLabel(asset);
-        const plEl = card.querySelector('.asset-pl');
-        if (plEl) {
-            const pl = formatValuePl(asset, cost, asset.value - cost, profitPct);
-            plEl.textContent = pl.text;
-            plEl.className = 'stat-sub asset-pl ' + pl.cls;
-        }
-
-        if (!isCashAsset(asset)) {
-            const costEl = card.querySelector('.asset-cost');
-            if (costEl) costEl.textContent = asset.avgCost > 0 ? 'ทุน ' + fmtUsd(asset.avgCost) : 'ยังไม่ใส่ทุน';
-            const price = getPrice(asset.name);
-            const priceEl = card.querySelector('.asset-price');
-            if (priceEl) {
-                priceEl.textContent = price > 0 ? fmtUsd(price) : (priceCache[asset.name]?.error ? 'ไม่พบ' : '…');
-            }
-        }
+        const valueCell = card.querySelector('.cell-value');
+        if (valueCell) valueCell.innerHTML = valueCellHtml(asset);
+        const profitCell = card.querySelector('.cell-profit');
+        if (profitCell) profitCell.innerHTML = profitCellHtml(asset, cost, asset.value - cost, profitPct);
+        const priceCell = card.querySelector('.cell-price');
+        if (priceCell) priceCell.innerHTML = priceCellHtml(asset);
 
         updateFvHeader(card, asset.name, asset);
 
@@ -1636,6 +1660,39 @@ function formatSharesLabel(asset) {
     return asset.shares > 0 ? `${fmtShares(asset.shares)} หุ้น` : 'ยังไม่มีหุ้น';
 }
 
+/* เนื้อหาช่อง ราคา / มูลค่า บนการ์ด — ดอลลาร์ตัวหลัก, บาทบรรทัดรอง */
+function thbInline(usd, sign = '', cls = '') {
+    const t = thbDual(usd, sign);
+    return t ? ` <span class="stat-thb-inline ${cls}">${t}</span>` : '';
+}
+
+function priceCellHtml(asset) {
+    const price = getPrice(asset.name);
+    const priceText = price > 0 ? usdDual(price) : (priceCache[asset.name]?.error ? 'ไม่พบ' : '…');
+    const costHtml = asset.avgCost > 0
+        ? `ทุน ${fmtUsd(asset.avgCost)}`
+        : 'ยังไม่ใส่ทุน';
+    return `<span class="stat-line"><span class="stat-num asset-price hi">${priceText}</span></span>`
+        + `<span class="stat-line stat-sub muted asset-cost">${costHtml}</span>`;
+}
+
+function valueCellHtml(asset) {
+    const totalCost = !isCashAsset(asset) && asset.avgCost > 0 && asset.shares > 0 ? asset.shares * asset.avgCost : 0;
+    return `<span class="stat-line"><span class="stat-num asset-value">${usdDual(asset.value)}</span>${thbInline(asset.value)}</span>`
+        + (totalCost > 0
+            ? `<span class="stat-line stat-sub muted asset-total-cost">ทุน ${usdDual(totalCost)}${thbInline(totalCost)}</span>`
+            : '');
+}
+
+function profitCellHtml(asset, cost, profit, profitPct) {
+    if (!(cost > 0)) return `<span class="stat-num muted">—</span><span class="stat-sub muted">ยังไม่ใส่ทุน</span>`;
+    if (!(getPrice(asset.name) > 0)) return `<span class="stat-num muted">…</span>`;
+    const sign = profit > 0 ? '+' : profit < 0 ? '−' : '';
+    const cls = profit > 0 ? 'gain' : profit < 0 ? 'loss' : 'muted';
+    return `<span class="stat-num asset-pl ${cls}">${sign}${fmt(Math.abs(profitPct), 2)}%</span>`
+        + `<span class="stat-line"><span class="stat-sub ${cls}">${usdDual(profit, sign)}</span>${thbInline(profit, sign, cls)}</span>`;
+}
+
 function formatValuePl(asset, cost, profit, profitPct) {
     if (isCashAsset(asset) || !(cost > 0) || !(getPrice(asset.name) > 0)) return { text: '', cls: 'muted' };
     const sign = profit > 0 ? '+' : profit < 0 ? '−' : '';
@@ -1656,64 +1713,74 @@ function renderAdviceInner(tradeSignal, action) {
     return item('สัญญาณ', signalText, tradeSignal.cls) + item('ปรับสัดส่วน', action.text, action.cls);
 }
 
-/* ราคาซื้อไม่เกิน (= ราคายุติธรรม) และราคาขายทำกำไรขั้นถัดไป (ทุน + % ตามตั้งค่าขายทำกำไร) */
+/* ซื้อไม่เกิน = แนวรับใกล้สุดใต้ราคา, ขาย = แนวต้านใกล้สุดเหนือราคา
+ * ใช้โหมดเดียวกับหน้าวิเคราะห์หุ้น (ถือยาว = swing, เทรดสั้น = pivot) */
+function getSrMode() {
+    try {
+        return localStorage.getItem('stock-sr-mode') === 'pivot' ? 'pivot' : 'swing';
+    } catch {
+        return 'swing';
+    }
+}
+
 function computePriceLevels(asset) {
     if (isCashAsset(asset)) return null;
-    const price = getPrice(asset.name);
+    const sr = priceCache[asset.name]?.srLevels?.[getSrMode()];
+    if (!sr) return { loading: !priceCache[asset.name], buy: null, sell: null };
     const fv = getStockData(asset.name).fairValue?.fairValue || null;
-    const buy = fv > 0 ? { price: fv, inZone: price > 0 && price <= fv } : null;
-
-    let sell = null;
-    if (asset.avgCost > 0 && groupUsesProfitTaking(getAssetGroup(asset))) {
-        const steps = [profitTiers[0], profitTiers[1]]
-            .filter(t => t && t.profitPct > 0)
-            .map(t => ({ pct: t.profitPct, price: asset.avgCost * (1 + t.profitPct / 100) }));
-        const next = steps.find(st => !(price >= st.price));
-        if (next) sell = { price: next.price, pct: next.pct, reached: false };
-        else if (steps.length) {
-            const last = steps[steps.length - 1];
-            sell = { price: last.price, pct: last.pct, reached: true };
-        }
-    }
-    return { buy, sell };
+    const price = getPrice(asset.name);
+    const near = lv => lv && price > 0 && Math.abs(price - lv.price) / lv.price <= 0.01;
+    return {
+        buy: sr.support ? { ...sr.support, aboveFv: fv > 0 && sr.support.price > fv, near: near(sr.support) } : null,
+        sell: sr.resistance ? { ...sr.resistance, near: near(sr.resistance) } : null
+    };
 }
 
 function renderPriceLevelsInner(asset) {
     const lv = computePriceLevels(asset);
     if (!lv) return '';
-    const buyHtml = lv.buy
-        ? `<span class="lv-item lv-buy"><span class="lv-label">ซื้อไม่เกิน</span> <span class="lv-price">${fmtUsd(lv.buy.price)}</span>${lv.buy.inZone ? ' <span class="lv-tag">✓ ราคาอยู่ในโซนซื้อ</span>' : ''}</span>`
-        : `<span class="lv-item lv-buy"><span class="lv-label">ซื้อไม่เกิน</span> <span class="lv-price muted">—</span></span>`;
-    let sellHtml;
-    if (lv.sell) {
-        const tag = lv.sell.reached ? ' <span class="lv-tag">✓ ถึงแล้ว · ใช้ Trailing</span>' : '';
-        sellHtml = `<span class="lv-item lv-sell"><span class="lv-label">ขายทำกำไร</span> <span class="lv-price">${fmtUsd(lv.sell.price)}</span> <span class="lv-note">(+${fmt(lv.sell.pct, 0)}% จากทุน)</span>${tag}</span>`;
-    } else if (!(asset.avgCost > 0)) {
-        sellHtml = `<span class="lv-item lv-sell"><span class="lv-label">ขายทำกำไร</span> <span class="lv-note">ใส่ราคาทุนก่อน</span></span>`;
+    if (lv.loading) return '';
+    const note = level => {
+        const price = getPrice(asset.name);
+        if (!(price > 0)) return ` <span class="lv-note">(${level.label})</span>`;
+        const d = ((level.price - price) / price) * 100;
+        return ` <span class="lv-note">(${d > 0 ? '+' : '−'}${fmt(Math.abs(d), 1)}% · ${level.label})</span>`;
+    };
+    let buyHtml, sellHtml;
+    if (lv.buy) {
+        const tags = (lv.buy.near ? ' <span class="lv-tag">✓ ใกล้แนวรับ</span>' : '')
+            + (lv.buy.aboveFv ? ' <span class="lv-warn">⚠ สูงกว่าราคายุติธรรม</span>' : '');
+        buyHtml = `<span class="lv-item lv-buy"><span class="lv-label">ซื้อไม่เกิน</span> <span class="lv-price">${fmtUsd(lv.buy.price)}</span>${note(lv.buy)}${tags}</span>`;
     } else {
-        sellHtml = '';
+        buyHtml = `<span class="lv-item lv-buy"><span class="lv-label">ซื้อไม่เกิน</span> <span class="lv-note">ไม่มีแนวรับใต้ราคานี้</span></span>`;
+    }
+    if (lv.sell) {
+        const tag = lv.sell.near ? ' <span class="lv-tag">✓ ใกล้แนวต้าน</span>' : '';
+        sellHtml = `<span class="lv-item lv-sell"><span class="lv-label">ขาย</span> <span class="lv-price">${fmtUsd(lv.sell.price)}</span>${note(lv.sell)}${tag}</span>`;
+    } else {
+        sellHtml = `<span class="lv-item lv-sell"><span class="lv-label">ขาย</span> <span class="lv-note">ไม่มีแนวต้านเหนือราคานี้</span></span>`;
     }
     return buyHtml + sellHtml;
 }
 
 function renderAssetCard(index, asset, curPct, ideal, cost, profit, profitPct, tradeSignal, action) {
     const cash = isCashAsset(asset);
-    const price = getPrice(asset.name);
-    const priceText = price > 0 ? fmtUsd(price) : '…';
-    const pl = formatValuePl(asset, cost, profit, profitPct);
     return `
             <div class="asset-stats compact${cash ? ' cash' : ''}">
                 ${cash ? '' : `
                 <div class="stat-col">
                     <span class="stat-label">ราคา</span>
-                    <span class="stat-num asset-price hi">${priceText}</span>
-                    <span class="stat-sub muted asset-cost">${asset.avgCost > 0 ? 'ทุน ' + fmtUsd(asset.avgCost) : 'ยังไม่ใส่ทุน'}</span>
+                    <div class="cell-price">${priceCellHtml(asset)}</div>
                 </div>`}
                 <div class="stat-col">
                     <span class="stat-label">มูลค่า</span>
-                    <span class="stat-num asset-value">${fmtUsd(asset.value)}</span>
-                    <span class="stat-sub asset-pl ${pl.cls}">${pl.text}</span>
+                    <div class="cell-value">${valueCellHtml(asset)}</div>
                 </div>
+                ${cash ? '' : `
+                <div class="stat-col">
+                    <span class="stat-label">กำไร</span>
+                    <div class="cell-profit">${profitCellHtml(asset, cost, profit, profitPct)}</div>
+                </div>`}
                 <div class="stat-col">
                     <span class="stat-label">สัดส่วน</span>
                     <span class="stat-num asset-pct hi">${fmtPct(curPct)}</span>

@@ -1339,3 +1339,144 @@ input, select, textarea { color: var(--ui-text); background: var(--ui-raised); b
 .lv-price.muted { color: var(--ui-muted); }
 .lv-note { font-size: 11px; color: var(--ui-muted); }
 .lv-tag { font-size: 11px; font-weight: 600; color: var(--ui-accent); }
+.lv-warn { font-size: 11px; font-weight: 600; color: var(--ui-warning, #fbbf24); }
+.lv-sell .lv-price { color: var(--red); }
+
+/* ── ดอลลาร์ / บาท แยกให้อ่านง่าย ── */
+.thb {
+    font-weight: 600;
+    color: var(--ui-muted);
+    white-space: nowrap;
+}
+.asset-fv-gain .thb { font-size: 0.92em; }
+#pl-amount { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+#pl-amount .usd { font-size: 14px; font-weight: 700; }
+#pl-amount .thb { font-size: 12px; }
+.summary-pl.gain #pl-amount .usd { color: var(--green); }
+.summary-pl.loss #pl-amount .usd { color: var(--red); }
+#total-value-thb { font-size: 12px; font-weight: 600; }
+
+/* บาทใต้ตัวเลขดอลลาร์บนการ์ด */
+.cell-price, .cell-value { display: flex; flex-direction: column; min-width: 0; }
+.stat-thb {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ui-muted);
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-variant-numeric: tabular-nums;
+}
+.stat-thb.gain { color: color-mix(in srgb, var(--green) 75%, var(--ui-muted)); }
+.stat-thb.loss { color: color-mix(in srgb, var(--red) 75%, var(--ui-muted)); }
+.asset-stats.compact .stat-sub.asset-cost { white-space: normal; }
+.asset-cost .thb { font-weight: 600; }
+.asset-stats.compact .cell-value .asset-pl { margin-top: 3px; }
+
+/* 4 คอลัมน์: ราคา · มูลค่า · กำไร · สัดส่วน (มือถือเป็น 2×2) */
+.asset-stats.compact { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.asset-stats.compact.cash { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.cell-profit { display: flex; flex-direction: column; min-width: 0; }
+.asset-stats.compact .stat-col + .stat-col { border-left: 1px solid var(--border); }
+@media (max-width: 520px) {
+    .asset-stats.compact:not(.cash) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .asset-stats.compact:not(.cash) .stat-col:nth-child(odd) { border-left: none; }
+    .asset-stats.compact:not(.cash) .stat-col:nth-child(n+3) { border-top: 1px solid var(--border); }
+}
+
+/* บาทอยู่บรรทัดเดียวกับดอลลาร์ */
+.stat-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 6px;
+    min-width: 0;
+}
+.stat-line .stat-num, .stat-line .stat-sub { display: inline; }
+.stat-thb-inline {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ui-muted);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+.asset-cost .stat-thb-inline { font-size: inherit; }
+.stat-thb-inline.gain { color: color-mix(in srgb, var(--green) 75%, var(--ui-muted)); }
+.stat-thb-inline.loss { color: color-mix(in srgb, var(--red) 75%, var(--ui-muted)); }
+.cell-profit .stat-line { margin-top: 2px; }
+
+/* ── สรุปด้านบน 4 ช่อง: มูลค่ารวม · ต้นทุน · กำไร · สัดส่วน ── */
+.summary.summary-4 {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    flex-wrap: nowrap;
+}
+.summary-4 .summary-item { flex: none; display: flex; flex-direction: column; justify-content: center; }
+.summary-4 #target-box { flex-basis: auto; }
+.summary-4 .summary-sub { font-size: 12px; }
+.summary-4 #pl-amount { display: block; }
+.summary-4 #pl-amount .usd { font-size: 13px; }
+.summary-4 #pl-amount .thb { font-size: 12px; }
+@media (max-width: 560px) {
+    .summary.summary-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+}
+.summary-4 #total-value-thb, .summary-4 #cost-thb { font-size: 12px; font-weight: 600; color: var(--ui-muted); }
+
+/* ── มือถือ: แถวเดียว 4 ช่อง ทั้งสรุปด้านบนและการ์ดหุ้น ── */
+@media (max-width: 560px) {
+    .summary.summary-4 {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 4px;
+        padding: 6px;
+    }
+    .summary-4 .summary-item { padding: 6px 3px; border-radius: 8px; }
+    .summary-4 .summary-label { font-size: 10px; line-height: 1.3; margin-bottom: 1px; }
+    .summary-4 .summary-value { font-size: 12px; white-space: normal; overflow-wrap: anywhere; }
+    .summary-4 .summary-sub,
+    .summary-4 #total-value-thb,
+    .summary-4 #cost-thb,
+    .summary-4 #pl-amount .usd,
+    .summary-4 #pl-amount .thb { font-size: 9px; }
+    .summary-4 #pl-amount .thb { display: block; }
+    .summary-4 .pl-note { font-size: 9px; line-height: 1.25; }
+
+    .asset-stats.compact:not(.cash) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .asset-stats.compact:not(.cash) .stat-col:nth-child(n+3) { border-top: none; }
+    .asset-stats.compact:not(.cash) .stat-col + .stat-col { border-left: 1px solid var(--border); }
+    .asset-stats.compact .stat-col { padding: 5px 4px; }
+    .asset-stats.compact .stat-label { font-size: 9px; }
+    .asset-stats.compact .stat-num { font-size: 11px; }
+    .asset-stats.compact .stat-sub,
+    .asset-stats.compact .stat-thb-inline { font-size: 9px; }
+    .stat-line { column-gap: 3px; }
+}
+
+/* ตัวเลขเต็ม/ย่อ + ดอลลาร์กับบาทอยู่บรรทัดเดียวกันบนมือถือ */
+.t-short { display: none; }
+@media (max-width: 560px) {
+    .t-full { display: none; }
+    .t-short { display: inline; }
+    .stat-line { flex-wrap: nowrap; white-space: nowrap; }
+    .stat-line > * { flex-shrink: 0; }
+    .asset-stats.compact .stat-sub.asset-cost { white-space: nowrap; }
+    .summary-4 #pl-amount { white-space: nowrap; }
+    .summary-4 #pl-amount .thb { display: inline; }
+    .summary-4 .summary-item { flex-direction: column; }
+    .summary-4 .summary-value-line { white-space: nowrap; }
+}
+@media (max-width: 379px) { .asset-stats.compact .stat-line { flex-wrap: wrap; white-space: normal; } }
+
+/* มือถือ: ตัวเล็กลงให้ดอลลาร์กับ ฿ อยู่บรรทัดเดียว */
+@media (max-width: 560px) {
+    .asset-stats.compact .stat-col { padding: 5px 3px; }
+    .asset-stats.compact .stat-num { font-size: 10px; letter-spacing: -0.2px; }
+    .asset-stats.compact .stat-sub { font-size: 8.5px; letter-spacing: -0.2px; }
+    .asset-stats.compact .stat-thb-inline { font-size: 8px; letter-spacing: -0.2px; }
+    .stat-line { column-gap: 2px; }
+    .summary-4 .summary-item { padding: 6px 2px; }
+    .summary-4 #pl-amount .usd, .summary-4 #pl-amount .thb { font-size: 8px; letter-spacing: -0.2px; }
+}
+@media (max-width: 560px) { .asset-stats.compact .asset-total-cost, .asset-stats.compact .asset-total-cost .stat-thb-inline { font-size: 7.5px; } .asset-total-cost { margin-top: 2px; } }
+@media (max-width: 379px) { .asset-stats.compact .stat-line.asset-total-cost { flex-wrap: wrap; white-space: normal; } }
