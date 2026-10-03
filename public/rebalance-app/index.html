@@ -28,6 +28,7 @@
             </button>
         </div>
         <button class="btn-sync synced" id="btn-sync" type="button" title="ซิงค์อัตโนมัติทุกอุปกรณ์">☁<span class="sync-dot"></span></button>
+        <button class="btn-currency" id="btn-currency" type="button" onclick="toggleCurrency()">$</button>
         <button class="btn-settings" id="btn-settings" type="button" title="ตั้งค่า" onclick="openSettingsSheet()">⚙</button>
         <button class="btn-refresh" id="btn-refresh" type="button" title="อัปเดตราคา">↻</button>
         <button class="btn-install" id="btn-install" type="button">ติดตั้ง</button>
@@ -36,7 +37,7 @@
     <div class="summary summary-4">
         <div class="summary-item">
             <div class="summary-label">มูลค่ารวม</div>
-            <div class="summary-value">$<span id="total-value">0</span></div>
+            <div class="summary-value" id="total-value">$0.00</div>
             <div class="summary-sub" id="total-value-thb"></div>
         </div>
         <div class="summary-item" id="cost-box" title="ต้นทุนของหุ้นที่ใส่ราคาทุนแล้ว ไม่รวมเงินสด">

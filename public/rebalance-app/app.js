@@ -675,6 +675,31 @@ async function initCloudSync() {
 }
 
 let usdThbRate = 0;
+let displayCurrency = (() => {
+    try { return localStorage.getItem('rbCurrency') === 'THB' ? 'THB' : 'USD'; } catch { return 'USD'; }
+})();
+
+function updateCurrencyButton() {
+    const btn = document.getElementById('btn-currency');
+    if (!btn) return;
+    const thb = displayCurrency === 'THB';
+    btn.textContent = thb ? '฿' : '$';
+    btn.classList.toggle('is-thb', thb);
+    btn.title = thb ? 'แสดงเป็นเงินบาท — กดเพื่อเปลี่ยนเป็นดอลลาร์' : 'แสดงเป็นดอลลาร์ — กดเพื่อเปลี่ยนเป็นเงินบาท';
+    btn.setAttribute('aria-label', btn.title);
+}
+
+function toggleCurrency() {
+    displayCurrency = displayCurrency === 'THB' ? 'USD' : 'THB';
+    try { localStorage.setItem('rbCurrency', displayCurrency); } catch { /* ignore */ }
+    updateCurrencyButton();
+    if (displayCurrency === 'THB' && !(usdThbRate > 0)) {
+        showToast('กำลังโหลดค่าเงินบาท…');
+        fetchUsdThbRate();
+    }
+    renderAndCalculate();
+    if (typeof refreshAssetSheet === 'function' && assetSheetIndex != null) refreshAssetSheet();
+}
 
 async function fetchUsdThbRate() {
     try {
@@ -1137,7 +1162,7 @@ function fvHeaderInnerHtml(symbol, asset) {
         const gain = (fv - price) * shares;
         const sign = gain > 0 ? '+' : gain < 0 ? '−' : '';
         const cls = gain > 0 ? 'gain' : gain < 0 ? 'loss' : 'muted';
-        const thbStr = thbText(gain, sign);
+        const thbStr = '';
         const thb = thbStr ? ` <span class="thb">(${thbStr})</span>` : '';
         const label = gain >= 0 ? 'ถ้าถึงราคานี้' : 'ถ้าลงถึงราคานี้';
         gainHtml = `<span class="asset-fv-gain"><span class="asset-fv-gain-label">${label}</span> <span class="${cls}">${sign}${fmtUsd(Math.abs(gain))}${thb}</span></span>`;
@@ -1267,10 +1292,14 @@ function dualText(full, short) {
 }
 
 function usdDual(usd, sign = '') {
-    return dualText(sign + fmtUsd(Math.abs(usd)), sign + usdShortText(usd));
+    return sign + fmtUsd(Math.abs(usd));
 }
 
 function thbDual(usd, sign = '') {
+    return '';
+}
+
+function thbDualLegacy(usd, sign = '') {
     const full = thbText(usd, sign);
     if (!full) return '';
     return `(${dualText(full, thbShortText(usd, sign))})`;
@@ -1284,7 +1313,13 @@ function fmtPct(n) {
     return fmt(n, 2) + '%';
 }
 
+/* สกุลเงินที่แสดง (ปุ่ม $ / ฿ บนหัว) — เปลี่ยนแค่การแสดงผล ข้อมูลที่กรอกยังเป็นดอลลาร์ */
+function isThbDisplay() {
+    return displayCurrency === 'THB' && usdThbRate > 0;
+}
+
 function fmtUsd(n) {
+    if (isThbDisplay()) return '฿' + fmt(n * usdThbRate, 2);
     return '$' + fmt(n, 2);
 }
 
@@ -1391,7 +1426,7 @@ function updateProfitSummary() {
     if (cost > 0) {
         const sign = profit > 0 ? '+' : profit < 0 ? '−' : '';
         pctEl.textContent = `${sign}${fmt(Math.abs(pct), 2)}%`;
-        const thbStr = thbText(profit, sign);
+        const thbStr = '';
         amountEl.innerHTML = `<span class="usd">${usdDual(profit, sign)}</span>`
             + (thbStr ? ` <span class="thb">${thbDual(profit, sign)}</span>` : '');
         costEl.innerHTML = usdDual(cost);
@@ -1411,7 +1446,7 @@ function updateProfitSummary() {
 }
 
 function updateSummary(totalValue, totalTarget) {
-    document.getElementById('total-value').innerHTML = dualText(fmt(totalValue, 2), usdShortText(totalValue).slice(1));
+    document.getElementById('total-value').textContent = fmtUsd(totalValue);
     const thbEl = document.getElementById('total-value-thb');
     if (thbEl) {
         thbEl.innerHTML = thbDual(totalValue);
@@ -2410,6 +2445,7 @@ document.addEventListener('visibilitychange', () => {
 });
 
 async function bootstrap() {
+    updateCurrencyButton();
     renderPortfolioSwitcher();
     renderAndCalculate();
     fetchPrices(true);

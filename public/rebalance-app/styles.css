@@ -1480,3 +1480,25 @@ input, select, textarea { color: var(--ui-text); background: var(--ui-raised); b
 }
 @media (max-width: 560px) { .asset-stats.compact .asset-total-cost, .asset-stats.compact .asset-total-cost .stat-thb-inline { font-size: 7.5px; } .asset-total-cost { margin-top: 2px; } }
 @media (max-width: 379px) { .asset-stats.compact .stat-line.asset-total-cost { flex-wrap: wrap; white-space: normal; } }
+
+/* ── ปุ่มเปลี่ยนสกุลเงิน $ / ฿ ── */
+.btn-currency {
+    flex-shrink: 0;
+    min-width: 40px;
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 1;
+    padding: 6px 10px;
+    cursor: pointer;
+}
+.header .btn-currency.is-thb { color: var(--ui-accent); border-color: var(--ui-accent); }
+
+/* แสดงสกุลเงินเดียวแล้ว — มือถือกลับมาใช้ตัวใหญ่ขึ้นได้ */
+@media (max-width: 560px) {
+    .asset-stats.compact .stat-col { padding: 6px 4px; }
+    .asset-stats.compact .stat-num { font-size: 11.5px; letter-spacing: -0.2px; }
+    .asset-stats.compact .stat-sub,
+    .asset-stats.compact .asset-total-cost { font-size: 9.5px; letter-spacing: -0.2px; }
+    .summary-4 .summary-value { font-size: 12px; }
+    .summary-4 #pl-amount .usd { font-size: 10px; }
+}
