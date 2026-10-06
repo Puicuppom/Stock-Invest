@@ -13,7 +13,8 @@ interface StockDashboardProps {
   market: "TH" | "US";
   assetKind: AssetKind;
   fairValue: FairValueResult;
-  tradePlan: TradePlan;
+  /** แสดงในการ์ดสรุปสัญญาณแล้ว */
+  tradePlan?: TradePlan;
   nearSupport: boolean;
   nearResistance: boolean;
   loading: boolean;
@@ -61,7 +62,6 @@ export default function StockDashboard({
   market,
   assetKind,
   fairValue,
-  tradePlan,
   nearSupport,
   nearResistance,
   loading,
@@ -119,16 +119,6 @@ export default function StockDashboard({
               </span>
             )}
           </div>
-          {trend && (
-            <p className="dash-trend" title={trend.reasons.join("\n")}>
-              {trend.change3mPercent != null && (
-                <span className={trend.change3mPercent >= 0 ? "change-up" : "change-down"}>
-                  3 เดือน {trend.change3mPercent > 0 ? "+" : ""}{trend.change3mPercent.toFixed(1)}%
-                </span>
-              )}
-              <span>{trend.rangeLow.toFixed(2)}–{trend.rangeHigh.toFixed(2)}</span>
-            </p>
-          )}
         </div>
 
         <button
@@ -239,47 +229,6 @@ export default function StockDashboard({
         </div>
       )}
 
-      <div className="dash-trade-grid">
-        <div className="trade-plan-box trade-plan-buy">
-          <p className="trade-plan-box-label">ซื้อที่</p>
-          <p className="trade-plan-box-price">
-            {tradePlan.buyPrice != null
-              ? formatPrice(tradePlan.buyPrice)
-              : "—"}
-          </p>
-          <p className="trade-plan-box-meta">{tradePlan.buyLabel}</p>
-          {tradePlan.buyPrice != null &&
-            Math.abs(tradePlan.buyPrice - currentPrice) / currentPrice <
-              0.02 && (
-              <p className="trade-plan-box-hint">ใกล้ราคาปัจจุบัน</p>
-            )}
-        </div>
-
-        <div className="trade-plan-box trade-plan-sell">
-          <p className="trade-plan-box-label">ขายที่</p>
-          <p className="trade-plan-box-price">
-            {tradePlan.sellPrice != null
-              ? formatPrice(tradePlan.sellPrice)
-              : "—"}
-          </p>
-          <p className="trade-plan-box-meta">{tradePlan.sellLabel}</p>
-          {tradePlan.sellPrice != null &&
-            Math.abs(tradePlan.sellPrice - currentPrice) / currentPrice <
-              0.02 && (
-              <p className="trade-plan-box-hint">ใกล้ราคาปัจจุบัน</p>
-            )}
-        </div>
-
-        <div className="trade-plan-box trade-plan-stop">
-          <p className="trade-plan-box-label">Stop loss</p>
-          <p className="trade-plan-box-price">
-            {tradePlan.stopLoss != null
-              ? formatPrice(tradePlan.stopLoss)
-              : "—"}
-          </p>
-          <p className="trade-plan-box-meta">ใต้แนวรับ</p>
-        </div>
-      </div>
     </section>
   );
 }

@@ -4,8 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import AddStockFab from "@/components/AddStockFab";
 import AppNavigation from "@/components/AppNavigation";
 import StockDashboard from "@/components/StockDashboard";
-import ReversalCard from "@/components/ReversalCard";
-import SupportResistanceCard from "@/components/SupportResistanceCard";
+import SignalSummary from "@/components/SignalSummary";
 import StockChart from "@/components/StockChart";
 import Watchlist from "@/components/Watchlist";
 import { useSrTagSettings } from "@/hooks/useSrTagSettings";
@@ -259,6 +258,20 @@ export default function StockApp() {
         />
       )}
 
+      {selectedData && tradePlan && (
+        <SignalSummary
+          data={selectedData}
+          trend={trend}
+          tradePlan={tradePlan}
+          srMode={srMode}
+          onModeChange={setSrMode}
+          hits={currentHits}
+          tolerancePercent={tagSettings.tolerancePercent}
+          toleranceOptions={toleranceOptions}
+          onToleranceChange={setTagTolerance}
+        />
+      )}
+
 
 
       {toast && (
@@ -291,21 +304,6 @@ export default function StockApp() {
               </div>
             )}
           </section>
-
-          <SupportResistanceCard
-            pivot={selectedData.pivot}
-            zones={selectedData.zones}
-            currentPrice={selectedData.lastClose}
-            mode={srMode}
-            hits={currentHits}
-            tolerancePercent={tagSettings.tolerancePercent}
-            toleranceOptions={toleranceOptions}
-            onModeChange={setSrMode}
-            onToleranceChange={setTagTolerance}
-            hideNearest
-          />
-
-          <ReversalCard data={selectedData} />
         </>
       )}
 
