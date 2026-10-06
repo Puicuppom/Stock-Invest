@@ -2795,3 +2795,30 @@ button.dash-jump:hover { filter: brightness(1.15); }
 button.dash-jump:active { transform: scale(0.95); }
 @keyframes ssFlash { 0%,100% { box-shadow: 0 0 0 0 transparent; } 25%,60% { box-shadow: 0 0 0 2px var(--accent, #60a5fa); } }
 .ss-flash { animation: ssFlash 1.5s ease; border-radius: 10px; }
+
+/* volume row */
+.ss-vol { gap: 8px; flex-wrap: wrap; }
+.vol-spark { position: relative; display: inline-flex; align-items: flex-end; gap: 1px; width: 84px; height: 22px; padding-bottom: 1px; border-bottom: 1px solid var(--border); }
+.vol-spark i { flex: 1; min-width: 2px; border-radius: 1px 1px 0 0; opacity: 0.55; }
+.vol-spark i.up { background: var(--success); }
+.vol-spark i.down { background: var(--danger); }
+.vol-spark i.last { opacity: 1; }
+.vol-spark s { position: absolute; left: 0; right: 0; height: 0; border-top: 1px dashed var(--muted); opacity: 0.8; text-decoration: none; }
+.vol-ratio, .vol-bal { font-size: var(--t-body); white-space: nowrap; }
+.vol-ratio b { font-weight: 800; }
+.vol-bal { color: var(--muted); padding: 1px 6px; border-radius: 999px; border: 1px solid var(--border); font-size: var(--t-meta); }
+.tone-good { color: var(--success); }
+.tone-bad { color: var(--danger); }
+.tone-mid { color: var(--text); }
+.tone-dim { color: var(--muted); }
+.vol-bal.tone-good { border-color: color-mix(in srgb, var(--success) 45%, transparent); }
+.vol-bal.tone-bad { border-color: color-mix(in srgb, var(--danger) 45%, transparent); }
+.ss-brk { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 4px 0 6px; padding: 4px 8px; border-radius: 8px; font-size: var(--t-body); font-weight: 700; border: 1px dashed var(--border); }
+.ss-brk em { font-style: normal; font-weight: 600; font-size: var(--t-meta); color: var(--warning); }
+.ss-brk small { margin-left: auto; color: var(--muted); font-weight: 400; font-size: var(--t-label); }
+.ss-brk.is-up { color: var(--success); }
+.ss-brk.is-down { color: var(--danger); }
+.ss-brk.is-strong { border-style: solid; }
+.ss-brk.is-up.is-strong { border-color: color-mix(in srgb, var(--success) 50%, transparent); background: color-mix(in srgb, var(--success) 10%, transparent); }
+.ss-brk.is-down.is-strong { border-color: color-mix(in srgb, var(--danger) 50%, transparent); background: color-mix(in srgb, var(--danger) 10%, transparent); }
+.ss-brk.is-strong em { color: inherit; }

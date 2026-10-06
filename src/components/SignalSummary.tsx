@@ -6,6 +6,7 @@ import { analyzeReversal, type ReversalSignal } from "@/lib/reversal";
 import type { SrHit } from "@/lib/sr-levels";
 import { TREND_METHOD, trendIcon, type TrendResult } from "@/lib/trend";
 import type { TradePlan } from "@/lib/trade-plan";
+import { analyzeVolume, VOLUME_METHOD } from "@/lib/volume";
 import type { SrMode, StockData } from "@/lib/types";
 
 interface Props {
@@ -29,6 +30,8 @@ export default function SignalSummary(props: Props) {
   const [info, setInfo] = useState(false);
   const price = data.lastClose;
   const reversal = analyzeReversal(data);
+  const vol = analyzeVolume(data);
+  const volMax = vol ? Math.max(...vol.bars.map(b => b.volume), vol.avg20) : 0;
   const fv = data.fairValue;
   const upside = fv.upsidePercent;
   const selected = reversal?.signals.find(s => s.label === openSignal) ?? null;
@@ -135,6 +138,23 @@ export default function SignalSummary(props: Props) {
         </div>
       )}
 
+      {vol && (
+        <div className="ss-row" id="ss-vol" title={VOLUME_METHOD}>
+          <span className="ss-label">Volume</span>
+          <div className="ss-body ss-inline ss-vol">
+            <span className="vol-spark" aria-hidden="true">
+              {vol.bars.map((b, i) => (
+                <i key={i} className={`${b.up ? "up" : "down"}${i === vol.bars.length - 1 ? " last" : ""}`}
+                  style={{ height: `${Math.max(6, (b.volume / volMax) * 100)}%` }} />
+              ))}
+              <s style={{ bottom: `${(vol.avg20 / volMax) * 100}%` }} />
+            </span>
+            <span className={`vol-ratio tone-${vol.tone}`}><b>{vol.lastRatio.toFixed(1)}×</b> {vol.label}</span>
+            <span className={`vol-bal tone-${vol.balanceTone}`}>10ว. {vol.balanceLabel}</span>
+          </div>
+        </div>
+      )}
+
       <div className="ss-sr-block" id="ss-sr">
         <div className="ss-sr-bar">
           <span className="ss-label">แนวรับ/แนวต้าน</span>
@@ -149,6 +169,14 @@ export default function SignalSummary(props: Props) {
               props.onToleranceChange(opts[(i + 1) % opts.length]);
             }}>ใกล้ ±{props.tolerancePercent}%</button>
         </div>
+        {vol?.breakout && (
+          <p className={`ss-brk ${vol.breakout.dir === "up" ? "is-up" : "is-down"}${vol.breakout.strong ? " is-strong" : ""}`}
+            title={`Volume วันที่ทะลุ ${vol.breakout.ratio.toFixed(1)} เท่าของค่าเฉลี่ย 20 วัน`}>
+            {vol.breakout.dir === "up" ? "▲ ทะลุแนวต้าน" : "▼ หลุดแนวรับ"} {p2(vol.breakout.level)}
+            <em>{vol.breakout.strong ? "Vol หนุน · ทะลุจริง" : "Vol เบา · ระวังหลอก"}</em>
+            <small>{vol.breakout.daysAgo === 0 ? "วันล่าสุด" : `${vol.breakout.daysAgo} วันก่อน`}</small>
+          </p>
+        )}
         <SrLadder pivot={data.pivot} zones={data.zones} price={price} mode={srMode} tolerancePercent={props.tolerancePercent} />
       </div>
 
