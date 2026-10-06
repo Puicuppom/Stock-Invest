@@ -4,7 +4,7 @@ import { findSwingPoints } from "./swing";
 import { analyzeTrend } from "./trend";
 
 export type SignalState = "yes" | "partial" | "no";
-export interface ReversalSignal { label: string; state: SignalState; detail: string; group: "early" | "confirm" }
+export interface ReversalSignal { label: string; short: string; state: SignalState; detail: string; group: "early" | "confirm" }
 export interface ReversalResult {
   signals: ReversalSignal[];
   /** ผ่าน = 1, เริ่มเห็น = 0.5 */
@@ -76,7 +76,7 @@ export function analyzeReversal(data: StockData): ReversalResult | null {
   const atSupport = gap != null && gap <= 3;
   signals.push({
     group: "early",
-    label: "ราคาอยู่ใกล้แนวรับ",
+    label: "ราคาอยู่ใกล้แนวรับ", short: "แนวรับ",
     state: atSupport ? "yes" : gap != null && gap <= 6 ? "partial" : "no",
     detail: nearest ? `${nearest.note} ${f2(nearest.price)} · ห่าง ${gap!.toFixed(1)}%` : "ไม่มีแนวรับใต้ราคา",
   });
@@ -86,7 +86,7 @@ export function analyzeReversal(data: StockData): ReversalResult | null {
   const minRsi = Math.min(...recentRsi);
   signals.push({
     group: "early",
-    label: "RSI เคยต่ำกว่า 30 แล้วกลับขึ้นมา",
+    label: "RSI เคยต่ำกว่า 30 แล้วกลับขึ้นมา", short: "RSI",
     state: minRsi < 30 && rsiNow >= 30 ? "yes" : rsiNow < 30 || (minRsi < 35 && rsiNow > minRsi + 5) ? "partial" : "no",
     detail: `RSI ตอนนี้ ${rsiNow.toFixed(0)} · ต่ำสุด 10 วัน ${minRsi.toFixed(0)}${rsiNow < 30 ? " (ยังอยู่โซนขายมาก รอกลับขึ้น)" : ""}`,
   });
@@ -120,7 +120,7 @@ export function analyzeReversal(data: StockData): ReversalResult | null {
       divDetail = `ราคาต่ำลง ${f2(low1.price)} → ${f2(low2.price)} แต่ RSI สูงขึ้น ${rsi[i1].toFixed(0)} → ${rsi[i2].toFixed(0)}${fresh ? "" : " (เกิดนานแล้ว)"}`;
     } else divDetail = `จุดต่ำล่าสุด ${f2(low1.price)} → ${f2(low2.price)} · RSI ${rsi[i1].toFixed(0)} → ${rsi[i2].toFixed(0)}`;
   }
-  signals.push({ group: "early", label: "Bullish Divergence (ราคาลงแต่ RSI ไม่ลง)", state: divergence, detail: divDetail });
+  signals.push({ group: "early", label: "Bullish Divergence (ราคาลงแต่ RSI ไม่ลง)", short: "Divergence", state: divergence, detail: divDetail });
 
   // 4. แท่งเทียนกลับตัว 3 วันล่าสุด
   let pattern: string | null = null;
@@ -130,7 +130,7 @@ export function analyzeReversal(data: StockData): ReversalResult | null {
   }
   signals.push({
     group: "early",
-    label: "แท่งเทียนกลับตัว (Hammer / Engulfing)",
+    label: "แท่งเทียนกลับตัว (Hammer / Engulfing)", short: "แท่งเทียน",
     state: pattern ? (atSupport ? "yes" : "partial") : "no",
     detail: pattern ? `${pattern}${atSupport ? " ที่แนวรับ" : " (ไม่ได้อยู่ที่แนวรับ น้ำหนักน้อย)"}` : "ไม่พบใน 3 วันล่าสุด",
   });
@@ -144,7 +144,7 @@ export function analyzeReversal(data: StockData): ReversalResult | null {
   }
   signals.push({
     group: "early",
-    label: "วันที่ราคาขึ้นมี Volume หนุน",
+    label: "วันที่ราคาขึ้นมี Volume หนุน", short: "Volume",
     state: bestRatio >= 1.5 ? "yes" : bestRatio >= 1.2 ? "partial" : "no",
     detail: bestRatio > 0 ? `Volume วันขึ้น ${bestRatio.toFixed(1)} เท่าของค่าเฉลี่ย 20 วัน` : "ไม่มีวันปิดบวกใน 3 วันล่าสุด",
   });
@@ -165,13 +165,13 @@ export function analyzeReversal(data: StockData): ReversalResult | null {
       }
     } else structDetail = `จุดต่ำล่าสุดยังต่ำลง ${f2(low1.price)} → ${f2(low2.price)}`;
   }
-  signals.push({ group: "confirm", label: "โครงสร้างเปลี่ยน (Higher Low + ทะลุจุดสูง)", state: structure, detail: structDetail });
+  signals.push({ group: "confirm", label: "โครงสร้างเปลี่ยน (Higher Low + ทะลุจุดสูง)", short: "Higher Low", state: structure, detail: structDetail });
 
   // 7. กลับมายืนเหนือเส้นเฉลี่ย
   const sma20 = avg(closes.slice(-20)), sma50 = avg(closes.slice(-50));
   signals.push({
     group: "confirm",
-    label: "ราคากลับมายืนเหนือเส้นเฉลี่ย",
+    label: "ราคากลับมายืนเหนือเส้นเฉลี่ย", short: "เหนือเส้นเฉลี่ย",
     state: close > sma20 && close > sma50 ? "yes" : close > sma20 ? "partial" : "no",
     detail: `เส้น 20 วัน ${f2(sma20)} (${close > sma20 ? "เหนือ" : "ใต้"}) · 50 วัน ${f2(sma50)} (${close > sma50 ? "เหนือ" : "ใต้"})`,
   });
