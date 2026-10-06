@@ -2551,3 +2551,14 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   border-color: var(--ui-danger, #f87171);
   color: var(--ui-danger, #f87171);
 }
+
+
+/* ── หน้าคัดหุ้น: เกือบผ่าน + สัญญาณเตือน ── */
+.screen-flags { color: var(--warning, #fbbf24); font-size: 0.85rem; }
+.screen-near summary { cursor: pointer; font-weight: 600; }
+.screen-near-note { color: var(--muted); font-size: 0.85rem; }
+.screen-near-row { display: flex; flex-direction: column; gap: 4px; padding: 10px 0; border-top: 1px solid var(--border); }
+.screen-near-row small { color: var(--muted); }
+.screen-near-fail { margin: 0; color: var(--danger, #f87171); font-size: 0.85rem; }
+.screen-near-fail span { color: var(--muted); }
+.screen-near-row button { align-self: flex-start; }

@@ -164,6 +164,30 @@ export async function fetchFundamentals(resolvedSymbol: string): Promise<FairVal
   return normalized ?? { ...listed, normalizationNotes: ["แปลงสกุลเงินไม่สำเร็จ: ข้อมูลงบต้นทาง อัตราแลกเปลี่ยนล่าสุด หรือจำนวนหุ้นยังยืนยันไม่ได้"] };
 }
 
+function qualityMetrics(data: FairValueData): import("./types").QualityMetrics {
+  const finite = (v: number | null | undefined): v is number => v != null && Number.isFinite(v);
+  const sameCurrency = data.financialCurrency != null && data.financialCurrency === data.quoteCurrency;
+  const cashCurrency = data.cashflowCurrency ?? data.financialCurrency;
+  const netDebtToEbitda = finite(data.ebitda) && data.ebitda > 0 && finite(data.totalDebt) && finite(data.totalCash)
+    ? (data.totalDebt - data.totalCash) / data.ebitda : null;
+  // ปันผล (สกุลราคา) เทียบ EPS/FCF ได้เฉพาะเมื่อสกุลเงินตรงกัน
+  const payoutPercent = sameCurrency && finite(data.dividendRate) && data.dividendRate > 0 && finite(data.trailingEps) && data.trailingEps > 0
+    ? data.dividendRate / data.trailingEps * 100 : null;
+  const dividendTotal = finite(data.dividendRate) && data.dividendRate > 0 && finite(data.sharesOutstanding) && data.sharesOutstanding > 0
+    ? data.dividendRate * data.sharesOutstanding : null;
+  const fcfDividendCoverage = dividendTotal != null && finite(data.freeCashflow) && cashCurrency === data.quoteCurrency
+    ? data.freeCashflow / dividendTotal : null;
+  return {
+    sector: data.sector ?? null,
+    roePercent: finite(data.returnOnEquity) ? data.returnOnEquity * 100 : null,
+    operatingMarginPercent: finite(data.operatingMargins) ? data.operatingMargins * 100 : null,
+    revenueGrowthPercent: finite(data.revenueGrowth) ? data.revenueGrowth * 100 : null,
+    netDebtToEbitda,
+    payoutPercent,
+    fcfDividendCoverage,
+  };
+}
+
 function fcfYieldPercent(data: FairValueData): number | null {
   const { freeCashflow, marketCap } = data;
   if (!(data.cashflowCurrency ?? data.financialCurrency) || (data.cashflowCurrency ?? data.financialCurrency) !== data.quoteCurrency) return null;
@@ -204,6 +228,7 @@ export function calculateFairValue(
   currentPrice: number,
   data: FairValueData | null
 ): {
+  quality?: import("./types").QualityMetrics | null;
   modelFairValue?: number | null;
   analystWeight?: number;
   confidence?: "low" | "medium" | "unavailable";
@@ -255,6 +280,7 @@ export function calculateFairValue(
       fcfYieldPercent: null,
       dividendYieldPercent: null,
       dividendRate: null,
+      quality: null,
       source: "unknown",
     };
   }
@@ -334,6 +360,7 @@ export function calculateFairValue(
     fcfYieldPercent: fcfYieldPercent(data),
     dividendYieldPercent: dividendYieldPercent(data, currentPrice),
     dividendRate: data.dividendRate,
+    quality: qualityMetrics(data),
     source,
   };
 }

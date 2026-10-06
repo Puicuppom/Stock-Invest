@@ -72,7 +72,19 @@ export interface FairValueData {
   dividendRate: number | null;
 }
 
+/** ตัวชี้วัดคุณภาพจาก Yahoo — ใช้ในหน้าคัดหุ้น (null = ไม่มีข้อมูล/สกุลเงินไม่ตรงกัน) */
+export interface QualityMetrics {
+  sector: string | null;
+  roePercent: number | null;
+  operatingMarginPercent: number | null;
+  revenueGrowthPercent: number | null;
+  netDebtToEbitda: number | null;
+  payoutPercent: number | null;
+  fcfDividendCoverage: number | null;
+}
+
 export interface FairValueResult {
+  quality?: QualityMetrics | null;
   modelFairValue?: number | null;
   analystWeight?: number;
   trailingEps?: number | null;

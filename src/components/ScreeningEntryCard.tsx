@@ -9,32 +9,9 @@ export default function ScreeningEntryCard({data, style}: {data: StockData; styl
   const fairValue = data.fairValue.fairValue;
   const upside = data.lastClose != null && Number.isFinite(data.lastClose) && data.lastClose > 0 && fairValue != null && Number.isFinite(fairValue) && fairValue > 0
     ? (fairValue / data.lastClose - 1) * 100 : null;
-  const forwardEps = data.fairValue.forwardEps;
-  const earningsYield = forwardEps != null && Number.isFinite(forwardEps) && Number.isFinite(data.lastClose) && data.lastClose > 0
-    ? forwardEps / data.lastClose * 100 : null;
   const checks = screenStock(data, style);
-  const descriptions: Record<ScreeningStyle, ((value: string) => string | null)[]> = {
-    long: [
-      value => `คาดการณ์กำไร ${value} ${unit} ต่อหุ้น${earningsYield != null ? ` (${earningsYield.toFixed(2)}% ของราคาปิดล่าสุด)` : ""}`,
-      value => `กระแสเงินสดอิสระ FCF Yield ${value}`,
-      () => null,
-      () => null,
-    ],
-    dividend: [
-      value => `อัตราปันผล ${value} อยู่ในช่วง 2–8%`,
-      value => `เงินปันผลต่อหุ้น ${value} ${data.market === "TH" ? "THB" : "USD"}`,
-      value => `กระแสเงินสดอิสระ FCF Yield ${value}`,
-      () => "กำไรย้อนหลังเป็นบวก",
-    ],
-    short: [
-      value => `ราคาเหนือค่าเฉลี่ย 20 วัน ${value}`,
-      () => "ค่าเฉลี่ย 20 วันสูงกว่า 50 วัน",
-      value => `ปริมาณซื้อขายเป็น ${value}ของค่าเฉลี่ย 20 วันก่อน`,
-      () => "ราคาเหนือ Pivot",
-    ],
-  };
-  const reasons = checks.flatMap((check, index) => check.passed === true && descriptions[style][index]
-    ? [descriptions[style][index](check.value)] : []).filter((reason): reason is string => reason != null);
+  // เหตุผลมาจากเกณฑ์ที่ผ่านโดยตรง จึงตรงกับเกณฑ์เสมอ
+  const reasons = checks.flatMap(check => check.passed === true && check.reason ? [check.reason] : []);
   const passed = checks.length > 0 && checks.every(check => check.passed === true);
   return <section className="screen-entry" aria-label="สรุปเหตุผลคัดหุ้น">
     <div className="screen-entry-prices">
@@ -43,7 +20,7 @@ export default function ScreeningEntryCard({data, style}: {data: StockData; styl
     </div>
     <p className="screen-entry-upside">ส่วนต่างถึง Fair Value <b style={{color: upside == null ? "var(--muted)" : upside >= 0 ? "#34d399" : "#f87171"}}>{upside == null ? "—" : `${upside > 0 ? "+" : ""}${upside.toFixed(1)}%`}</b><small>จากราคาปิดล่าสุด</small></p>
     <b>{passed ? "เหตุผลสรุป" : "สรุปผลคัดกรอง"}</b>
-    <p>{reasons.length ? reasons.slice(0, 3).map(reason => <span key={reason} style={{display: "block"}}>{reason}</span>) : "ยังไม่มีข้อมูลเพียงพอที่ผ่านเกณฑ์"}</p>
+    <p>{reasons.length ? reasons.slice(0, 5).map(reason => <span key={reason} style={{display: "block"}}>{reason}</span>) : "ยังไม่มีข้อมูลเพียงพอที่ผ่านเกณฑ์"}</p>
     {!passed && reasons.length > 0 && <small>ยังไม่ผ่านครบทุกเกณฑ์</small>}
   </section>;
 }

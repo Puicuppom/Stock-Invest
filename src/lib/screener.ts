@@ -1,42 +1,120 @@
-import type { StockData } from "./types";
+import type { Candle, StockData } from "./types";
 export type ScreeningStyle = "long" | "dividend" | "short";
 export const screeningStyles = {
-  long: { label: "ถือยาว", description: "คัดจากกำไร เงินสด และมูลค่า ยังไม่ยืนยันการเติบโตหลายปีหรือคุณภาพหนี้" },
-  dividend: { label: "ปันผล", description: "คัดจากปันผลและเงินสด ยังไม่ยืนยันความต่อเนื่องหรือความปลอดภัยของปันผล" },
-  short: { label: "เทรดสั้น", description: "คัดจากแนวโน้มและปริมาณซื้อขายรายวัน ใช้ราคาปิด ไม่ใช่ราคาสด" },
+  long: { label: "ถือยาว", description: "คัดจากกำไร เงินสด มูลค่า และคุณภาพธุรกิจ (ROE รายได้ หนี้) ตัดหุ้นที่ราคายุติธรรมมีสัญญาณข้อมูลผิดปกติ ยังไม่ยืนยันการเติบโตหลายปี" },
+  dividend: { label: "ปันผล", description: "คัดจากปันผล เงินสด และความสามารถจ่ายปันผล (ไม่จ่ายเกินกำไร/เงินสดอิสระ) ยังไม่ยืนยันความต่อเนื่องของปันผลหลายปี" },
+  short: { label: "เทรดสั้น", description: "คัดจากแนวโน้ม ปริมาณซื้อขาย และสภาพคล่อง ใช้เฉพาะวันที่ตลาดปิดแล้ว ไม่นับวันที่ยังซื้อขายอยู่" },
 };
-export interface ScreeningCheck { label: string; value: string; passed: boolean | null }
+export interface ScreeningCheck { label: string; value: string; passed: boolean | null; reason?: string }
+
 export function hasValuationSupport(f: StockData["fairValue"]): boolean {
   return f.modelCount >= 2 || (f.modelCount >= 1 && f.analystWeight === 0.5 && f.analystTarget != null && Number.isFinite(f.analystTarget) && f.analystTarget > 0);
 }
+
+/* ── วันที่ตลาดปิดแล้ว ── ข้อมูลรายวันจาก Yahoo มีแท่งของวันที่ยังซื้อขายอยู่ (ปริมาณยังไม่ครบวัน) */
+const MARKET_SESSION = {
+  US: { timeZone: "America/New_York", closeMinutes: 16 * 60 + 15 },
+  TH: { timeZone: "Asia/Bangkok", closeMinutes: 16 * 60 + 45 },
+} as const;
+
+function marketNow(market: "US" | "TH", now = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: MARKET_SESSION[market].timeZone, year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+  }).formatToParts(now);
+  const get = (type: string) => parts.find(p => p.type === type)?.value ?? "00";
+  return { date: `${get("year")}-${get("month")}-${get("day")}`, minutes: Number(get("hour")) * 60 + Number(get("minute")) };
+}
+
+/** false = แท่งสุดท้ายเป็นวันนี้และตลาดยังไม่ปิด (ราคา/ปริมาณยังไม่ใช่ของทั้งวัน) */
+export function isLastCandleComplete(data: StockData, now = new Date()): boolean {
+  const last = data.candles.at(-1);
+  if (!last) return true;
+  const { date, minutes } = marketNow(data.market, now);
+  return last.date !== date || minutes >= MARKET_SESSION[data.market].closeMinutes;
+}
+
+export function completedCandles(data: StockData, now = new Date()): Candle[] {
+  return isLastCandleComplete(data, now) ? data.candles : data.candles.slice(0, -1);
+}
+
+/* ── สัญญาณข้อมูลผิดปกติจากตัวคำนวณราคายุติธรรม ── */
+// hard = ข้อมูลน่าจะผิดจริง (ตัดออกจากถือยาว) · soft = แค่เตือน + หักคะแนน
+// "โมเดลต่างกันมาก" เกิดบ่อยกับหุ้นปันผลที่ปกติดี (P/E กับโมเดลปันผลให้ค่าต่างกันโดยธรรมชาติ) จึงเป็น soft
+const RISK_PATTERNS: [string, string, "hard" | "soft"][] = [
+  ["EPS คาดการณ์ต่างจาก TTM มาก", "กำไรคาดการณ์ต่างจากกำไรปีล่าสุดมาก (อาจมีรายการพิเศษ)", "hard"],
+  ["ยังไม่ยืนยันหน่วยหุ้น/อัตราส่วน ADR", "หุ้นจดทะเบียนต่างประเทศ ยืนยันหน่วยหุ้นไม่ได้", "hard"],
+  ["แปลงสกุลเงินไม่สำเร็จ", "แปลงสกุลเงินงบการเงินไม่สำเร็จ", "hard"],
+  ["โมเดลให้ค่าต่างกันมาก", "โมเดลประเมินให้ราคาต่างกันมาก", "soft"],
+  ["P/E ย้อนหลังกระจายกว้าง", "P/E ย้อนหลังผันผวนสูง", "soft"],
+];
+export function valuationRiskFlags(f: StockData["fairValue"], level?: "hard" | "soft"): string[] {
+  const warnings = f.warnings ?? [];
+  return RISK_PATTERNS.filter(([needle, , sev]) => (!level || sev === level) && warnings.some(w => w.includes(needle))).map(([, label]) => label);
+}
+
+const fmt = (n: number, d = 2) => n.toFixed(d);
+
 export function screenStock(data: StockData, style: ScreeningStyle): ScreeningCheck[] {
   const f = data.fairValue;
-  const check = (label: string, value: number | null | undefined, predicate: (n: number) => boolean, suffix = ""): ScreeningCheck => ({
-    label, value: value != null && Number.isFinite(value) ? `${value.toFixed(2)}${suffix}` : "ไม่มีข้อมูล",
-    passed: value != null && Number.isFinite(value) ? predicate(value) : null,
-  });
+  const q = f.quality ?? null;
+  const unit = data.market === "TH" ? "THB" : "USD";
+  const check = (label: string, value: number | null | undefined, predicate: (n: number) => boolean, suffix = "", reason?: (v: string) => string): ScreeningCheck => {
+    const ok = value != null && Number.isFinite(value);
+    const text = ok ? `${fmt(value)}${suffix}` : "ไม่มีข้อมูล";
+    return { label, value: text, passed: ok ? predicate(value) : null, reason: ok && reason ? reason(text) : undefined };
+  };
   if (data.assetKind !== "stock") return [{label: "รองรับหุ้นสามัญเท่านั้น", value: "ไม่ใช้กับ ETF/ทอง/ค่าเงิน", passed: null}];
-  if (style === "long") return [
-    check("Forward EPS > 0", f.forwardEps, n => n > 0),
-    check("FCF Yield > 0%", f.fcfYieldPercent, n => n > 0, "%"),
-    check("Upside ถึง Fair Value ≥ 10%", f.upsidePercent, n => n >= 10, "%"),
-    {label:"มี 2 โมเดล หรือ 1 โมเดล + เป้านักวิเคราะห์", value: f.modelCount + " โมเดล" + (f.analystWeight === 0.5 ? " + นักวิเคราะห์" : ""), passed:hasValuationSupport(f)},
-  ];
-  if (style === "dividend") return [
-    check("Dividend Yield 2–8%", f.dividendYieldPercent, n => n >= 2 && n <= 8, "%"),
-    check("เงินปันผลต่อหุ้น > 0", f.dividendRate, n => n > 0),
-    check("FCF Yield > 0%", f.fcfYieldPercent, n => n > 0, "%"),
-    check("P/E ย้อนหลัง > 0", f.trailingPE, n => n > 0),
-  ];
-  const candles = data.candles;
+
+  if (style === "long") {
+    const earningsYield = f.forwardEps != null && data.lastClose > 0 ? f.forwardEps / data.lastClose * 100 : null;
+    const financial = q?.sector === "Financial Services";
+    const debt: ScreeningCheck = financial
+      ? { label: "หนี้สุทธิ ≤ 3 เท่าของ EBITDA", value: "ไม่ใช้กับกลุ่มการเงิน", passed: true }
+      : q?.netDebtToEbitda != null && Number.isFinite(q.netDebtToEbitda)
+        ? q.netDebtToEbitda <= 0
+          ? { label: "หนี้สุทธิ ≤ 3 เท่าของ EBITDA", value: "เงินสดมากกว่าหนี้", passed: true, reason: "เงินสดมากกว่าหนี้สิน (ไม่มีหนี้สุทธิ)" }
+          : check("หนี้สุทธิ ≤ 3 เท่าของ EBITDA", q.netDebtToEbitda, n => n <= 3, " เท่า", v => `หนี้สุทธิ ${v}ของ EBITDA`)
+        : { label: "หนี้สุทธิ ≤ 3 เท่าของ EBITDA", value: "ไม่มีข้อมูล", passed: null };
+    const flags = valuationRiskFlags(f, "hard");
+    return [
+      check("Forward EPS > 0", f.forwardEps, n => n > 0, "", v => `คาดการณ์กำไร ${v} ${unit} ต่อหุ้น${earningsYield != null ? ` (${earningsYield.toFixed(2)}% ของราคา)` : ""}`),
+      check("FCF Yield > 0%", f.fcfYieldPercent, n => n > 0, "%", v => `กระแสเงินสดอิสระ FCF Yield ${v}`),
+      check("Upside ถึง Fair Value ≥ 10%", f.upsidePercent, n => n >= 10, "%", v => `ต่ำกว่าราคายุติธรรม ${v}`),
+      {label: "มี 2 โมเดล หรือ 1 โมเดล + เป้านักวิเคราะห์", value: f.modelCount + " โมเดล" + (f.analystWeight === 0.5 ? " + นักวิเคราะห์" : ""), passed: hasValuationSupport(f)},
+      check("ROE ≥ 10%", q?.roePercent, n => n >= 10, "%", v => `ผลตอบแทนต่อส่วนผู้ถือหุ้น (ROE) ${v}`),
+      check("รายได้ล่าสุดไม่หดตัว (YoY ≥ 0%)", q?.revenueGrowthPercent, n => n >= 0, "%", v => `รายได้ล่าสุดโต ${v} เทียบปีก่อน`),
+      debt,
+      {label: "ข้อมูลกำไร/หน่วยหุ้นไม่ผิดปกติ", value: flags.length ? flags.join(" · ") : "ไม่มี", passed: flags.length === 0},
+    ];
+  }
+
+  if (style === "dividend") {
+    return [
+      check("Dividend Yield 2–8%", f.dividendYieldPercent, n => n >= 2 && n <= 8, "%", v => `อัตราปันผล ${v} อยู่ในช่วง 2–8%`),
+      check("เงินปันผลต่อหุ้น > 0", f.dividendRate, n => n > 0, "", v => `เงินปันผลต่อหุ้น ${v} ${unit}`),
+      check("FCF Yield > 0%", f.fcfYieldPercent, n => n > 0, "%", v => `กระแสเงินสดอิสระ FCF Yield ${v}`),
+      check("P/E ย้อนหลัง > 0", f.trailingPE, n => n > 0, "", () => "กำไรย้อนหลังเป็นบวก"),
+      check("จ่ายปันผล ≤ 80% ของกำไร", q?.payoutPercent, n => n <= 80, "%", v => `จ่ายปันผล ${v} ของกำไร (ไม่จ่ายเกินตัว)`),
+      check("เงินสดอิสระ ≥ 1 เท่าของปันผล", q?.fcfDividendCoverage, n => n >= 1, " เท่า", v => `เงินสดอิสระครอบคลุมปันผล ${v}`),
+    ];
+  }
+
+  const candles = completedCandles(data);
+  const close = candles.at(-1)?.close ?? null;
   const average = (n: number) => candles.length >= n ? candles.slice(-n).reduce((sum,c) => sum+c.close,0)/n : null;
   const sma20 = average(20), sma50 = average(50);
   const prior = candles.slice(-21,-1);
   const volume = prior.length === 20 ? prior.reduce((sum,c)=>sum+c.volume,0)/20 : 0;
+  const recent = candles.slice(-20);
+  const tradedValue = recent.length === 20 ? recent.reduce((sum,c)=>sum+c.close*c.volume,0)/20 : null;
+  const minValue = data.market === "TH" ? 20e6 : 5e6;
+  const millions = tradedValue != null ? tradedValue / 1e6 : null;
   return [
-    check("ราคาเหนือ SMA20", sma20 && data.lastClose > 0 ? (data.lastClose/sma20-1)*100 : null, n=>n>0, "%"),
-    check("SMA20 เหนือ SMA50", sma20 && sma50 ? (sma20/sma50-1)*100 : null,n=>n>0,"%"),
-    check("Volume ≥ 1.2 เท่าของ 20 วันก่อน", volume > 0 ? candles[candles.length-1].volume/volume : null,n=>n>=1.2," เท่า"),
-    check("ราคาเหนือ Pivot", data.pivot.pivot > 0 ? (data.lastClose/data.pivot.pivot-1)*100 : null,n=>n>0,"%"),
+    check("ราคาเหนือ SMA20", sma20 && close ? (close/sma20-1)*100 : null, n=>n>0, "%", v => `ราคาเหนือค่าเฉลี่ย 20 วัน ${v}`),
+    check("SMA20 เหนือ SMA50", sma20 && sma50 ? (sma20/sma50-1)*100 : null,n=>n>0,"%", () => "ค่าเฉลี่ย 20 วันสูงกว่า 50 วัน"),
+    check("Volume ≥ 1.2 เท่าของ 20 วันก่อน", volume > 0 && candles.length ? candles[candles.length-1].volume/volume : null,n=>n>=1.2," เท่า", v => `ปริมาณซื้อขายเป็น ${v}ของค่าเฉลี่ย 20 วันก่อน`),
+    check("ราคาเหนือ Pivot", data.pivot.pivot > 0 ? (data.lastClose/data.pivot.pivot-1)*100 : null,n=>n>0,"%", () => "ราคาเหนือ Pivot"),
+    check(`มูลค่าซื้อขายเฉลี่ย ≥ ${data.market === "TH" ? "20 ล้าน THB" : "5 ล้าน USD"}/วัน`, millions, n => n * 1e6 >= minValue, ` ล้าน ${unit}`, v => `สภาพคล่องเฉลี่ย ${v}/วัน`),
   ];
 }

@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import AppNavigation from "./AppNavigation";
 import ScreeningEntryCard from "./ScreeningEntryCard";
 import { useWatchlist } from "@/hooks/useWatchlist";
-import { screeningStyles, screenStock, type ScreeningStyle } from "@/lib/screener";
+import { isLastCandleComplete, screeningStyles, screenStock, valuationRiskFlags, type ScreeningStyle } from "@/lib/screener";
 import { interestScore, RANKING_DESCRIPTION } from "@/lib/screener-ranking";
 import { DISCOVERY_SECTORS } from "@/lib/discovery";
 import type { StockData } from "@/lib/types";
@@ -122,7 +122,11 @@ export default function StockScreener() {
     const count=checks.filter(c=>c.passed===true).length;
     const passed=checks.length>0 && checks.every(c=>c.passed===true);
     const incomplete=checks.some(c=>c.passed===null);
-    return {...row,checks,count,passed,incomplete,score:row.data ? interestScore(row.data,style) : 0};
+    const failed=checks.filter(c=>c.passed!==true);
+    // เกือบผ่าน = ขาดเกณฑ์เดียว (ไม่ผ่าน หรือไม่มีข้อมูล)
+    const nearMiss=!row.error && checks.length>1 && failed.length===1;
+    const flags=row.data ? valuationRiskFlags(row.data.fairValue) : [];
+    return {...row,checks,count,passed,incomplete,failed,nearMiss,flags,score:row.data ? interestScore(row.data,style) : 0};
   }).sort((a,b)=>Number(b.passed)-Number(a.passed)||b.score-a.score||a.symbol.localeCompare(b.symbol));
   return <main className="app-shell screener">
     <AppNavigation active="screener" />
@@ -154,18 +158,29 @@ export default function StockScreener() {
     </section>
     {discoveryNote && <p>{discoveryNote}</p>}
     <p role="status">{message}</p>
-    <div className="screen-actions"><span aria-live="polite">ตรวจแล้ว {rows.length} · ผ่าน {evaluated.filter(r=>r.passed).length} · โหลดไม่ได้ {rows.filter(r=>r.error).length}</span></div>
+    <div className="screen-actions"><span aria-live="polite">ตรวจแล้ว {rows.length} · ผ่าน {evaluated.filter(r=>r.passed).length} · เกือบผ่าน {evaluated.filter(r=>r.nearMiss).length} · โหลดไม่ได้ {rows.filter(r=>r.error).length}</span></div>
     {!busy && rows.length===0 && <p>เลือกถือยาว ปันผล หรือเทรดสั้น แล้วกด “ค้นหาหุ้นให้ฉัน” โดยไม่ต้องกรอกชื่อหุ้น</p>}
     {rows.length>0 && !evaluated.some(r=>r.passed) && <p>ยังไม่มีหุ้นผ่านครบทุกเกณฑ์ในรายการที่ตรวจแล้ว</p>}
     <details className="screen-panel"><summary>เรียงความน่าสนใจมากไปน้อย · วิธีคิดคะแนน</summary><p>{RANKING_DESCRIPTION[style]}</p><p>คะแนนตามสูตรของแอป ใช้เปรียบเทียบเฉพาะหุ้นที่ค้นพบและผ่านครบ ยังไม่ใช่อันดับของทั้งตลาดหรือโอกาสทำกำไร หากคะแนนเท่ากันเรียงตามชื่อหุ้น</p></details>
     {evaluated.filter(row=>row.passed).map((row,index)=><article className="screen-panel" key={row.symbol}>
       <div className="screen-actions"><h2>#{index+1} {row.symbol} <small>{scannedMarket==="TH"?"BKK":"US"}</small></h2><strong>{row.error?"โหลดไม่ได้":row.passed?"ผ่านครบ":row.incomplete?`ข้อมูลไม่ครบ · ผ่าน ${row.count}/${row.checks.length}`:`ผ่าน ${row.count}/${row.checks.length}`}</strong></div>
-      {row.data && <p>{row.data.longName} · ราคาปิด {row.data.lastClose.toFixed(2)} {row.data.market==="TH"?"THB":"USD"} · {row.data.candles.at(-1)?.date}</p>}
+      {row.data && <p>{row.data.longName} · {isLastCandleComplete(row.data) ? "ราคาปิด" : "ราคาล่าสุด (ตลาดยังเปิด)"} {row.data.lastClose.toFixed(2)} {row.data.market==="TH"?"THB":"USD"} · {row.data.candles.at(-1)?.date}</p>}
+      {row.flags.length>0 && <p className="screen-flags" role="note">⚠ {row.flags.join(" · ")}</p>}
       {row.data && <p title={RANKING_DESCRIPTION[style]}>คะแนนความน่าสนใจ <strong style={{color: "var(--accent)"}}>{row.score}/100</strong></p>}
       {row.data && <ScreeningEntryCard data={row.data} style={style} />}
       {row.error && <p role="alert">{row.error}</p>}
       {row.data && <button disabled={!loaded||items.some(item=>item.symbol===row.symbol && item.market===scannedMarket)} onClick={()=>{if(addStock(row.symbol,scannedMarket))setMessage(`เพิ่ม ${row.symbol} ใน Watchlist แล้ว`);}}>{items.some(item=>item.symbol===row.symbol && item.market===scannedMarket)?"อยู่ใน Watchlist แล้ว":"+ เพิ่ม Watchlist"}</button>}
     </article>)}
+    {evaluated.some(row=>row.nearMiss) && <details className="screen-panel screen-near">
+      <summary>เกือบผ่าน · ขาด 1 เกณฑ์ ({evaluated.filter(row=>row.nearMiss).length} ตัว)</summary>
+      <p className="screen-near-note">ผ่านทุกข้อยกเว้นหนึ่งข้อ เรียงตามคะแนน ใช้ดูว่าตัวไหนน่าศึกษาต่อ ไม่นับรวมในหุ้นที่ผ่านครบ</p>
+      {[...evaluated].filter(row=>row.nearMiss).sort((a,b)=>b.score-a.score||a.symbol.localeCompare(b.symbol)).map(row=><div className="screen-near-row" key={row.symbol}>
+        <div className="screen-actions"><strong>{row.symbol} <small>{scannedMarket==="TH"?"BKK":"US"}</small></strong><span>คะแนน {row.score}/100</span></div>
+        {row.data && <small>{row.data.longName} · {row.data.lastClose.toFixed(2)} {row.data.market==="TH"?"THB":"USD"}</small>}
+        {row.failed.map(c=><p key={c.label} className="screen-near-fail">✗ {c.label} <span>({c.value})</span></p>)}
+        {row.data && <button disabled={!loaded||items.some(item=>item.symbol===row.symbol && item.market===scannedMarket)} onClick={()=>{if(addStock(row.symbol,scannedMarket))setMessage(`เพิ่ม ${row.symbol} ใน Watchlist แล้ว`);}}>{items.some(item=>item.symbol===row.symbol && item.market===scannedMarket)?"อยู่ใน Watchlist แล้ว":"+ เพิ่ม Watchlist"}</button>}
+      </div>)}
+    </details>}
     <footer className="app-footer">เกณฑ์เริ่มต้นสำหรับคัดไปศึกษาต่อ ไม่ใช่คะแนนรับรองคุณภาพหรือคำสั่งซื้อ ข้อมูลที่ขาดจะไม่นับว่าผ่าน</footer>
   </main>;
 }
