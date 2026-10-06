@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import AddStockFab from "@/components/AddStockFab";
 import AppNavigation from "@/components/AppNavigation";
 import StockDashboard from "@/components/StockDashboard";
+import ReversalCard from "@/components/ReversalCard";
 import SupportResistanceCard from "@/components/SupportResistanceCard";
 import StockChart from "@/components/StockChart";
 import Watchlist from "@/components/Watchlist";
@@ -303,6 +304,8 @@ export default function StockApp() {
             onToleranceChange={setTagTolerance}
             hideNearest
           />
+
+          <ReversalCard data={selectedData} />
         </>
       )}
 

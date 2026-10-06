@@ -2597,3 +2597,39 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .screen-trend .trend-badge { margin-left: 0; }
 
 .dash-trend .change-up, .dash-trend .change-down { font-size: inherit; font-weight: 700; }
+
+
+/* ── การ์ดสัญญาณกลับตัวขึ้น ── */
+.reversal-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 0.65rem;
+}
+.rev-verdict {
+  flex-shrink: 0;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  background: var(--surface-2);
+}
+.rev-verdict-confirmed, .rev-verdict-clear { color: var(--success, #4ade80); border-color: color-mix(in srgb, var(--success, #4ade80) 45%, transparent); background: color-mix(in srgb, var(--success, #4ade80) 12%, var(--surface-2)); }
+.rev-verdict-early { color: var(--warning, #fbbf24); border-color: color-mix(in srgb, var(--warning, #fbbf24) 40%, transparent); background: color-mix(in srgb, var(--warning, #fbbf24) 10%, var(--surface-2)); }
+.rev-context { margin: 0 0 0.5rem; font-size: 0.8rem; color: var(--accent); }
+.rev-group { margin: 0.6rem 0 0.25rem; font-size: 0.72rem; font-weight: 700; color: var(--muted); text-transform: none; letter-spacing: 0.02em; }
+.rev-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.rev-row { display: flex; gap: 8px; align-items: flex-start; padding: 6px 4px; border-top: 1px solid var(--border); }
+.rev-row:first-child { border-top: none; }
+.rev-icon { width: 18px; flex-shrink: 0; text-align: center; font-weight: 800; line-height: 1.35; }
+.rev-yes .rev-icon { color: var(--success, #4ade80); }
+.rev-partial .rev-icon { color: var(--warning, #fbbf24); }
+.rev-no .rev-icon { color: var(--muted); opacity: 0.6; }
+.rev-label { margin: 0; font-size: 0.85rem; font-weight: 600; }
+.rev-no .rev-label { color: var(--muted); font-weight: 500; }
+.rev-detail { margin: 1px 0 0; font-size: 0.75rem; color: var(--muted); }
+.rev-foot { margin: 0.6rem 0 0; font-size: 0.7rem; color: var(--muted); }
+
+.rev-partial .rev-icon { font-size: 0.7rem; line-height: 1.9; }
