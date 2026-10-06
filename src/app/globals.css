@@ -2775,3 +2775,16 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .ss-sr-mode button + button { border-top: 1px solid var(--border); }
 .ss-sr-mode button.active { background: color-mix(in srgb, var(--accent) 18%, var(--surface-2)); color: var(--accent); }
 .ss-sr-tol { padding: 5px 2px; border: 1px dashed var(--warning, #fbbf24); border-radius: 8px; background: transparent; color: var(--warning, #fbbf24); font-size: 0.66rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+
+
+/* แถบตั้งค่าแนวรับ/แนวต้านเหนือบันได (บันไดเต็มความกว้าง) */
+.ss-sr-block { padding: 9px 0; border-top: 1px solid var(--border); }
+.ss-sr-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.ss-sr-bar .ss-label { flex: 1; min-width: 0; }
+.ss-sr-bar .ss-sr-mode { flex-direction: row; }
+.ss-sr-bar .ss-sr-mode button { padding: 5px 12px; font-size: 0.75rem; }
+.ss-sr-bar .ss-sr-mode button + button { border-top: none; border-left: 1px solid var(--border); }
+.ss-sr-bar .ss-sr-tol { padding: 5px 10px; font-size: 0.72rem; }
+.lad-empty { padding: 6px 10px; border-radius: 8px; border: 1px dashed var(--border); color: var(--muted); font-size: 0.75rem; text-align: center; }
+.ss-pill sup { margin-left: 1px; color: var(--muted); font-weight: 700; }
+.ss-pill.ss-fallback { border-style: dashed; }

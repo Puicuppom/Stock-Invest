@@ -30,8 +30,10 @@ export default function SrLadder({ pivot, zones, price, mode, tolerancePercent, 
   return (
     <ol className="lad">
       {above.map((l, i) => row(l, "res", above.length - i))}
+      {!above.length && <li className="lad-empty">ไม่มีแนวต้านเหนือราคา · ทำจุดสูงใหม่</li>}
       <li className="lad-now"><span>ราคาตอนนี้</span><b>{price.toFixed(2)}</b></li>
       {below.map((l, i) => row(l, "sup", i + 1))}
+      {!below.length && <li className="lad-empty">ไม่มีแนวรับใต้ราคา · ราคาหลุดทุกแนว</li>}
     </ol>
   );
 }

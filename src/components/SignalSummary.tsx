@@ -33,6 +33,29 @@ export default function SignalSummary(props: Props) {
   const upside = fv.upsidePercent;
   const selected = reversal?.signals.find(s => s.label === openSignal) ?? null;
 
+  // แผน: ใช้แนวรับ/ต้านตามโหมด ถ้าไม่มี (ราคาหลุดทุกแนว/ทำจุดสูงใหม่) ใช้ค่าสำรอง: Pivot แล้วค่อย 52 สัปดาห์
+  type PlanItem = { price: number; note: string; fallback: boolean } | null;
+  const pivotBelow = ([["S1", data.pivot.s1], ["S2", data.pivot.s2], ["S3", data.pivot.s3]] as const)
+    .filter(([, v]) => v > 0 && v < price).sort((a, b) => b[1] - a[1])[0];
+  const pivotAbove = ([["R1", data.pivot.r1], ["R2", data.pivot.r2], ["R3", data.pivot.r3]] as const)
+    .filter(([, v]) => v > price).sort((a, b) => a[1] - b[1])[0];
+  const low52 = fv.range52w?.low, high52 = fv.range52w?.high;
+  const buy: PlanItem = tradePlan.buyPrice != null
+    ? { price: tradePlan.buyPrice, note: tradePlan.buyLabel, fallback: false }
+    : pivotBelow ? { price: pivotBelow[1], note: `* ไม่มีแนวรับ${srMode === "swing" ? "ถือยาว" : ""}ใต้ราคา (ราคาหลุดทุกแนว) จึงใช้ Pivot ${pivotBelow[0]} แทน`, fallback: true }
+    : low52 != null && low52 < price ? { price: low52, note: "* ไม่มีแนวรับใต้ราคา จึงใช้จุดต่ำสุด 52 สัปดาห์แทน", fallback: true }
+    : null;
+  const sell: PlanItem = tradePlan.sellPrice != null
+    ? { price: tradePlan.sellPrice, note: tradePlan.sellLabel, fallback: false }
+    : pivotAbove ? { price: pivotAbove[1], note: `* ไม่มีแนวต้าน${srMode === "swing" ? "ถือยาว" : ""}เหนือราคา (ทำจุดสูงใหม่) จึงใช้ Pivot ${pivotAbove[0]} แทน`, fallback: true }
+    : high52 != null && high52 > price ? { price: high52, note: "* ไม่มีแนวต้านเหนือราคา จึงใช้จุดสูงสุด 52 สัปดาห์แทน", fallback: true }
+    : null;
+  const stop: PlanItem = tradePlan.stopLoss != null
+    ? { price: tradePlan.stopLoss, note: "ใต้แนวรับ", fallback: false }
+    : buy ? { price: buy.price * (1 - (Math.max(props.tolerancePercent, 1) / 100) * 1.5), note: "* คำนวณใต้ราคาซื้อสำรอง", fallback: true }
+    : null;
+  const plan = { buy, sell, stop };
+
   const valueText = upside == null ? null : upside >= 10 ? `ถูกกว่า ${upside.toFixed(0)}%` : upside <= -10 ? `แพงกว่า ${Math.abs(upside).toFixed(0)}%` : "ใกล้ราคายุติธรรม";
   const valueTone = upside == null ? "" : upside >= 10 ? "good" : upside <= -10 ? "bad" : "mid";
   const rsi = reversal?.rsi ?? null;
@@ -57,9 +80,9 @@ export default function SignalSummary(props: Props) {
       <div className="ss-row">
         <span className="ss-label">แผน</span>
         <div className="ss-body ss-plan">
-          <span className="ss-pill ss-pill-buy" title={tradePlan.buyLabel}>ซื้อ <b>{tradePlan.buyPrice != null ? p2(tradePlan.buyPrice) : "—"}</b></span>
-          <span className="ss-pill ss-pill-sell" title={tradePlan.sellLabel}>ขาย <b>{tradePlan.sellPrice != null ? p2(tradePlan.sellPrice) : "—"}</b></span>
-          <span className="ss-pill ss-pill-stop" title="ใต้แนวรับ">Stop <b>{tradePlan.stopLoss != null ? p2(tradePlan.stopLoss) : "—"}</b></span>
+          <span className={`ss-pill ss-pill-buy${plan.buy?.fallback ? " ss-fallback" : ""}`} title={plan.buy?.note}>ซื้อ <b>{plan.buy ? p2(plan.buy.price) : "—"}</b>{plan.buy?.fallback && <sup>*</sup>}</span>
+          <span className={`ss-pill ss-pill-sell${plan.sell?.fallback ? " ss-fallback" : ""}`} title={plan.sell?.note}>ขาย <b>{plan.sell ? p2(plan.sell.price) : "—"}</b>{plan.sell?.fallback && <sup>*</sup>}</span>
+          <span className={`ss-pill ss-pill-stop${plan.stop?.fallback ? " ss-fallback" : ""}`} title={plan.stop?.note}>Stop <b>{plan.stop ? p2(plan.stop.price) : "—"}</b>{plan.stop?.fallback && <sup>*</sup>}</span>
         </div>
       </div>
 
@@ -112,9 +135,9 @@ export default function SignalSummary(props: Props) {
         </div>
       )}
 
-      <div className="ss-row ss-row-top ss-row-sr">
-        <div className="ss-label ss-sr-side">
-          <span>แนวรับ<br />แนวต้าน</span>
+      <div className="ss-sr-block">
+        <div className="ss-sr-bar">
+          <span className="ss-label">แนวรับ/แนวต้าน</span>
           <div className="ss-sr-mode" role="group" aria-label="โหมดแนวรับแนวต้าน">
             <button type="button" className={srMode === "swing" ? "active" : ""} aria-pressed={srMode === "swing"} onClick={() => onModeChange("swing")} title="ถือยาว · จุดกลับตัว 6 เดือน">ถือยาว</button>
             <button type="button" className={srMode === "pivot" ? "active" : ""} aria-pressed={srMode === "pivot"} onClick={() => onModeChange("pivot")} title="เทรดสั้น · Pivot วันถัดไป">เทรดสั้น</button>
@@ -126,9 +149,7 @@ export default function SignalSummary(props: Props) {
               props.onToleranceChange(opts[(i + 1) % opts.length]);
             }}>ใกล้ ±{props.tolerancePercent}%</button>
         </div>
-        <div className="ss-body">
-          <SrLadder pivot={data.pivot} zones={data.zones} price={price} mode={srMode} tolerancePercent={props.tolerancePercent} />
-        </div>
+        <SrLadder pivot={data.pivot} zones={data.zones} price={price} mode={srMode} tolerancePercent={props.tolerancePercent} />
       </div>
 
       {reversal && (
