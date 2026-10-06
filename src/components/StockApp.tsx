@@ -13,6 +13,7 @@ import { useWatchlist } from "@/hooks/useWatchlist";
 import { useSrMode } from "@/hooks/useSrMode";
 import { findSrHits } from "@/lib/sr-levels";
 import { computeTradePlan } from "@/lib/trade-plan";
+import { analyzeTrend } from "@/lib/trend";
 import { displaySymbol, normalizeInput } from "@/lib/symbol";
 import { marketLabel, stockDataMatchesItem, watchlistId } from "@/lib/watchlist-id";
 import type { StockData } from "@/lib/types";
@@ -84,6 +85,8 @@ export default function StockApp() {
       kind === "stock" || kind === "etf"
     );
   }, [selectedData, srMode, tagSettings.tolerancePercent]);
+
+  const trend = useMemo(() => (selectedData ? analyzeTrend(selectedData) : null), [selectedData]);
 
   useEffect(() => {
     setLiveTagCache({});
@@ -251,6 +254,7 @@ export default function StockApp() {
           nearResistance={nearResistance}
           loading={loading}
           onRefresh={() => fetchStock(true)}
+          trend={trend}
         />
       )}
 

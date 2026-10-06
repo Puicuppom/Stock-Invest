@@ -2,6 +2,7 @@ import FundamentalMetrics from "./FundamentalMetrics";
 import type { TradePlan } from "@/lib/trade-plan";
 import { assetKindLabel } from "@/lib/instrument";
 import type { AssetKind, FairValueResult } from "@/lib/types";
+import { TREND_METHOD, trendIcon, type TrendResult } from "@/lib/trend";
 
 interface StockDashboardProps {
   symbol: string;
@@ -17,6 +18,7 @@ interface StockDashboardProps {
   nearResistance: boolean;
   loading: boolean;
   onRefresh: () => void;
+  trend?: TrendResult | null;
 }
 
 function formatPrice(value: number): string {
@@ -64,6 +66,7 @@ export default function StockDashboard({
   nearResistance,
   loading,
   onRefresh,
+  trend,
 }: StockDashboardProps) {
   const changePositive = change >= 0;
   const { range52w, dividendYieldPercent, dividendRate } = fairValue;
@@ -110,7 +113,22 @@ export default function StockDashboard({
             {nearResistance && (
               <span className="header-sr-tag header-sr-tag-res">ต้าน</span>
             )}
+            {trend && (
+              <span className={`trend-badge trend-${trend.kind}${trend.strong ? " trend-strong" : ""}`} title={TREND_METHOD}>
+                {trendIcon(trend.kind)} {trend.label}
+              </span>
+            )}
           </div>
+          {trend && (
+            <p className="dash-trend" title={TREND_METHOD}>
+              {trend.change3mPercent != null && (
+                <span className={trend.change3mPercent >= 0 ? "change-up" : "change-down"}>
+                  3 เดือน {trend.change3mPercent > 0 ? "+" : ""}{trend.change3mPercent.toFixed(1)}%
+                </span>
+              )}
+              {trend.reasons.map(reason => <span key={reason}>{reason}</span>)}
+            </p>
+          )}
         </div>
 
         <button
