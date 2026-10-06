@@ -2753,7 +2753,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .lad-res .lad-tag, .lad-res .lad-dist { color: var(--danger, #f87171); }
 .lad-sup .lad-tag, .lad-sup .lad-dist { color: var(--success, #4ade80); }
 .lad-price { font-size: 0.9rem; font-weight: 700; }
-.lad-dots { font-size: 0.8rem; letter-spacing: 1px; color: var(--muted); }
+.lad-dots { font-size: 0.8rem; letter-spacing: 1px; color: var(--muted); text-align: right; }
 .lad-res .lad-dots { color: color-mix(in srgb, var(--danger, #f87171) 85%, var(--muted)); }
 .lad-sup .lad-dots { color: color-mix(in srgb, var(--success, #4ade80) 85%, var(--muted)); }
 .lad-dist { font-size: 0.78rem; font-weight: 700; text-align: right; }
@@ -2765,3 +2765,13 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 }
 .lad-now::before, .lad-now::after { content: ""; flex: 1; height: 2px; background: var(--accent); opacity: 0.6; border-radius: 2px; }
 .lad-now b { font-size: 0.95rem; }
+
+
+/* ตั้งค่าแนวรับ/แนวต้านในคอลัมน์ซ้าย */
+.ss-row-sr { grid-template-columns: 64px minmax(0, 1fr) auto; }
+.ss-sr-side { display: flex; flex-direction: column; gap: 6px; }
+.ss-sr-mode { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.ss-sr-mode button { padding: 5px 2px; border: none; background: var(--surface-2); color: var(--muted); font-size: 0.68rem; font-weight: 700; cursor: pointer; }
+.ss-sr-mode button + button { border-top: 1px solid var(--border); }
+.ss-sr-mode button.active { background: color-mix(in srgb, var(--accent) 18%, var(--surface-2)); color: var(--accent); }
+.ss-sr-tol { padding: 5px 2px; border: 1px dashed var(--warning, #fbbf24); border-radius: 8px; background: transparent; color: var(--warning, #fbbf24); font-size: 0.66rem; font-weight: 700; cursor: pointer; white-space: nowrap; }

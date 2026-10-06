@@ -13,7 +13,7 @@ export default function SrLadder({ pivot, zones, price, mode, tolerancePercent, 
   const near = (p: number) => (Math.abs(price - p) / p) * 100 <= tolerancePercent;
   const strength = (s?: number) => {
     const n = Math.max(1, Math.min(3, s ?? 1));
-    return mode === "swing" ? "●".repeat(n) + "○".repeat(3 - n) : "";
+    return mode === "swing" ? "★".repeat(n) : "";
   };
   const row = (l: (typeof levels)[number], side: "res" | "sup", rank: number) => {
     const dist = (l.price / price - 1) * 100;

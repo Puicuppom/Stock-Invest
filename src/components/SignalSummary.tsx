@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-import SupportResistanceCard from "./SupportResistanceCard";
 import Gauge from "./Gauge";
 import SrLadder from "./SrLadder";
 import { analyzeReversal, type ReversalSignal } from "@/lib/reversal";
@@ -27,7 +26,6 @@ const p2 = (n: number) => n.toFixed(2);
 export default function SignalSummary(props: Props) {
   const { data, trend, tradePlan, srMode, onModeChange } = props;
   const [openSignal, setOpenSignal] = useState<string | null>(null);
-  const [showLevels, setShowLevels] = useState(false);
   const [info, setInfo] = useState(false);
   const price = data.lastClose;
   const reversal = analyzeReversal(data);
@@ -53,11 +51,16 @@ export default function SignalSummary(props: Props) {
     <section className="signal-summary">
       <div className="ss-head">
         <h3 className="section-title">สรุปสัญญาณ</h3>
-        <div className="sr-mode-toggle" role="group" aria-label="โหมดแนวรับแนวต้าน">
-          <button type="button" className={`sr-mode-btn${srMode === "swing" ? " active" : ""}`} onClick={() => onModeChange("swing")}>ถือยาว</button>
-          <button type="button" className={`sr-mode-btn${srMode === "pivot" ? " active" : ""}`} onClick={() => onModeChange("pivot")}>เทรดสั้น</button>
-        </div>
         <button type="button" className="rev-info-btn" aria-label="วิธีอ่าน" aria-expanded={info} onClick={() => setInfo(!info)}>ⓘ</button>
+      </div>
+
+      <div className="ss-row">
+        <span className="ss-label">แผน</span>
+        <div className="ss-body ss-plan">
+          <span className="ss-pill ss-pill-buy" title={tradePlan.buyLabel}>ซื้อ <b>{tradePlan.buyPrice != null ? p2(tradePlan.buyPrice) : "—"}</b></span>
+          <span className="ss-pill ss-pill-sell" title={tradePlan.sellLabel}>ขาย <b>{tradePlan.sellPrice != null ? p2(tradePlan.sellPrice) : "—"}</b></span>
+          <span className="ss-pill ss-pill-stop" title="ใต้แนวรับ">Stop <b>{tradePlan.stopLoss != null ? p2(tradePlan.stopLoss) : "—"}</b></span>
+        </div>
       </div>
 
       {trend && (
@@ -109,8 +112,20 @@ export default function SignalSummary(props: Props) {
         </div>
       )}
 
-      <div className="ss-row ss-row-top">
-        <span className="ss-label">แนวรับ<br />แนวต้าน</span>
+      <div className="ss-row ss-row-top ss-row-sr">
+        <div className="ss-label ss-sr-side">
+          <span>แนวรับ<br />แนวต้าน</span>
+          <div className="ss-sr-mode" role="group" aria-label="โหมดแนวรับแนวต้าน">
+            <button type="button" className={srMode === "swing" ? "active" : ""} aria-pressed={srMode === "swing"} onClick={() => onModeChange("swing")} title="ถือยาว · จุดกลับตัว 6 เดือน">ถือยาว</button>
+            <button type="button" className={srMode === "pivot" ? "active" : ""} aria-pressed={srMode === "pivot"} onClick={() => onModeChange("pivot")} title="เทรดสั้น · Pivot วันถัดไป">เทรดสั้น</button>
+          </div>
+          <button type="button" className="ss-sr-tol" title="แตะเพื่อเปลี่ยนระยะที่ถือว่า 'ใกล้' แนวรับ/แนวต้าน"
+            onClick={() => {
+              const opts = props.toleranceOptions;
+              const i = opts.indexOf(props.tolerancePercent);
+              props.onToleranceChange(opts[(i + 1) % opts.length]);
+            }}>ใกล้ ±{props.tolerancePercent}%</button>
+        </div>
         <div className="ss-body">
           <SrLadder pivot={data.pivot} zones={data.zones} price={price} mode={srMode} tolerancePercent={props.tolerancePercent} />
         </div>
@@ -137,14 +152,6 @@ export default function SignalSummary(props: Props) {
         </div>
       )}
 
-      <div className="ss-row">
-        <span className="ss-label">แผน</span>
-        <div className="ss-body ss-plan">
-          <span className="ss-pill ss-pill-buy" title={tradePlan.buyLabel}>ซื้อ <b>{tradePlan.buyPrice != null ? p2(tradePlan.buyPrice) : "—"}</b></span>
-          <span className="ss-pill ss-pill-sell" title={tradePlan.sellLabel}>ขาย <b>{tradePlan.sellPrice != null ? p2(tradePlan.sellPrice) : "—"}</b></span>
-          <span className="ss-pill ss-pill-stop" title="ใต้แนวรับ">Stop <b>{tradePlan.stopLoss != null ? p2(tradePlan.stopLoss) : "—"}</b></span>
-        </div>
-      </div>
 
       {info && (
         <p className="rev-info">
@@ -154,14 +161,6 @@ export default function SignalSummary(props: Props) {
         </p>
       )}
 
-      <button type="button" className="ss-more" aria-expanded={showLevels} onClick={() => setShowLevels(!showLevels)}>
-        {showLevels ? "▲ ซ่อนรายละเอียดแนวรับ/แนวต้าน" : "▼ ตั้งค่าและดูแนวรับ/แนวต้านทั้งหมด"}
-      </button>
-      {showLevels && (
-        <SupportResistanceCard pivot={data.pivot} zones={data.zones} currentPrice={price} mode={srMode}
-          hits={props.hits} tolerancePercent={props.tolerancePercent} toleranceOptions={props.toleranceOptions}
-          onModeChange={onModeChange} onToleranceChange={props.onToleranceChange} hideNearest />
-      )}
     </section>
   );
 }
