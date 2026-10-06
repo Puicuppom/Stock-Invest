@@ -2788,3 +2788,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .lad-empty { padding: 6px 10px; border-radius: 8px; border: 1px dashed var(--border); color: var(--muted); font-size: 0.75rem; text-align: center; }
 .ss-pill sup { margin-left: 1px; color: var(--muted); font-weight: 700; }
 .ss-pill.ss-fallback { border-style: dashed; }
+
+/* header badges jump to signal summary */
+button.dash-jump { font-family: inherit; cursor: pointer; }
+button.dash-jump:hover { filter: brightness(1.15); }
+button.dash-jump:active { transform: scale(0.95); }
+@keyframes ssFlash { 0%,100% { box-shadow: 0 0 0 0 transparent; } 25%,60% { box-shadow: 0 0 0 2px var(--accent, #60a5fa); } }
+.ss-flash { animation: ssFlash 1.5s ease; border-radius: 10px; }

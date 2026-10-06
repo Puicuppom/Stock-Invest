@@ -87,7 +87,7 @@ export default function SignalSummary(props: Props) {
       </div>
 
       {trend && (
-        <div className="ss-row" title={trend.reasons.join("\n") + "\n\n" + TREND_METHOD}>
+        <div className="ss-row" id="ss-trend" title={trend.reasons.join("\n") + "\n\n" + TREND_METHOD}>
           <span className="ss-label">แนวโน้ม</span>
           <div className="ss-body ss-inline">
             <span className={`trend-badge trend-${trend.kind}${trend.strong ? " trend-strong" : ""}`}>{trendIcon(trend.kind)} {trend.label}</span>
@@ -135,7 +135,7 @@ export default function SignalSummary(props: Props) {
         </div>
       )}
 
-      <div className="ss-sr-block">
+      <div className="ss-sr-block" id="ss-sr">
         <div className="ss-sr-bar">
           <span className="ss-label">แนวรับ/แนวต้าน</span>
           <div className="ss-sr-mode" role="group" aria-label="โหมดแนวรับแนวต้าน">

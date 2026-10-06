@@ -2,7 +2,7 @@ import FundamentalMetrics from "./FundamentalMetrics";
 import type { TradePlan } from "@/lib/trade-plan";
 import { assetKindLabel } from "@/lib/instrument";
 import type { AssetKind, FairValueResult } from "@/lib/types";
-import { TREND_METHOD, trendIcon, type TrendResult } from "@/lib/trend";
+import { trendIcon, type TrendResult } from "@/lib/trend";
 
 interface StockDashboardProps {
   symbol: string;
@@ -20,6 +20,17 @@ interface StockDashboardProps {
   loading: boolean;
   onRefresh: () => void;
   trend?: TrendResult | null;
+}
+
+/** เลื่อนไปยังส่วนที่เกี่ยวข้องในการ์ดสรุปสัญญาณ แล้วกะพริบไฮไลต์ */
+function jumpTo(id: string) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
+  el.classList.remove("ss-flash");
+  void el.offsetWidth;
+  el.classList.add("ss-flash");
+  window.setTimeout(() => el.classList.remove("ss-flash"), 1600);
 }
 
 function formatPrice(value: number): string {
@@ -107,16 +118,21 @@ export default function StockDashboard({
             {kindLabel && (
               <span className="market-badge asset-badge">{kindLabel}</span>
             )}
+            {trend && (
+              <button
+                type="button"
+                className={`trend-badge trend-${trend.kind}${trend.strong ? " trend-strong" : ""} dash-jump`}
+                onClick={() => jumpTo("ss-trend")}
+                title="ดูรายละเอียดแนวโน้ม"
+              >
+                {trendIcon(trend.kind)} {trend.label}
+              </button>
+            )}
             {nearSupport && (
-              <span className="header-sr-tag header-sr-tag-sup">รับ</span>
+              <button type="button" className="header-sr-tag header-sr-tag-sup dash-jump" onClick={() => jumpTo("ss-sr")} title="ดูแนวรับ/แนวต้าน">รับ</button>
             )}
             {nearResistance && (
-              <span className="header-sr-tag header-sr-tag-res">ต้าน</span>
-            )}
-            {trend && (
-              <span className={`trend-badge trend-${trend.kind}${trend.strong ? " trend-strong" : ""}`} title={trend.reasons.join("\n") + "\n\n" + TREND_METHOD}>
-                {trendIcon(trend.kind)} {trend.label}
-              </span>
+              <button type="button" className="header-sr-tag header-sr-tag-res dash-jump" onClick={() => jumpTo("ss-sr")} title="ดูแนวรับ/แนวต้าน">ต้าน</button>
             )}
           </div>
         </div>
