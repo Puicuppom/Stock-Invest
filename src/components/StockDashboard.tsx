@@ -114,19 +114,19 @@ export default function StockDashboard({
               <span className="header-sr-tag header-sr-tag-res">ต้าน</span>
             )}
             {trend && (
-              <span className={`trend-badge trend-${trend.kind}${trend.strong ? " trend-strong" : ""}`} title={TREND_METHOD}>
+              <span className={`trend-badge trend-${trend.kind}${trend.strong ? " trend-strong" : ""}`} title={trend.reasons.join("\n") + "\n\n" + TREND_METHOD}>
                 {trendIcon(trend.kind)} {trend.label}
               </span>
             )}
           </div>
           {trend && (
-            <p className="dash-trend" title={TREND_METHOD}>
+            <p className="dash-trend" title={trend.reasons.join("\n")}>
               {trend.change3mPercent != null && (
                 <span className={trend.change3mPercent >= 0 ? "change-up" : "change-down"}>
                   3 เดือน {trend.change3mPercent > 0 ? "+" : ""}{trend.change3mPercent.toFixed(1)}%
                 </span>
               )}
-              {trend.reasons.map(reason => <span key={reason}>{reason}</span>)}
+              <span>{trend.rangeLow.toFixed(2)}–{trend.rangeHigh.toFixed(2)}</span>
             </p>
           )}
         </div>
