@@ -5,12 +5,17 @@ export interface FxQuote { rate: number; timestamp: number }
 // ASML's Nasdaq and Amsterdam registrations represent the same ordinary share.
 // https://www.asml.com/en/investors/shares
 // Do not extend this mapping to ADRs without verifying the depositary ratio.
-export const PRIMARY_LISTINGS: Record<string, { symbol: string; currency: string; quote: string; ordinaryPerListed?: number }> = {
+export const PRIMARY_LISTINGS: Record<string, { symbol: string; currency: string; quote: string; ordinaryPerListed?: number;
+  /** ADR ใหม่: Yahoo อาจรายงานจำนวนหุ้นเท่าจำนวน ADS ที่ออกจริง (บางส่วนของบริษัท) — ยอมรับได้ถ้าไม่เกินจำนวนหุ้นทั้งบริษัทเทียบเป็น ADS */
+  partialAdsFloat?: boolean }> = {
   // Issuer confirms one ADR represents one B share: https://www.novonordisk.com/investors/stock-information/dividend.html
   // https://investor.tsmc.com/english/faq — one ADS represents five ordinary shares.
   TSM: { symbol: "2330.TW", currency: "TWD", quote: "USD", ordinaryPerListed: 5 },
   NVO: { symbol: "NOVO-B.CO", currency: "DKK", quote: "USD" },
   ASML: { symbol: "ASML.AS", currency: "EUR", quote: "USD" },
+  // SEC 424(b)(4) prospectus: "Each ADS represents one-tenth of a share of our common stock"
+  // https://www.sec.gov/Archives/edgar/data/2120882/000119312526299963/d32785d424b4.htm
+  SKHY: { symbol: "000660.KS", currency: "KRW", quote: "USD", ordinaryPerListed: 0.1, partialAdsFloat: true },
 };
 
 export function convertPrimaryFundamentals(
@@ -27,7 +32,10 @@ export function convertPrimaryFundamentals(
   if (!Number.isFinite(ratio) || ratio <= 0) return null;
   const a = primary.sharesOutstanding;
   const b = listed.sharesOutstanding;
-  if (a == null || b == null || !Number.isFinite(a) || !Number.isFinite(b) || a <= 0 || b <= 0 || Math.min(Math.abs(a / b - 1), Math.abs(a / b / ratio - 1)) > 0.02) return null;
+  if (a == null || b == null || !Number.isFinite(a) || !Number.isFinite(b) || a <= 0 || b <= 0) return null;
+  const sharesMatch = Math.min(Math.abs(a / b - 1), Math.abs(a / b / ratio - 1)) <= 0.02;
+  const partialFloat = mapping.partialAdsFloat === true && b <= (a / ratio) * 1.02;
+  if (!sharesMatch && !partialFloat) return null;
   const converted: FairValueData = { ...primary, financialCurrency: mapping.quote, quoteCurrency: mapping.quote };
   const moneyFields = ["trailingEps", "forwardEps", "totalDebt", "totalCash", "freeCashflow", "operatingCashflow", "ebitda", "revenuePerShare", "bookValue", "enterpriseValue", "marketCap", "dividendRate"] as const;
   for (const key of moneyFields) {
