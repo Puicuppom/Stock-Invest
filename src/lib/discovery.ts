@@ -14,7 +14,13 @@ export function capLimits(market: "US"|"TH", size: string): [number, number | nu
   const mid = market === "US" ? 2e9 : 10e9;
   return size === "large" ? [large, null] : size === "mid" ? [mid, large] : size === "small" ? [0, mid] : [0, null];
 }
-export interface DiscoveryQuote {symbol?: string; shortName?: string; longName?: string; quoteType?: string; currency?: string; marketCap?: number}
+export interface DiscoveryQuote {symbol?: string; shortName?: string; longName?: string; quoteType?: string; currency?: string; marketCap?: number; regularMarketPrice?: number; fiftyTwoWeekHigh?: number}
+/** คัดเบื้องต้นสำหรับ "หุ้นดีลดราคา" — ตัดตัวที่ยังห่างจุดสูงสุดไม่ถึงเกณฑ์ (ไม่มีข้อมูล = ไม่ตัด ให้ตรวจละเอียดต่อ) */
+export function deepEnough(q: DiscoveryQuote, minDropPercent: number) {
+  const p = q.regularMarketPrice, h = q.fiftyTwoWeekHigh;
+  if (p == null || h == null || !Number.isFinite(p) || !Number.isFinite(h) || h <= 0) return true;
+  return (p / h - 1) * 100 <= -minDropPercent + 3;
+}
 export function eligibleQuote(q: DiscoveryQuote, market: "TH"|"US") {
   if (!q.symbol || q.quoteType !== "EQUITY" || !/^[A-Z0-9.^=-]{1,40}$/.test(q.symbol)) return false;
   if (market === "TH") return q.symbol.endsWith(".BK") && !/-(?:R|F|W\d*)\.BK$/.test(q.symbol) && q.currency === "THB" && !/(?:_DR\b|\bDR\b|WARRANT)/i.test(q.shortName || "");

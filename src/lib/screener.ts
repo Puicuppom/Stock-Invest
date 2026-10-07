@@ -1,7 +1,9 @@
 import type { Candle, StockData } from "./types";
-export type ScreeningStyle = "long" | "dividend" | "short";
+import { drawdownFromHigh, DIP_DEEP_PERCENT } from "./dip";
+export type ScreeningStyle = "long" | "dip" | "dividend" | "short";
 export const screeningStyles = {
   long: { label: "ถือยาว", description: "คัดจากกำไร เงินสด มูลค่า และคุณภาพธุรกิจ (ROE รายได้ หนี้) ตัดหุ้นที่ราคายุติธรรมมีสัญญาณข้อมูลผิดปกติ ยังไม่ยืนยันการเติบโตหลายปี" },
+  dip: { label: "หุ้นดีลดราคา", description: `ราคาลงจากจุดสูงสุด 52 สัปดาห์ ≥ ${DIP_DEEP_PERCENT}% แต่พื้นฐานยังดี (ROE รายได้ หนี้) และไม่เข้าข่ายกับดัก: กำไรคาดการณ์ไม่ลดลงเกิน 10% และราคาถูกกว่า P/E ในอดีตหรือ Fair Value` },
   dividend: { label: "ปันผล", description: "คัดจากปันผล เงินสด และความสามารถจ่ายปันผล (ไม่จ่ายเกินกำไร/เงินสดอิสระ) ยังไม่ยืนยันความต่อเนื่องของปันผลหลายปี" },
   short: { label: "เทรดสั้น", description: "คัดจากแนวโน้ม ปริมาณซื้อขาย และสภาพคล่อง ใช้เฉพาะวันที่ตลาดปิดแล้ว ไม่นับวันที่ยังซื้อขายอยู่" },
 };
@@ -85,6 +87,34 @@ export function screenStock(data: StockData, style: ScreeningStyle): ScreeningCh
       check("ROE ≥ 10%", q?.roePercent, n => n >= 10, "%", v => `ผลตอบแทนต่อส่วนผู้ถือหุ้น (ROE) ${v}`),
       check("รายได้ล่าสุดไม่หดตัว (YoY ≥ 0%)", q?.revenueGrowthPercent, n => n >= 0, "%", v => `รายได้ล่าสุดโต ${v} เทียบปีก่อน`),
       debt,
+      {label: "ข้อมูลกำไร/หน่วยหุ้นไม่ผิดปกติ", value: flags.length ? flags.join(" · ") : "ไม่มี", passed: flags.length === 0},
+    ];
+  }
+
+  if (style === "dip") {
+    const { percent: dd } = drawdownFromHigh(data);
+    const financial = q?.sector === "Financial Services";
+    const ttm = f.trailingEps, fwd = f.forwardEps;
+    const epsRatio = ttm != null && Number.isFinite(ttm) && ttm > 0 && fwd != null && Number.isFinite(fwd) ? fwd / ttm : null;
+    const hist = f.historicalPE, pe = f.trailingPE;
+    const cheapVsHistory = hist && pe != null && Number.isFinite(pe) && pe > 0 ? pe <= hist.median : null;
+    const cheapVsFair = f.upsidePercent != null && Number.isFinite(f.upsidePercent) ? f.upsidePercent >= 15 : null;
+    const cheap: ScreeningCheck = cheapVsHistory === true || cheapVsFair === true
+      ? { label: "ถูกกว่า P/E ในอดีต หรือต่ำกว่า Fair Value ≥ 15%", value: "ผ่าน", passed: true,
+          reason: cheapVsHistory ? `P/E ${pe!.toFixed(1)} ต่ำกว่าค่ากลาง ${hist!.years} ปี (${hist!.median.toFixed(1)})` : `ต่ำกว่าราคายุติธรรม ${f.upsidePercent!.toFixed(1)}%` }
+      : { label: "ถูกกว่า P/E ในอดีต หรือต่ำกว่า Fair Value ≥ 15%", value: cheapVsHistory === null && cheapVsFair === null ? "ไม่มีข้อมูล" : "ยังไม่ถูก", passed: cheapVsHistory === null && cheapVsFair === null ? null : false };
+    const flags = valuationRiskFlags(f, "hard");
+    return [
+      check(`ลงจากจุดสูงสุด 52 สัปดาห์ ≥ ${DIP_DEEP_PERCENT}%`, dd, n => n <= -DIP_DEEP_PERCENT, "%", v => `ราคาต่ำกว่าจุดสูงสุด 52 สัปดาห์ ${v}`),
+      check("Forward EPS > 0", f.forwardEps, n => n > 0, "", v => `คาดการณ์กำไร ${v} ${unit} ต่อหุ้น`),
+      check("กำไรคาดการณ์ไม่ลดลงเกิน 10%", epsRatio != null ? (epsRatio - 1) * 100 : null, n => n >= -10, "%", v => `กำไรคาดการณ์เทียบ 12 เดือนล่าสุด ${v} (ราคาลงแต่กำไรไม่ลงตาม)`),
+      cheap,
+      check("ROE ≥ 10%", q?.roePercent, n => n >= 10, "%", v => `ผลตอบแทนต่อส่วนผู้ถือหุ้น (ROE) ${v}`),
+      check("รายได้ล่าสุดไม่หดตัว (YoY ≥ 0%)", q?.revenueGrowthPercent, n => n >= 0, "%", v => `รายได้ล่าสุดโต ${v} เทียบปีก่อน`),
+      financial ? { label: "หนี้สุทธิ ≤ 3 เท่าของ EBITDA", value: "ไม่ใช้กับกลุ่มการเงิน", passed: true }
+        : q?.netDebtToEbitda != null && Number.isFinite(q.netDebtToEbitda) && q.netDebtToEbitda <= 0
+          ? { label: "หนี้สุทธิ ≤ 3 เท่าของ EBITDA", value: "เงินสดมากกว่าหนี้", passed: true, reason: "เงินสดมากกว่าหนี้สิน" }
+          : check("หนี้สุทธิ ≤ 3 เท่าของ EBITDA", q?.netDebtToEbitda, n => n <= 3, " เท่า", v => `หนี้สุทธิ ${v}ของ EBITDA`),
       {label: "ข้อมูลกำไร/หน่วยหุ้นไม่ผิดปกติ", value: flags.length ? flags.join(" · ") : "ไม่มี", passed: flags.length === 0},
     ];
   }

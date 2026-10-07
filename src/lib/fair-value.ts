@@ -248,6 +248,7 @@ export function calculateFairValue(
   modelCount: number;
   range52w: { low: number; high: number } | null;
   trailingEps?: number | null;
+  historicalPE?: { low: number; median: number; high: number; years: number } | null;
   forwardEps: number | null;
   peReferenceUpsidePercent: number | null;
   analystUpsidePercent: number | null;
@@ -367,6 +368,7 @@ export function calculateFairValue(
     dividendYieldPercent: dividendYieldPercent(data, currentPrice),
     dividendRate: data.dividendRate,
     quality: qualityMetrics(data),
+    historicalPE: data.historicalPE ? { low: data.historicalPE.low, median: data.historicalPE.median, high: data.historicalPE.high, years: data.historicalPE.years } : null,
     source,
   };
 }

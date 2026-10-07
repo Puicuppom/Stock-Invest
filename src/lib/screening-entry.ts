@@ -19,6 +19,12 @@ export function screeningEntry(data: StockData, style: ScreeningStyle): Screenin
       return { price: null, basis: "ต้องมี 2 โมเดล หรือ 1 โมเดลพร้อมเป้านักวิเคราะห์ที่ใช้ถ่วง" };
     return { price: f.fairValue * 0.8, basis: "เพดานราคาซื้อ = Fair Value × 80% (เผื่อส่วนต่าง 20% ตามสมมติฐานเริ่มต้น)" };
   }
+  if (style === "dip") {
+    const supports = data.zones.filter(z => z.type === "support" && positive(z.price) && z.price <= data.lastClose).map(z => z.price);
+    if (supports.length) return { price: Math.max(...supports), basis: "แนวรับ Swing ใกล้สุดใต้ราคา · หุ้นที่ลงลึกอาจลงต่อ ควรแบ่งซื้อหลายไม้ตามแนวรับ" };
+    if (positive(f.fairValue) && hasValuationSupport(f)) return { price: f.fairValue * 0.8, basis: "ไม่มีแนวรับใต้ราคา (ราคาหลุดทุกแนว) จึงใช้ Fair Value × 80% · ควรรอสัญญาณกลับตัวก่อน" };
+    return { price: null, basis: "ไม่มีแนวรับใต้ราคาและยังประเมิน Fair Value ไม่ได้" };
+  }
   if (style === "dividend") {
     if (!positive(f.dividendRate)) return { price: null, basis: "ไม่มีข้อมูลเงินปันผลต่อหุ้นรายปี" };
     return { price: f.dividendRate / 0.04, basis: "เพดานราคาซื้อ = ปันผลต่อหุ้นรายปี ÷ 4% ก่อนภาษี สมมติปันผลคงเดิม ไม่รับรองว่าจะจ่ายเท่าเดิม" };

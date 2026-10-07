@@ -78,7 +78,7 @@ export default function StockScreener() {
         if (!pending.current.length) {
           if (cursor.current === null) break;
           const offset=cursor.current;
-          const params=new URLSearchParams({market,sector,cap,offset:String(offset)});
+          const params=new URLSearchParams({market,sector,cap,offset:String(offset),...(style==="dip"?{dip:"1"}:{})});
           const response=await fetch("/api/discover?"+params,{signal:AbortSignal.any([abort.signal,AbortSignal.timeout(25000)])});
           const result=await response.json();
           if (!response.ok) throw new Error(result.error || "ค้นหารายชื่อไม่สำเร็จ");
@@ -161,7 +161,7 @@ export default function StockScreener() {
     {discoveryNote && <p>{discoveryNote}</p>}
     <p role="status">{message}</p>
     <div className="screen-actions"><span aria-live="polite">ตรวจแล้ว {rows.length} · ผ่าน {evaluated.filter(r=>r.passed).length} · เกือบผ่าน {evaluated.filter(r=>r.nearMiss).length} · โหลดไม่ได้ {rows.filter(r=>r.error).length}</span></div>
-    {!busy && rows.length===0 && <p>เลือกถือยาว ปันผล หรือเทรดสั้น แล้วกด “ค้นหาหุ้นให้ฉัน” โดยไม่ต้องกรอกชื่อหุ้น</p>}
+    {!busy && rows.length===0 && <p>เลือกแนวทางที่ต้องการ แล้วกด “ค้นหาหุ้นให้ฉัน” โดยไม่ต้องกรอกชื่อหุ้น</p>}
     {rows.length>0 && !evaluated.some(r=>r.passed) && <p>ยังไม่มีหุ้นผ่านครบทุกเกณฑ์ในรายการที่ตรวจแล้ว</p>}
     <details className="screen-panel"><summary>เรียงความน่าสนใจมากไปน้อย · วิธีคิดคะแนน</summary><p>{RANKING_DESCRIPTION[style]}</p><p>คะแนนตามสูตรของแอป ใช้เปรียบเทียบเฉพาะหุ้นที่ค้นพบและผ่านครบ ยังไม่ใช่อันดับของทั้งตลาดหรือโอกาสทำกำไร หากคะแนนเท่ากันเรียงตามชื่อหุ้น</p></details>
     {evaluated.filter(row=>row.passed).map((row,index)=><article className="screen-panel" key={row.symbol}>

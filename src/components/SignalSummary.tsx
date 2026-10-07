@@ -9,6 +9,7 @@ import { TREND_METHOD, trendIcon, type TrendResult } from "@/lib/trend";
 import type { TradePlan } from "@/lib/trade-plan";
 import { analyzeVolume, VOLUME_METHOD } from "@/lib/volume";
 import { eventBadges } from "@/lib/events";
+import { analyzeDip, DIP_METHOD, type DipCheck } from "@/lib/dip";
 import type { SrMode, StockData } from "@/lib/types";
 
 interface Props {
@@ -29,10 +30,12 @@ const p2 = (n: number) => n.toFixed(2);
 export default function SignalSummary(props: Props) {
   const { data, trend, tradePlan, srMode, onModeChange } = props;
   const [openSignal, setOpenSignal] = useState<string | null>(null);
-  const [info, setInfo] = useState(false);
+  const [openDip, setOpenDip] = useState<string | null>(null);
   const price = data.lastClose;
   const reversal = analyzeReversal(data);
   const vol = analyzeVolume(data);
+  const dip = analyzeDip(data);
+  const dipSelected = dip?.checks.find(c => c.label === openDip) ?? null;
   const eventWarn = eventBadges(data.events, data.market).filter(b => b.tone === "warn" || (b.kind === "earnings" && b.days < 0));
   const volMax = vol ? Math.max(...vol.bars.map(b => b.volume), vol.avg20) : 0;
   const fv = data.fairValue;
@@ -80,11 +83,18 @@ export default function SignalSummary(props: Props) {
     </button>
   );
 
+  const dipChip = (c: DipCheck) => (
+    <button key={c.label} type="button" title={`${c.label}\n${c.detail}`} aria-expanded={openDip === c.label}
+      className={`rev-chip dip-chip rev-${c.state}${openDip === c.label ? " is-open" : ""}`}
+      onClick={() => setOpenDip(openDip === c.label ? null : c.label)}>
+      <span className="rev-icon" aria-hidden="true">{c.state === "na" ? "?" : ICON[c.state]}</span>{c.short}
+    </button>
+  );
+
   return (
     <section className="signal-summary">
       <div className="ss-head">
         <h3 className="section-title">สรุปสัญญาณ</h3>
-        <button type="button" className="rev-info-btn" aria-label="วิธีอ่าน" aria-expanded={info} onClick={() => setInfo(!info)}>ⓘ</button>
       </div>
 
       <div className="ss-row" id="ss-plan">
@@ -110,6 +120,27 @@ export default function SignalSummary(props: Props) {
           <div className="ss-body ss-inline">
             <span className={`trend-badge trend-${trend.kind}${trend.strong ? " trend-strong" : ""}`}>{trendIcon(trend.kind)} {trend.label}</span>
             <span className="ss-range">{p2(trend.rangeLow)}–{p2(trend.rangeHigh)}</span>
+          </div>
+        </div>
+      )}
+
+      {dip && dip.drawdownPercent != null && (
+        <div className="ss-row ss-row-top" id="ss-dip" title={DIP_METHOD}>
+          <span className="ss-label">ลดราคา</span>
+          <div className="ss-body">
+            <div className="ss-dots-line">
+              <span className={`dip-verdict dip-${dip.kind}`}>{dip.verdict}</span>
+              <span className="dip-dd"><b>{dip.drawdownPercent.toFixed(0)}%</b> จากจุดสูงสุด {dip.high52 != null ? p2(dip.high52) : ""}</span>
+            </div>
+            <div className="rev-chips">
+              <span className="dip-group">พื้นฐาน</span>
+              {dip.checks.filter(c => c.group === "quality").map(dipChip)}
+            </div>
+            <div className="rev-chips dip-chips-2">
+              <span className="dip-group">ถูกจริง?</span>
+              {dip.checks.filter(c => c.group === "value").map(dipChip)}
+            </div>
+            {dipSelected && <p className="rev-detail-box" role="status"><b>{dipSelected.label}</b> · {dipSelected.detail}</p>}
           </div>
         </div>
       )}
@@ -223,13 +254,6 @@ export default function SignalSummary(props: Props) {
       )}
 
 
-      {info && (
-        <p className="rev-info">
-          {reversal?.context ? reversal.context + " · " : ""}
-          มูลค่า: ซ้าย = ราคาต่ำกว่าราคายุติธรรม · ตำแหน่ง: ● ใกล้ซ้าย = ใกล้แนวรับ · RSI ต่ำกว่า 30 ขายมากเกิน สูงกว่า 70 ซื้อมากเกิน ·
-          กลับตัว: 5 ชิปแรกเป็นสัญญาณเริ่มต้น 2 ชิปหลังเป็นสัญญาณยืนยัน ✓ = 1 ● = 0.5 แตะชิปเพื่อดูตัวเลข · เครื่องมือวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน ใช้คู่กับ Stop loss เสมอ
-        </p>
-      )}
 
     </section>
   );
