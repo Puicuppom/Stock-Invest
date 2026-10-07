@@ -136,6 +136,8 @@ export interface StockData {
   fairValue: FairValueResult;
   /** วันประกาศงบ / วันขึ้น XD (ไม่มีในโหมดคัดหุ้น) */
   events?: import("./events").StockEvents | null;
+  /** ข้อมูลธุรกิจ + งบรายปี (ไม่มีในโหมดคัดหุ้น) */
+  company?: import("./financials").CompanyInfo | null;
 }
 
 export interface WatchlistItem {

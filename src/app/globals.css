@@ -2867,3 +2867,57 @@ button.dash-jump:active { transform: scale(0.95); }
 
 .screen-desc summary { cursor: pointer; color: var(--muted); font-size: var(--t-body); }
 .screen-desc p { font-size: var(--t-meta); color: var(--muted); margin: 4px 0 0; }
+
+/* company & financials */
+.company-card { border: 1px solid var(--border); border-radius: 12px; background: var(--surface); padding: 0.65rem; display: flex; flex-direction: column; gap: 8px; }
+.company-card .ss-head { justify-content: space-between; margin: 0; }
+.fin-cur { color: var(--muted); font-size: var(--t-label); }
+.co-meta { margin: 0; font-size: var(--t-meta); color: var(--muted); }
+.co-meta a { color: var(--accent); }
+.co-summary summary { cursor: pointer; font-size: var(--t-body); color: var(--text); }
+.co-summary p { margin: 4px 0 0; font-size: var(--t-meta); line-height: 1.5; color: var(--muted); max-height: 12em; overflow: auto; }
+.fin-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.fin-bars { background: var(--surface-2); border-radius: 10px; padding: 6px 8px; min-width: 0; }
+.fin-bars-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 5px; font-size: var(--t-label); color: var(--muted); }
+.fin-bars-head span { flex-basis: 100%; }
+.fin-bars-head b { font-size: var(--t-value); color: var(--text); }
+.fin-bars-head b.neg { color: var(--danger); }
+.fin-bars-head em { font-style: normal; font-weight: 700; }
+.fin-bars-head em.up { color: var(--success); }
+.fin-bars-head em.down { color: var(--danger); }
+.fin-bars-plot { display: flex; align-items: flex-end; gap: 4px; height: 44px; margin-top: 4px; }
+.fin-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; min-width: 0; }
+.fin-bar-col i { width: 100%; max-width: 18px; border-radius: 3px 3px 0 0; background: var(--accent); opacity: 0.55; }
+.fin-bar-col:last-child i { opacity: 1; }
+.fin-bar-col i.neg { background: var(--danger); }
+.fin-bar-col small { font-size: 0.55rem; color: var(--muted); margin-top: 2px; }
+.fin-cashdebt { display: grid; gap: 4px; }
+.fin-cashdebt div { display: grid; grid-template-columns: 3.2em 1fr auto; align-items: center; gap: 6px; font-size: var(--t-meta); color: var(--muted); }
+.fin-cashdebt i { height: 8px; border-radius: 4px; min-width: 2px; }
+.fin-cashdebt i.cash { background: var(--success); }
+.fin-cashdebt i.debt { background: var(--danger); }
+.fin-cashdebt b { color: var(--text); font-weight: 600; }
+
+/* watchlist review in screener */
+.screen-view button { padding: 8px 10px; }
+.wr { display: flex; flex-direction: column; gap: 6px; }
+.wr-legend { margin: 0; font-size: var(--t-meta); color: var(--muted); }
+.wr-row { border: 1px solid var(--border); border-radius: 10px; background: var(--surface); overflow: hidden; }
+.screener .wr-head { display: grid; grid-template-columns: 4.6em 1fr auto; align-items: center; gap: 8px; width: 100%; border: 0; border-radius: 0; background: transparent; padding: 8px 10px; text-align: left; }
+.wr-sym { display: flex; flex-direction: column; line-height: 1.1; }
+.wr-sym small { font-size: 0.6rem; }
+.wr-price { font-size: var(--t-body); white-space: nowrap; }
+.wr-price em { font-style: normal; font-size: var(--t-meta); }
+.wr-price em.up, .wr-why .up { color: var(--success); }
+.wr-price em.down { color: var(--danger); }
+.wr-styles { display: flex; gap: 4px; }
+.wr-st { display: inline-flex; flex-direction: column; align-items: center; width: 2.1em; padding: 2px 0; border-radius: 8px; border: 1px solid var(--border); opacity: 0.35; font-size: 0.8rem; line-height: 1.1; }
+.wr-st small { font-size: 0.6rem; }
+.wr-st.pass { opacity: 1; border-color: color-mix(in srgb, var(--success) 55%, transparent); background: color-mix(in srgb, var(--success) 14%, transparent); }
+.wr-st.pass small { color: var(--success); }
+.wr-st.near { opacity: 0.85; border-color: color-mix(in srgb, var(--warning) 45%, transparent); }
+.wr-st.near small { color: var(--warning); }
+.wr-detail { padding: 0 10px 10px; font-size: var(--t-meta); color: var(--muted); }
+.wr-detail p { margin: 3px 0; }
+.wr-detail b { color: var(--text); }
+.wr-open { display: inline-block; margin-top: 6px; color: var(--accent); font-weight: 600; }

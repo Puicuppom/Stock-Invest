@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import AppNavigation from "./AppNavigation";
 import ScreeningEntryCard from "./ScreeningEntryCard";
+import WatchlistReview from "./WatchlistReview";
 import { useWatchlist } from "@/hooks/useWatchlist";
 import { isLastCandleComplete, screeningStyles, screenStock, valuationRiskFlags, VISIBLE_STYLES, type ScreeningStyle } from "@/lib/screener";
 import { returnPercent, type MarketContext } from "@/lib/momentum";
@@ -19,6 +20,7 @@ type Snapshot = {
 // Retain the current search across client-side navigation without refetching.
 let savedSearch: Snapshot | null = null;
 export default function StockScreener() {
+  const [view,setView] = useState<"watchlist" | "market">("watchlist");
   const [style,setStyle] = useState<ScreeningStyle>("dip");
   const [ctx,setCtx] = useState<MarketContext | null>(null);
   const [market,setMarket] = useState<"US"|"TH">("US");
@@ -148,6 +150,11 @@ export default function StockScreener() {
     <AppNavigation active="screener" />
     <p className="dash-metric-sub" role="status">{syncStatus}</p>
     <header><h1>คัดหุ้น</h1></header>
+    <div className="screen-styles screen-view" role="group" aria-label="มุมมอง">
+      <button aria-pressed={view==="watchlist"} onClick={()=>setView("watchlist")}>Watchlist ของฉัน</button>
+      <button aria-pressed={view==="market"} onClick={()=>setView("market")}>ค้นหาจากตลาด</button>
+    </div>
+    {view==="watchlist" ? <WatchlistReview items={items} loaded={loaded} /> : <>
     <div className="screen-styles" role="group" aria-label="แนวทางคัดหุ้น">
       {VISIBLE_STYLES.map(key=><button key={key} aria-pressed={style===key} disabled={busy} onClick={()=>{if (key !== style) {setStyle(key);clearResults();}}}>{screeningStyles[key].label}</button>)}
     </div>
@@ -198,6 +205,7 @@ export default function StockScreener() {
         {row.data && <button disabled={!loaded||items.some(item=>item.symbol===row.symbol && item.market===scannedMarket)} onClick={()=>{if(addStock(row.symbol,scannedMarket))setMessage(`เพิ่ม ${row.symbol} ใน Watchlist แล้ว`);}}>{items.some(item=>item.symbol===row.symbol && item.market===scannedMarket)?"อยู่ใน Watchlist แล้ว":"+ เพิ่ม Watchlist"}</button>}
       </div>)}
     </details>}
+    </>}
     <footer className="app-footer">เกณฑ์เริ่มต้นสำหรับคัดไปศึกษาต่อ ไม่ใช่คะแนนรับรองคุณภาพหรือคำสั่งซื้อ ข้อมูลที่ขาดจะไม่นับว่าผ่าน</footer>
   </main>;
 }

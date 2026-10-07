@@ -7,6 +7,7 @@ import { classifyInstrument } from "./instrument";
 import { calculatePivot } from "./pivot";
 import { detectMarket, resolveSymbol } from "./symbol";
 import { fetchCalendarEvents, type StockEvents } from "./events";
+import { fetchCompanyInfo } from "./financials";
 import { clusterZones, findSwingPoints, topZones } from "./swing";
 import type { Candle, FairValueData, StockData } from "./types";
 
@@ -74,13 +75,19 @@ export async function getStockData(
 
   const primary = PRIMARY_LISTINGS[resolvedSymbol];
   const eventMarket = detectMarket(resolvedSymbol);
-  const [daily, fundamentals, earnings, primaryDaily, listedEvents] = await Promise.all([
+  const [daily, fundamentals, earnings, primaryDaily, listedEvents, listedCompany] = await Promise.all([
     fetchDailyCandles(resolvedSymbol),
     fetchFundamentals(resolvedSymbol),
     fetchAnnualEps(primary?.symbol ?? resolvedSymbol),
     primary ? fetchDailyCandles(primary.symbol).catch(() => null) : Promise.resolve(null),
     options.screening ? Promise.resolve(null) : fetchCalendarEvents(resolvedSymbol, eventMarket),
+    options.screening ? Promise.resolve(null) : fetchCompanyInfo(resolvedSymbol),
   ]);
+  let company = listedCompany;
+  if (!options.screening && primary && !company?.revenue.length) {
+    const primaryCompany = await fetchCompanyInfo(primary.symbol);
+    if (primaryCompany) company = { ...primaryCompany, summary: company?.summary ?? primaryCompany.summary, website: company?.website ?? primaryCompany.website };
+  }
   // ADR ที่เพิ่งเข้าตลาด Yahoo อาจยังไม่มีวันประกาศงบ → ใช้ของหุ้นต้นทาง (บริษัทเดียวกัน)
   let events: StockEvents | null = listedEvents;
   if (!options.screening && primary && !events?.earningsDate) {
@@ -120,5 +127,6 @@ export async function getStockData(
       assetKind
     ),
     events,
+    company,
   };
 }

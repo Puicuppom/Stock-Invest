@@ -36,7 +36,11 @@ export function useWatchlist() {
         const parsed = (JSON.parse(raw) as WatchlistItem[]).map(normalizeItem);
         if (Array.isArray(parsed)) {
           setItems(parsed);
-          if (parsed[0]) setSelected(watchlistId(parsed[0]));
+          // เปิดจากหน้าคัดหุ้น: /?s=SYMBOL::MARKET
+          const wanted = new URLSearchParams(window.location.search).get("s");
+          const hit = wanted ? parsed.find((item) => watchlistId(item) === wanted) : undefined;
+          if (hit) setSelected(watchlistId(hit));
+          else if (parsed[0]) setSelected(watchlistId(parsed[0]));
         }
       }
     } catch {

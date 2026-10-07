@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import AddStockFab from "@/components/AddStockFab";
 import AppNavigation from "@/components/AppNavigation";
 import StockDashboard from "@/components/StockDashboard";
+import CompanyCard from "./CompanyCard";
 import SignalSummary from "@/components/SignalSummary";
 import StockChart from "@/components/StockChart";
 import Watchlist from "@/components/Watchlist";
@@ -279,6 +280,7 @@ export default function StockApp() {
           onToleranceChange={setTagTolerance}
         />
       )}
+      {selectedData?.company && <CompanyCard company={selectedData.company} />}
 
 
 
