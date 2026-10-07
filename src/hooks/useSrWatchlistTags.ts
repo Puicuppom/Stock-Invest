@@ -4,6 +4,7 @@ import type { SrMode, StockData, WatchlistItem } from "@/lib/types";
 import { watchlistId } from "@/lib/watchlist-id";
 import { analyzeTrend, type TrendKind } from "@/lib/trend";
 import { eventBadges, type EventBadge } from "@/lib/events";
+import { analyzeDip, type DipKind } from "@/lib/dip";
 
 const POLL_MS = 3 * 60 * 1000;
 
@@ -16,6 +17,9 @@ export interface ChipSignal {
   changePercent: number;
   /** งบ/XD ที่ใกล้ที่สุดภายใน 14 วัน */
   event: EventBadge | null;
+  /** คำตัดสินหุ้นดีลดราคา (แสดงไอคอนเฉพาะ good / trap / watch) */
+  dipKind: DipKind | null;
+  dipLabel: string | null;
 }
 export type WatchlistSignals = Record<string, ChipSignal>;
 
@@ -24,7 +28,9 @@ export function chipSignalOf(data: StockData): ChipSignal {
   const event = eventBadges(data.events, data.market)
     .filter(b => b.tone !== "dim" && b.days >= 0)
     .sort((a, b) => a.days - b.days)[0] ?? null;
-  return { trend: trend?.kind ?? null, trendLabel: trend?.label ?? null, changePercent: data.changePercent, event };
+  const dip = analyzeDip(data);
+  const dipLabel = dip && dip.drawdownPercent != null && dip.kind !== "na" && dip.kind !== "notdeep" ? `${dip.verdict} (${dip.drawdownPercent.toFixed(0)}% จากจุดสูงสุด)` : null;
+  return { trend: trend?.kind ?? null, trendLabel: trend?.label ?? null, changePercent: data.changePercent, event, dipKind: dip?.kind ?? null, dipLabel };
 }
 
 interface UseSrWatchlistTagsOptions {

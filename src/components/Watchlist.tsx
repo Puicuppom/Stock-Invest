@@ -310,7 +310,7 @@ export default function Watchlist({
           const srAria = chipSrAriaLabel(nearResistance, nearSupport);
           const sig = signals[id];
           const sigTitle = sig
-            ? [sig.trendLabel ? `แนวโน้ม: ${sig.trendLabel}` : null, `วันนี้ ${sig.changePercent >= 0 ? "+" : ""}${sig.changePercent.toFixed(2)}%`, sig.event?.title ?? null, srAria ?? null].filter(Boolean).join("\n")
+            ? [sig.trendLabel ? `แนวโน้ม: ${sig.trendLabel}` : null, `วันนี้ ${sig.changePercent >= 0 ? "+" : ""}${sig.changePercent.toFixed(2)}%`, sig.dipLabel, sig.event?.title ?? null, srAria ?? null].filter(Boolean).join("\n")
             : undefined;
 
           return (
@@ -347,6 +347,9 @@ export default function Watchlist({
               </span>
               <span className="chip-symbol">
                 {symbolLabel}
+                {sig?.dipKind === "good" && <span className="chip-dip" aria-label="หุ้นดีลดราคา">🏷️</span>}
+                {sig?.dipKind === "trap" && <span className="chip-dip" aria-label="ถูก แต่ระวังกับดัก">⚠️</span>}
+                {sig?.dipKind === "watch" && <span className="chip-dip" aria-label="น่าจับตา">👀</span>}
               </span>
               {sig && (
                 <span className="chip-sig" aria-hidden="true">

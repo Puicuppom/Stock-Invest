@@ -2862,3 +2862,5 @@ button.dash-jump:active { transform: scale(0.95); }
 
 .dip-chip { padding: 3px 8px; min-height: 26px; font-size: 0.74rem; gap: 4px; }
 .signal-summary .rev-chips .dip-group + .dip-chip { margin-left: -2px; }
+
+.chip-dip { margin-left: 2px; font-size: 0.6rem; vertical-align: 1px; }
