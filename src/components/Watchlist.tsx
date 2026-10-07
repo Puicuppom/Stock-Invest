@@ -310,7 +310,7 @@ export default function Watchlist({
           const srAria = chipSrAriaLabel(nearResistance, nearSupport);
           const sig = signals[id];
           const sigTitle = sig
-            ? [sig.trendLabel ? `แนวโน้ม: ${sig.trendLabel}` : null, `วันนี้ ${sig.changePercent >= 0 ? "+" : ""}${sig.changePercent.toFixed(2)}%`, sig.dipLabel, sig.event?.title ?? null, srAria ?? null].filter(Boolean).join("\n")
+            ? [sig.trendLabel ? `แนวโน้ม: ${sig.trendLabel}` : null, `${sig.extSession === "pre" ? "ก่อนเปิด" : sig.extSession === "post" ? "หลังปิด" : "วันนี้"} ${sig.changePercent >= 0 ? "+" : ""}${sig.changePercent.toFixed(2)}%`, sig.dipLabel, sig.event?.title ?? null, srAria ?? null].filter(Boolean).join("\n")
             : undefined;
 
           return (
@@ -357,6 +357,7 @@ export default function Watchlist({
                   <em className={sig.changePercent >= 0 ? "up" : "down"}>
                     {sig.changePercent >= 0 ? "+" : ""}{sig.changePercent.toFixed(1)}%
                   </em>
+                  {sig.extSession && <b className="chip-ext">{sig.extSession === "pre" ? "ก่อนเปิด" : "หลังปิด"}</b>}
                 </span>
               )}
               {sig?.event && (

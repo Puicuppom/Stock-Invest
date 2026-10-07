@@ -79,3 +79,54 @@ function normalizeV7Dividends(row: V7QuoteRow): YahooDividendFields | null {
 
   return { dividendYield, dividendRate };
 }
+
+/** ราคานอกเวลาทำการ (หุ้นสหรัฐ) — เทียบกับราคาปิดของช่วงปกติล่าสุด */
+export interface ExtendedQuote {
+  session: "pre" | "post";
+  price: number;
+  changePercent: number;
+  /** unix วินาที */
+  time: number;
+}
+
+interface V7ExtRow {
+  marketState?: string;
+  regularMarketPrice?: number;
+  regularMarketTime?: number;
+  preMarketPrice?: number;
+  preMarketTime?: number;
+  postMarketPrice?: number;
+  postMarketTime?: number;
+}
+
+export async function fetchExtendedQuote(resolvedSymbol: string): Promise<ExtendedQuote | null> {
+  try {
+    const { cookie, crumb } = await getYahooAuth();
+    const url = new URL("https://query1.finance.yahoo.com/v7/finance/quote");
+    url.searchParams.set("symbols", resolvedSymbol);
+    url.searchParams.set("crumb", crumb);
+    const res = await fetch(url.toString(), {
+      headers: { "User-Agent": USER_AGENT, Cookie: cookie },
+      next: { revalidate: 60 },
+      signal: AbortSignal.timeout(6000),
+    });
+    if (!res.ok) return null;
+    const row = ((await res.json()) as { quoteResponse?: { result?: V7ExtRow[] } }).quoteResponse?.result?.[0];
+    return row ? pickExtended(row) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function pickExtended(row: V7ExtRow, nowSec = Date.now() / 1000): ExtendedQuote | null {
+  const base = row.regularMarketPrice, baseTime = row.regularMarketTime ?? 0;
+  if (!base || base <= 0) return null;
+  const state = row.marketState ?? "";
+  if (state === "REGULAR") return null;
+  const make = (session: "pre" | "post", price?: number, time?: number): ExtendedQuote | null =>
+    price != null && price > 0 && time != null && time > baseTime && nowSec - time < 16 * 3600
+      ? { session, price, changePercent: (price / base - 1) * 100, time }
+      : null;
+  if (state.startsWith("PRE")) return make("pre", row.preMarketPrice, row.preMarketTime) ?? make("post", row.postMarketPrice, row.postMarketTime);
+  return make("post", row.postMarketPrice, row.postMarketTime);
+}

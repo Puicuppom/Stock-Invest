@@ -264,6 +264,7 @@ export default function StockApp() {
           onRefresh={() => fetchStock(true)}
           trend={trend}
           events={selectedData.events}
+          extended={selectedData.extended}
         />
       )}
 

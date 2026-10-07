@@ -4,6 +4,7 @@ import { assetKindLabel } from "@/lib/instrument";
 import type { AssetKind, FairValueResult } from "@/lib/types";
 import { trendIcon, type TrendResult } from "@/lib/trend";
 import { eventBadges, type StockEvents } from "@/lib/events";
+import type { ExtendedQuote } from "@/lib/yahoo-quote";
 
 interface StockDashboardProps {
   symbol: string;
@@ -22,6 +23,7 @@ interface StockDashboardProps {
   onRefresh: () => void;
   trend?: TrendResult | null;
   events?: StockEvents | null;
+  extended?: ExtendedQuote | null;
 }
 
 /** เลื่อนไปยังส่วนที่เกี่ยวข้องในการ์ดสรุปสัญญาณ แล้วกะพริบไฮไลต์ */
@@ -81,6 +83,7 @@ export default function StockDashboard({
   onRefresh,
   trend,
   events,
+  extended,
 }: StockDashboardProps) {
   const evBadges = eventBadges(events, market);
   const changePositive = change >= 0;
@@ -115,6 +118,13 @@ export default function StockDashboard({
               {change.toFixed(2)} ({changePercent.toFixed(2)}%)
             </span>
           </div>
+          {extended && (
+            <p className="dash-ext" title="ราคานอกเวลาทำการ คนซื้อขายน้อย ราคาเหวี่ยงง่าย · สัญญาณต่าง ๆ ยังใช้ราคาปิด">
+              {extended.session === "pre" ? "ก่อนเปิด" : "หลังปิด"} <b>{formatPrice(extended.price)}</b>{" "}
+              <em className={extended.changePercent >= 0 ? "change-up" : "change-down"}>{extended.changePercent >= 0 ? "+" : ""}{extended.changePercent.toFixed(2)}%</em>
+              <small> · {new Date(extended.time * 1000).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Bangkok" })} น.</small>
+            </p>
+          )}
           <div className="dash-badges">
             <span className="market-badge">
               {market === "TH" ? "BKK" : "US"}

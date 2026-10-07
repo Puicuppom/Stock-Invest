@@ -138,6 +138,8 @@ export interface StockData {
   events?: import("./events").StockEvents | null;
   /** ข้อมูลธุรกิจ + งบรายปี (ไม่มีในโหมดคัดหุ้น) */
   company?: import("./financials").CompanyInfo | null;
+  /** ราคาก่อนเปิด/หลังปิด (หุ้นสหรัฐ) */
+  extended?: import("./yahoo-quote").ExtendedQuote | null;
 }
 
 export interface WatchlistItem {

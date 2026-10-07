@@ -8,6 +8,7 @@ import { calculatePivot } from "./pivot";
 import { detectMarket, resolveSymbol } from "./symbol";
 import { fetchCalendarEvents, type StockEvents } from "./events";
 import { fetchCompanyInfo } from "./financials";
+import { fetchExtendedQuote } from "./yahoo-quote";
 import { clusterZones, findSwingPoints, topZones } from "./swing";
 import type { Candle, FairValueData, StockData } from "./types";
 
@@ -75,13 +76,14 @@ export async function getStockData(
 
   const primary = PRIMARY_LISTINGS[resolvedSymbol];
   const eventMarket = detectMarket(resolvedSymbol);
-  const [daily, fundamentals, earnings, primaryDaily, listedEvents, listedCompany] = await Promise.all([
+  const [daily, fundamentals, earnings, primaryDaily, listedEvents, listedCompany, extended] = await Promise.all([
     fetchDailyCandles(resolvedSymbol),
     fetchFundamentals(resolvedSymbol),
     fetchAnnualEps(primary?.symbol ?? resolvedSymbol),
     primary ? fetchDailyCandles(primary.symbol).catch(() => null) : Promise.resolve(null),
     options.screening ? Promise.resolve(null) : fetchCalendarEvents(resolvedSymbol, eventMarket),
     options.screening ? Promise.resolve(null) : fetchCompanyInfo(resolvedSymbol),
+    options.screening || eventMarket !== "US" ? Promise.resolve(null) : fetchExtendedQuote(resolvedSymbol),
   ]);
   let company = listedCompany;
   if (!options.screening && primary && !company?.revenue.length) {
@@ -128,5 +130,6 @@ export async function getStockData(
     ),
     events,
     company,
+    extended,
   };
 }

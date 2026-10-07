@@ -20,6 +20,8 @@ export interface ChipSignal {
   /** คำตัดสินหุ้นดีลดราคา (แสดงไอคอนเฉพาะ good / trap / watch) */
   dipKind: DipKind | null;
   dipLabel: string | null;
+  /** % นี้มาจากราคาก่อนเปิด/หลังปิด */
+  extSession: "pre" | "post" | null;
 }
 export type WatchlistSignals = Record<string, ChipSignal>;
 
@@ -30,7 +32,7 @@ export function chipSignalOf(data: StockData): ChipSignal {
     .sort((a, b) => a.days - b.days)[0] ?? null;
   const dip = analyzeDip(data);
   const dipLabel = dip && dip.drawdownPercent != null && dip.kind !== "na" && dip.kind !== "notdeep" ? `${dip.verdict} (${dip.drawdownPercent.toFixed(0)}% จากจุดสูงสุด)` : null;
-  return { trend: trend?.kind ?? null, trendLabel: trend?.label ?? null, changePercent: data.changePercent, event, dipKind: dip?.kind ?? null, dipLabel };
+  return { trend: trend?.kind ?? null, trendLabel: trend?.label ?? null, changePercent: data.extended?.changePercent ?? data.changePercent, extSession: data.extended?.session ?? null, event, dipKind: dip?.kind ?? null, dipLabel };
 }
 
 interface UseSrWatchlistTagsOptions {

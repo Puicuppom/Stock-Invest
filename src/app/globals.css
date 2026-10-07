@@ -2936,3 +2936,12 @@ button.dash-jump:active { transform: scale(0.95); }
 .wr-st { width: 2.4em; font-size: 0.95rem; }
 
 .watchlist-scroll { --watchlist-row-height: 2.6rem; }
+
+/* extended hours */
+.dash-ext { margin: 1px 0 0; font-size: var(--t-meta); color: var(--muted); }
+.dash-ext b { color: var(--text); font-weight: 700; }
+.dash-ext em { font-style: normal; font-weight: 600; }
+.dash-ext small { font-size: var(--t-label); }
+.chip-ext { font-size: 0.48rem; font-weight: 600; color: var(--accent); margin-left: 2px; }
+
+.dash-ext em { font-size: inherit; }
