@@ -188,7 +188,7 @@ export default function StockScreener() {
     {evaluated.filter(row=>row.passed).map((row,index)=><article className="screen-panel" key={row.symbol}>
       <div className="screen-actions"><h2>#{index+1} {row.symbol} <small>{scannedMarket==="TH"?"BKK":"US"}</small></h2><strong>{row.error?"โหลดไม่ได้":row.passed?"ผ่านครบ":row.incomplete?`ข้อมูลไม่ครบ · ผ่าน ${row.count}/${row.checks.length}`:`ผ่าน ${row.count}/${row.checks.length}`}</strong></div>
       {row.data && <p>{row.data.longName} · {isLastCandleComplete(row.data) ? "ราคาปิด" : "ราคาล่าสุด (ตลาดยังเปิด)"} {row.data.lastClose.toFixed(2)} {row.data.market==="TH"?"THB":"USD"} · {row.data.candles.at(-1)?.date}</p>}
-      {row.trend && <p className="screen-trend" title={TREND_METHOD}><span className={`trend-badge trend-${row.trend.kind}${row.trend.strong ? " trend-strong" : ""}`}>{trendIcon(row.trend.kind)} {row.trend.label}</span>{row.trend.change3mPercent != null && <span>3 เดือน {row.trend.change3mPercent > 0 ? "+" : ""}{row.trend.change3mPercent.toFixed(1)}%</span>}</p>}
+      {row.trend && <p className="screen-trend" title={TREND_METHOD}><span className={`trend-badge trend-${row.trend.kind}${row.trend.strong ? " trend-strong" : ""}`}>{trendIcon(row.trend.kind, row.trend.label)} {row.trend.label}</span>{row.trend.change3mPercent != null && <span>3 เดือน {row.trend.change3mPercent > 0 ? "+" : ""}{row.trend.change3mPercent.toFixed(1)}%</span>}</p>}
       {row.flags.length>0 && <p className="screen-flags" role="note">⚠ {row.flags.join(" · ")}</p>}
       {row.data && <p title={RANKING_DESCRIPTION[style]}>คะแนนความน่าสนใจ <strong style={{color: "var(--accent)"}}>{row.score}/100</strong></p>}
       {row.data && <ScreeningEntryCard data={row.data} style={style} ctx={ctx} />}
@@ -199,7 +199,7 @@ export default function StockScreener() {
       <summary>เกือบผ่าน · ขาด 1 เกณฑ์ ({evaluated.filter(row=>row.nearMiss).length} ตัว)</summary>
       <p className="screen-near-note">ผ่านทุกข้อยกเว้นหนึ่งข้อ เรียงตามคะแนน ใช้ดูว่าตัวไหนน่าศึกษาต่อ ไม่นับรวมในหุ้นที่ผ่านครบ</p>
       {[...evaluated].filter(row=>row.nearMiss).sort((a,b)=>b.score-a.score||a.symbol.localeCompare(b.symbol)).map(row=><div className="screen-near-row" key={row.symbol}>
-        <div className="screen-actions"><strong>{row.symbol} <small>{scannedMarket==="TH"?"BKK":"US"}</small>{row.trend && <span className={`trend-badge trend-${row.trend.kind}${row.trend.strong ? " trend-strong" : ""}`} title={TREND_METHOD}>{trendIcon(row.trend.kind)} {row.trend.label}</span>}</strong><span>คะแนน {row.score}/100</span></div>
+        <div className="screen-actions"><strong>{row.symbol} <small>{scannedMarket==="TH"?"BKK":"US"}</small>{row.trend && <span className={`trend-badge trend-${row.trend.kind}${row.trend.strong ? " trend-strong" : ""}`} title={TREND_METHOD}>{trendIcon(row.trend.kind, row.trend.label)} {row.trend.label}</span>}</strong><span>คะแนน {row.score}/100</span></div>
         {row.data && <small>{row.data.longName} · {row.data.lastClose.toFixed(2)} {row.data.market==="TH"?"THB":"USD"}</small>}
         {row.failed.map(c=><p key={c.label} className="screen-near-fail">✗ {c.label} <span>({c.value})</span></p>)}
         {row.data && <button disabled={!loaded||items.some(item=>item.symbol===row.symbol && item.market===scannedMarket)} onClick={()=>{if(addStock(row.symbol,scannedMarket))setMessage(`เพิ่ม ${row.symbol} ใน Watchlist แล้ว`);}}>{items.some(item=>item.symbol===row.symbol && item.market===scannedMarket)?"อยู่ใน Watchlist แล้ว":"+ เพิ่ม Watchlist"}</button>}

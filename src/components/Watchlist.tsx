@@ -6,7 +6,7 @@ import { displaySymbol, normalizeInput } from "@/lib/symbol";
 import { chipSrAriaLabel, chipSrClass } from "@/lib/chip-sr-style";
 import { watchlistId } from "@/lib/watchlist-id";
 import type { WatchlistSignals, WatchlistSrTags } from "@/hooks/useSrWatchlistTags";
-import { trendIcon } from "@/lib/trend";
+import { LEAN_GLYPH, trendLean } from "@/lib/trend";
 import type { WatchlistItem } from "@/lib/types";
 
 interface WatchlistProps {
@@ -353,7 +353,7 @@ export default function Watchlist({
               </span>
               {sig && (
                 <span className="chip-sig" aria-hidden="true">
-                  {sig.trend && <i className={`chip-trend t-${sig.trend}`}>{trendIcon(sig.trend)}</i>}
+                  {sig.trend && <i className={`chip-trend lean-${trendLean(sig.trend, sig.trendLabel)}`}>{LEAN_GLYPH[trendLean(sig.trend, sig.trendLabel)]}</i>}
                   <em className={sig.changePercent >= 0 ? "up" : "down"}>
                     {sig.changePercent >= 0 ? "+" : ""}{sig.changePercent.toFixed(1)}%
                   </em>

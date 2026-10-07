@@ -129,7 +129,7 @@ export default function StockDashboard({
                 onClick={() => jumpTo("ss-trend")}
                 title="ดูรายละเอียดแนวโน้ม"
               >
-                {trendIcon(trend.kind)} {trend.label}
+                {trendIcon(trend.kind, trend.label)} {trend.label}
               </button>
             )}
             {nearSupport && (

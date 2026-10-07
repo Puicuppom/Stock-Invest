@@ -73,6 +73,18 @@ export function analyzeTrend(data: StockData): TrendResult | null {
   return { kind, strong, label, reasons, change3mPercent, rangeLow, rangeHigh };
 }
 
-export function trendIcon(kind: TrendKind): string {
-  return kind === "up" ? "▲" : kind === "down" ? "▼" : "↔";
+export type TrendLean = "up" | "upish" | "flat" | "downish" | "down";
+/** แยก Sideway เอียงขึ้น/เอียงลง (และกำลังกลับตัว) ออกจาก Sideway ธรรมดา */
+export function trendLean(kind: TrendKind, label?: string | null): TrendLean {
+  if (kind === "up") return "up";
+  if (kind === "down") return "down";
+  if (label && /เอียงขึ้น|กลับตัวขึ้น/.test(label)) return "upish";
+  if (label && /เอียงลง|กลับตัวลง/.test(label)) return "downish";
+  return "flat";
+}
+export const LEAN_GLYPH: Record<TrendLean, string> = { up: "▲", upish: "↗", flat: "↔", downish: "↘", down: "▼" };
+export const LEAN_SHORT: Record<TrendLean, string> = { up: "ขาขึ้น", upish: "เอียงขึ้น", flat: "ไซด์เวย์", downish: "เอียงลง", down: "ขาลง" };
+
+export function trendIcon(kind: TrendKind, label?: string | null): string {
+  return LEAN_GLYPH[trendLean(kind, label)];
 }

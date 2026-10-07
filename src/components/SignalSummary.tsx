@@ -118,7 +118,7 @@ export default function SignalSummary(props: Props) {
         <div className="ss-row" id="ss-trend" title={trend.reasons.join("\n") + "\n\n" + TREND_METHOD}>
           <span className="ss-label">แนวโน้ม</span>
           <div className="ss-body ss-inline">
-            <span className={`trend-badge trend-${trend.kind}${trend.strong ? " trend-strong" : ""}`}>{trendIcon(trend.kind)} {trend.label}</span>
+            <span className={`trend-badge trend-${trend.kind}${trend.strong ? " trend-strong" : ""}`}>{trendIcon(trend.kind, trend.label)} {trend.label}</span>
             <span className="ss-range">{p2(trend.rangeLow)}–{p2(trend.rangeHigh)}</span>
           </div>
         </div>

@@ -2921,3 +2921,18 @@ button.dash-jump:active { transform: scale(0.95); }
 .wr-detail p { margin: 3px 0; }
 .wr-detail b { color: var(--text); }
 .wr-open { display: inline-block; margin-top: 6px; color: var(--accent); font-weight: 600; }
+
+/* trend lean (sideway up/down) */
+.lean-up { --lean: var(--success); }
+.lean-upish { --lean: color-mix(in srgb, var(--success) 70%, var(--warning)); }
+.lean-flat { --lean: var(--warning); }
+.lean-downish { --lean: color-mix(in srgb, var(--danger) 70%, var(--warning)); }
+.lean-down { --lean: var(--danger); }
+.chip-trend[class*="lean-"] { color: var(--lean); font-size: 0.72rem; font-weight: 700; }
+.chip-sig { font-size: 0.62rem; gap: 3px; }
+.wr-trend { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; min-width: 3.4em; padding: 2px 4px; border-radius: 8px; color: var(--lean); border: 1px solid color-mix(in srgb, var(--lean) 50%, transparent); background: color-mix(in srgb, var(--lean) 12%, transparent); line-height: 1.1; margin-right: 4px; }
+.wr-trend b { font-size: 1rem; }
+.wr-trend small { font-size: 0.58rem; color: inherit; white-space: nowrap; }
+.wr-st { width: 2.4em; font-size: 0.95rem; }
+
+.watchlist-scroll { --watchlist-row-height: 2.6rem; }

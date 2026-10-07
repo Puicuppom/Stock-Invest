@@ -4,7 +4,7 @@ import Link from "next/link";
 import { screenStock, screeningStyles, valuationRiskFlags, type ScreeningStyle } from "@/lib/screener";
 import { analyzeDip } from "@/lib/dip";
 import { analyzeMomentum, returnPercent, type MarketContext } from "@/lib/momentum";
-import { analyzeTrend, trendIcon } from "@/lib/trend";
+import { analyzeTrend, LEAN_GLYPH, LEAN_SHORT, trendLean } from "@/lib/trend";
 import { watchlistId } from "@/lib/watchlist-id";
 import type { StockData, WatchlistItem } from "@/lib/types";
 
@@ -82,9 +82,11 @@ export default function WatchlistReview({ items, loaded }: { items: WatchlistIte
             <button type="button" className="wr-head" onClick={() => setOpen(open === id ? null : id)} aria-expanded={open === id}>
               <span className="wr-sym"><b>{item.symbol}</b><small>{item.market === "TH" ? "BKK" : "US"}</small></span>
               {data ? <>
-                <span className="wr-price">{data.lastClose.toFixed(2)} <em className={data.changePercent >= 0 ? "up" : "down"}>{data.changePercent >= 0 ? "+" : ""}{data.changePercent.toFixed(1)}%</em>
-                  {trend && <i className={`chip-trend t-${trend.kind}`} title={trend.label}> {trendIcon(trend.kind)}</i>}</span>
+                <span className="wr-price">{data.lastClose.toFixed(2)} <em className={data.changePercent >= 0 ? "up" : "down"}>{data.changePercent >= 0 ? "+" : ""}{data.changePercent.toFixed(1)}%</em></span>
                 <span className="wr-styles">
+                  {trend && (() => { const l = trendLean(trend.kind, trend.label); return (
+                    <span className={`wr-trend lean-${l}`} title={trend.label}><b>{LEAN_GLYPH[l]}</b><small>{LEAN_SHORT[l]}</small></span>
+                  ); })()}
                   {results.map(r => (
                     <span key={r.key} className={`wr-st${r.pass ? " pass" : r.near ? " near" : ""}`} title={screeningStyles[r.key].label}>
                       {r.icon}<small>{r.pass ? "✓" : r.near ? "●" : "–"}</small>
