@@ -2864,3 +2864,6 @@ button.dash-jump:active { transform: scale(0.95); }
 .signal-summary .rev-chips .dip-group + .dip-chip { margin-left: -2px; }
 
 .chip-dip { margin-left: 2px; font-size: 0.6rem; vertical-align: 1px; }
+
+.screen-desc summary { cursor: pointer; color: var(--muted); font-size: var(--t-body); }
+.screen-desc p { font-size: var(--t-meta); color: var(--muted); margin: 4px 0 0; }

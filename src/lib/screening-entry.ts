@@ -25,6 +25,15 @@ export function screeningEntry(data: StockData, style: ScreeningStyle): Screenin
     if (positive(f.fairValue) && hasValuationSupport(f)) return { price: f.fairValue * 0.8, basis: "ไม่มีแนวรับใต้ราคา (ราคาหลุดทุกแนว) จึงใช้ Fair Value × 80% · ควรรอสัญญาณกลับตัวก่อน" };
     return { price: null, basis: "ไม่มีแนวรับใต้ราคาและยังประเมิน Fair Value ไม่ได้" };
   }
+  if (style === "momentum" || style === "smallcap") {
+    const c = data.candles.slice(-50).map(x => x.close);
+    if (c.length < 20) return { price: null, basis: "ข้อมูลราคาไม่พอคำนวณเส้นค่าเฉลี่ย" };
+    const sma20 = c.slice(-20).reduce((s, x) => s + x, 0) / 20;
+    const sma50 = c.length >= 50 ? c.reduce((s, x) => s + x, 0) / 50 : null;
+    const target = sma20 <= data.lastClose ? sma20 : sma50 != null && sma50 <= data.lastClose ? sma50 : null;
+    if (target == null) return { price: null, basis: "ราคาอยู่ใต้เส้นค่าเฉลี่ย 20/50 วัน ยังไม่ใช่จังหวะซื้อแบบไปต่อ" };
+    return { price: target, basis: `รอย่อมาที่เส้นค่าเฉลี่ย ${target === sma20 ? 20 : 50} วัน หรือซื้อตอนทะลุจุดสูงสุดเดิมพร้อม Volume หนุน` };
+  }
   if (style === "dividend") {
     if (!positive(f.dividendRate)) return { price: null, basis: "ไม่มีข้อมูลเงินปันผลต่อหุ้นรายปี" };
     return { price: f.dividendRate / 0.04, basis: "เพดานราคาซื้อ = ปันผลต่อหุ้นรายปี ÷ 4% ก่อนภาษี สมมติปันผลคงเดิม ไม่รับรองว่าจะจ่ายเท่าเดิม" };

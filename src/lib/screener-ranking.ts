@@ -1,15 +1,18 @@
 import type { StockData } from "./types";
 import { completedCandles, valuationRiskFlags, type ScreeningStyle } from "./screener";
 import { analyzeDip } from "./dip";
+import { analyzeMomentum, techSnapshot, type MarketContext } from "./momentum";
 const clamp = (value: number) => Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 0;
 const num = (value: number | null | undefined) => value != null && Number.isFinite(value) ? value : 0;
 export const RANKING_DESCRIPTION: Record<ScreeningStyle, string> = {
   long: "Upside 35 คะแนน (เต็มที่ 40%) + FCF Yield 20 (เต็มที่ 8%) + คุณภาพธุรกิจ 30 (ROE 15 เต็มที่ 25% · อัตรากำไรจากการดำเนินงาน 10 เต็มที่ 30% · รายได้โต 5 เต็มที่ 15%) + จำนวนโมเดล 15 (เต็มที่ 2 โมเดล) · หัก 10 คะแนนต่อคำเตือนข้อมูล (⚠ บนการ์ด)",
   dip: "ความลึก 30 คะแนน (เต็มที่ลง 40%) + พื้นฐาน 35 (ROE อัตรากำไร รายได้ หนี้ ข้อละ 8.75) + ถูกจริง 35 (กำไรคาดการณ์ไม่ลด 15 · P/E ต่ำกว่าอดีต 10 · ต่ำกว่า Fair Value 10) · ผ่านครึ่งได้ครึ่ง ไม่มีข้อมูลได้หนึ่งในสาม · หัก 10 คะแนนต่อคำเตือนข้อมูล",
+  momentum: "พื้นฐาน 40 คะแนน (ROE อัตรากำไร รายได้ กำไรคาดการณ์ หนี้ ข้อละ 8) + แรงกว่าตลาด 6 เดือน 15 (เต็มที่ +30 จุด%) + ใกล้จุดสูงสุด 15 + ขาขึ้น 15 + ยังไม่วิ่งเกินตัว 15",
+  smallcap: "รายได้โต 25 คะแนน (เต็มที่ 40%) + กำไรคาดการณ์โต 20 (เต็มที่ 40%) + แรงซื้อ Volume 25 (เต็มที่ 2.5 เท่า) + ใกล้จุดสูงสุด 3 เดือน 15 + ROE 15 (เต็มที่ 20%) · หัก 10 คะแนนต่อคำเตือนข้อมูล",
   dividend: "Yield ใกล้ 4% 30 คะแนน (ลดตามระยะห่าง เต็มช่วง ±4 จุดเปอร์เซ็นต์) + FCF Yield 25 (เต็มที่ 8%) + ความปลอดภัยปันผล 30 (จ่ายจากกำไร 20 เต็มเมื่อ ≤60% เป็นศูนย์ที่ 100% · เงินสดอิสระครอบคลุม 10 เต็มที่ 2 เท่า) + P/E 15 (เต็มเมื่อ ≤15 ลดจนเป็นศูนย์ที่ 30)",
   short: "ปริมาณซื้อขายเทียบ 20 วันก่อน 40 คะแนน (เต็มที่ 3 เท่า) + SMA20 เหนือ SMA50 30 (เต็มที่ 10%) + ราคาไม่ห่าง SMA20 30 (ลดจนเป็นศูนย์เมื่อห่าง 10%) · ใช้เฉพาะวันที่ตลาดปิดแล้ว",
 };
-export function interestScore(data: StockData, style: ScreeningStyle): number {
+export function interestScore(data: StockData, style: ScreeningStyle, ctx?: MarketContext | null): number {
   const f=data.fairValue;
   const q=f.quality ?? null;
   let score=0;
@@ -21,6 +24,15 @@ export function interestScore(data: StockData, style: ScreeningStyle): number {
   }
   else if (style === "dip") {
     score=(analyzeDip(data)?.score ?? 0)-10*valuationRiskFlags(f).length;
+  }
+  else if (style === "momentum") {
+    score=(analyzeMomentum(data,ctx)?.score ?? 0)-10*valuationRiskFlags(f).length;
+  }
+  else if (style === "smallcap") {
+    const t=techSnapshot(data);
+    score=25*clamp(num(q?.revenueGrowthPercent)/40)+20*clamp(num(t?.epsGrowthPercent)/40)
+      +25*clamp((num(t?.volRatio5v50)-1)/1.5)+15*clamp(1+num(t?.fromHigh3m)/10)+15*clamp(num(q?.roePercent)/20);
+    score-=10*valuationRiskFlags(f).length;
   }
   else if (style === "dividend") {
     const payout=q?.payoutPercent;

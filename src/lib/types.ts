@@ -87,6 +87,7 @@ export interface FairValueResult {
   quality?: QualityMetrics | null;
   /** ช่วง P/E ย้อนหลังของหุ้นเอง (P25/มัธยฐาน/P75) */
   historicalPE?: { low: number; median: number; high: number; years: number } | null;
+  marketCap?: number | null;
   modelFairValue?: number | null;
   analystWeight?: number;
   trailingEps?: number | null;

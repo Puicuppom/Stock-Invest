@@ -1,15 +1,16 @@
 import { screeningEntry } from "@/lib/screening-entry";
 import type { StockData } from "@/lib/types";
 import { screenStock, type ScreeningStyle } from "@/lib/screener";
+import type { MarketContext } from "@/lib/momentum";
 
-export default function ScreeningEntryCard({data, style}: {data: StockData; style: ScreeningStyle}) {
+export default function ScreeningEntryCard({data, style, ctx}: {data: StockData; style: ScreeningStyle; ctx?: MarketContext | null}) {
   const entry = screeningEntry(data, style);
   const unit = data.market === "TH" ? "THB" : "USD";
   const price = (value: number | null | undefined) => value != null && Number.isFinite(value) && value > 0 ? `${value.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})} ${unit}` : "ยังประเมินไม่ได้";
   const fairValue = data.fairValue.fairValue;
   const upside = data.lastClose != null && Number.isFinite(data.lastClose) && data.lastClose > 0 && fairValue != null && Number.isFinite(fairValue) && fairValue > 0
     ? (fairValue / data.lastClose - 1) * 100 : null;
-  const checks = screenStock(data, style);
+  const checks = screenStock(data, style, ctx);
   // เหตุผลมาจากเกณฑ์ที่ผ่านโดยตรง จึงตรงกับเกณฑ์เสมอ
   const reasons = checks.flatMap(check => check.passed === true && check.reason ? [check.reason] : []);
   const passed = checks.length > 0 && checks.every(check => check.passed === true);

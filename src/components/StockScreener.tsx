@@ -3,7 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import AppNavigation from "./AppNavigation";
 import ScreeningEntryCard from "./ScreeningEntryCard";
 import { useWatchlist } from "@/hooks/useWatchlist";
-import { isLastCandleComplete, screeningStyles, screenStock, valuationRiskFlags, type ScreeningStyle } from "@/lib/screener";
+import { isLastCandleComplete, screeningStyles, screenStock, valuationRiskFlags, VISIBLE_STYLES, type ScreeningStyle } from "@/lib/screener";
+import { returnPercent, type MarketContext } from "@/lib/momentum";
 import { interestScore, RANKING_DESCRIPTION } from "@/lib/screener-ranking";
 import { analyzeTrend, TREND_METHOD, trendIcon } from "@/lib/trend";
 import { DISCOVERY_SECTORS } from "@/lib/discovery";
@@ -13,12 +14,13 @@ type Snapshot = {
   style: ScreeningStyle; market: "US" | "TH"; source: "discover" | "watchlist";
   sector: string; cap: string; nextOffset: number | null; discoveryNote: string;
   total: number; rows: Row[]; message: string; scannedMarket: "US" | "TH";
-  pending: string[]; cursor: number | null; seen: string[];
+  pending: string[]; cursor: number | null; seen: string[]; ctx: MarketContext | null;
 };
 // Retain the current search across client-side navigation without refetching.
 let savedSearch: Snapshot | null = null;
 export default function StockScreener() {
-  const [style,setStyle] = useState<ScreeningStyle>("long");
+  const [style,setStyle] = useState<ScreeningStyle>("dip");
+  const [ctx,setCtx] = useState<MarketContext | null>(null);
   const [market,setMarket] = useState<"US"|"TH">("US");
   const [source,setSource] = useState<"discover" | "watchlist">("discover");
   const [sector,setSector] = useState("");
@@ -40,7 +42,7 @@ export default function StockScreener() {
   useEffect(()=>{
     if (savedSearch) {
       const s=savedSearch;
-      setStyle(s.style);setMarket(s.market);setSource(s.source);setSector(s.sector);setCap(s.cap);
+      setStyle(VISIBLE_STYLES.includes(s.style) ? s.style : "dip");setCtx(s.ctx);setMarket(s.market);setSource(s.source);setSector(s.sector);setCap(s.cap);
       setNextOffset(s.nextOffset);setDiscoveryNote(s.discoveryNote);setTotal(s.total);
       setRows(s.rows);setMessage(s.message);setScannedMarket(s.scannedMarket);
       pending.current=[...s.pending];cursor.current=s.cursor;seen.current=new Set(s.seen);
@@ -52,7 +54,7 @@ export default function StockScreener() {
     if (!restored) return;
     savedSearch={style,market,source,sector,cap,nextOffset,discoveryNote,total,rows,
       message:busy ? "เก็บผลค้นหาไว้แล้ว · กดค้นหาต่อได้" : message,scannedMarket,
-      pending:[...pending.current],cursor:cursor.current,seen:[...seen.current]};
+      pending:[...pending.current],cursor:cursor.current,seen:[...seen.current],ctx};
     return ()=>{
       // Include candidates currently loading so leaving the page never skips them.
       if (savedSearch) {
@@ -61,7 +63,7 @@ export default function StockScreener() {
         savedSearch.nextOffset=pending.current.length ? cursor.current ?? 0 : cursor.current;
       }
     };
-  },[restored,style,market,source,sector,cap,nextOffset,discoveryNote,total,rows,message,scannedMarket,busy]);
+  },[restored,style,market,source,sector,cap,nextOffset,discoveryNote,total,rows,message,scannedMarket,busy,ctx]);
   async function scan(append = false) {
     controller.current?.abort();
     const abort = new AbortController(); controller.current=abort;
@@ -71,6 +73,18 @@ export default function StockScreener() {
       if (source === "watchlist") pending.current=[...new Set(items.filter(item=>item.market===market).map(item=>item.symbol))];
     }
     setBusy(true);setMessage("");setScannedMarket(market);setTotal(0);
+    let scanCtx=ctx;
+    if (style === "momentum" && (!append || !scanCtx)) {
+      // ดัชนีอ้างอิงสำหรับเทียบความแรง 6 เดือน
+      const indexName=market==="US"?"S&P 500":"SET";
+      try {
+        const r=await fetch("/api/stock/"+encodeURIComponent(market==="US"?"^GSPC":"^SET.BK")+"?market="+market+"&mode=screen",{signal:AbortSignal.any([abort.signal,AbortSignal.timeout(20000)])});
+        const d=await r.json();
+        const closes:number[]=r.ok && Array.isArray(d.candles) ? d.candles.map((c:{close:number})=>c.close) : [];
+        scanCtx={index6mPercent:returnPercent(closes,126),indexName};
+      } catch { scanCtx={index6mPercent:null,indexName}; }
+      setCtx(scanCtx);
+    }
     let passedInBatch=0;
     const updateContinuation=()=>setNextOffset(pending.current.length ? cursor.current ?? 0 : cursor.current);
     try {
@@ -78,7 +92,7 @@ export default function StockScreener() {
         if (!pending.current.length) {
           if (cursor.current === null) break;
           const offset=cursor.current;
-          const params=new URLSearchParams({market,sector,cap,offset:String(offset),...(style==="dip"?{dip:"1"}:{})});
+          const params=new URLSearchParams({market,sector,cap:style==="smallcap"?"small":cap,offset:String(offset),...(style==="dip"?{dip:"1"}:style==="momentum"?{near:"1"}:{})});
           const response=await fetch("/api/discover?"+params,{signal:AbortSignal.any([abort.signal,AbortSignal.timeout(25000)])});
           const result=await response.json();
           if (!response.ok) throw new Error(result.error || "ค้นหารายชื่อไม่สำเร็จ");
@@ -104,7 +118,7 @@ export default function StockScreener() {
         for (const row of results) {
           if (seen.current.has(row.symbol)) continue;
           seen.current.add(row.symbol);
-          const checks=row.data ? screenStock(row.data,style) : [];
+          const checks=row.data ? screenStock(row.data,style,scanCtx) : [];
           if (checks.length && checks.every(check=>check.passed===true)) passedInBatch++;
           setRows(previous=>[...previous,row]);
         }
@@ -119,7 +133,7 @@ export default function StockScreener() {
     }
   }
   const evaluated=rows.map(row=>{
-    const checks=row.data ? screenStock(row.data,style):[];
+    const checks=row.data ? screenStock(row.data,style,ctx):[];
     const count=checks.filter(c=>c.passed===true).length;
     const passed=checks.length>0 && checks.every(c=>c.passed===true);
     const incomplete=checks.some(c=>c.passed===null);
@@ -128,16 +142,16 @@ export default function StockScreener() {
     const nearMiss=!row.error && checks.length>1 && failed.length===1;
     const flags=row.data ? valuationRiskFlags(row.data.fairValue) : [];
     const trend=row.data ? analyzeTrend(row.data) : null;
-    return {...row,checks,count,passed,incomplete,failed,nearMiss,flags,trend,score:row.data ? interestScore(row.data,style) : 0};
+    return {...row,checks,count,passed,incomplete,failed,nearMiss,flags,trend,score:row.data ? interestScore(row.data,style,ctx) : 0};
   }).sort((a,b)=>Number(b.passed)-Number(a.passed)||b.score-a.score||a.symbol.localeCompare(b.symbol));
   return <main className="app-shell screener">
     <AppNavigation active="screener" />
     <p className="dash-metric-sub" role="status">{syncStatus}</p>
-    <header><h1>คัดหุ้น</h1><p>เลือกตลาดและแนวทาง แล้วกดค้นหาได้เลย</p></header>
+    <header><h1>คัดหุ้น</h1></header>
     <div className="screen-styles" role="group" aria-label="แนวทางคัดหุ้น">
-      {(Object.keys(screeningStyles) as ScreeningStyle[]).map(key=><button key={key} aria-pressed={style===key} disabled={busy} onClick={()=>{if (key !== style) {setStyle(key);clearResults();}}}>{screeningStyles[key].label}</button>)}
+      {VISIBLE_STYLES.map(key=><button key={key} aria-pressed={style===key} disabled={busy} onClick={()=>{if (key !== style) {setStyle(key);clearResults();}}}>{screeningStyles[key].label}</button>)}
     </div>
-    <p>{screeningStyles[style].description}</p>
+    <details className="screen-desc"><summary>{screeningStyles[style].tagline}</summary><p>{screeningStyles[style].description}</p></details>
     <section className="screen-panel">
       <label htmlFor="screen-market">ตลาด</label>
       <select id="screen-market" value={market} disabled={busy} onChange={e=>{setMarket(e.target.value as "TH"|"US");clearResults();}}><option value="US">US</option><option value="TH">ไทย (BKK)</option></select>
@@ -149,9 +163,9 @@ export default function StockScreener() {
       {source === "discover" && <>
         <label htmlFor="screen-sector">กลุ่มธุรกิจ</label>
         <select id="screen-sector" value={sector} disabled={busy} onChange={e=>{setSector(e.target.value);clearResults();}}>{DISCOVERY_SECTORS.map(([value,label])=><option key={value} value={value}>{label}</option>)}</select>
-        <label htmlFor="screen-cap">ขนาดบริษัท (Market Cap)</label>
-        <select id="screen-cap" value={cap} disabled={busy} onChange={e=>{setCap(e.target.value);clearResults();}}><option value="all">ทุกขนาด</option><option value="large">ใหญ่</option><option value="mid">กลาง</option><option value="small">เล็ก</option></select>
-        <p>{market === "US" ? "ใหญ่ ≥ 10 พันล้าน USD · กลาง 2–ต่ำกว่า 10 พันล้าน · เล็ก < 2 พันล้าน" : "ใหญ่ ≥ 100 พันล้าน THB · กลาง 10–ต่ำกว่า 100 พันล้าน · เล็ก < 10 พันล้าน"}</p>
+        {style !== "smallcap" && <><label htmlFor="screen-cap">ขนาดบริษัท (Market Cap)</label>
+        <select id="screen-cap" value={cap} disabled={busy} onChange={e=>{setCap(e.target.value);clearResults();}}><option value="all">ทุกขนาด</option><option value="large">ใหญ่</option><option value="mid">กลาง</option><option value="small">เล็ก</option></select></>}
+        
         <details><summary>ขอบเขตการค้นหา</summary><p>ค้นหาต่อเนื่องตามตัวกรอง เรียง Market Cap จากมากไปน้อย จนพบหุ้นผ่านครบ 30 ตัวต่อชุด หรือหมดขอบเขตที่แหล่งข้อมูลส่งให้ หุ้นที่ไม่ผ่านหรือข้อมูลไม่ครบไม่นับรวม 30 ตัว ตัดรายการที่ Yahoo ระบุว่าเป็น DR/วอร์แรนต์ไทย รวมถึงรหัส -R/-F ออก กลุ่มธุรกิจใช้การจัดประเภทของ Yahoo และอาจมีข้อมูลขาดหรือคลาดเคลื่อน ขนาดบริษัทเป็นเกณฑ์ของแอปในสกุลเงินตลาด</p></details>
       </>}
       <button disabled={!restored || busy || (source === "watchlist" && !loaded)} onClick={()=>scan()}>{busy ? "กำลังค้นหา… ผ่าน " + total + "/30 · ตรวจ " + rows.length + " ตัว" : rows.length > 0 || nextOffset !== null ? "↻ รีเฟรช · เริ่มค้นหาใหม่" : "ค้นหาหุ้นให้ฉัน"}</button>
@@ -170,7 +184,7 @@ export default function StockScreener() {
       {row.trend && <p className="screen-trend" title={TREND_METHOD}><span className={`trend-badge trend-${row.trend.kind}${row.trend.strong ? " trend-strong" : ""}`}>{trendIcon(row.trend.kind)} {row.trend.label}</span>{row.trend.change3mPercent != null && <span>3 เดือน {row.trend.change3mPercent > 0 ? "+" : ""}{row.trend.change3mPercent.toFixed(1)}%</span>}</p>}
       {row.flags.length>0 && <p className="screen-flags" role="note">⚠ {row.flags.join(" · ")}</p>}
       {row.data && <p title={RANKING_DESCRIPTION[style]}>คะแนนความน่าสนใจ <strong style={{color: "var(--accent)"}}>{row.score}/100</strong></p>}
-      {row.data && <ScreeningEntryCard data={row.data} style={style} />}
+      {row.data && <ScreeningEntryCard data={row.data} style={style} ctx={ctx} />}
       {row.error && <p role="alert">{row.error}</p>}
       {row.data && <button disabled={!loaded||items.some(item=>item.symbol===row.symbol && item.market===scannedMarket)} onClick={()=>{if(addStock(row.symbol,scannedMarket))setMessage(`เพิ่ม ${row.symbol} ใน Watchlist แล้ว`);}}>{items.some(item=>item.symbol===row.symbol && item.market===scannedMarket)?"อยู่ใน Watchlist แล้ว":"+ เพิ่ม Watchlist"}</button>}
     </article>)}

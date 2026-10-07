@@ -1,11 +1,19 @@
 import type { Candle, StockData } from "./types";
 import { drawdownFromHigh, DIP_DEEP_PERCENT } from "./dip";
-export type ScreeningStyle = "long" | "dip" | "dividend" | "short";
+import { techSnapshot, type MarketContext } from "./momentum";
+import { analyzeTrend } from "./trend";
+export type ScreeningStyle = "long" | "dip" | "momentum" | "smallcap" | "dividend" | "short";
+/** ปุ่มที่แสดงในหน้าคัดหุ้น (long/short ยังเก็บโค้ดไว้แต่ไม่แสดง) */
+export const VISIBLE_STYLES: ScreeningStyle[] = ["dip", "momentum", "smallcap", "dividend"];
+/** เกณฑ์หุ้นจิ๋ว (Market Cap สกุลเงินตลาด) */
+export const SMALL_CAP_MAX = { US: 2e9, TH: 10e9 } as const;
 export const screeningStyles = {
-  long: { label: "ถือยาว", description: "คัดจากกำไร เงินสด มูลค่า และคุณภาพธุรกิจ (ROE รายได้ หนี้) ตัดหุ้นที่ราคายุติธรรมมีสัญญาณข้อมูลผิดปกติ ยังไม่ยืนยันการเติบโตหลายปี" },
-  dip: { label: "หุ้นดีลดราคา", description: `ราคาลงจากจุดสูงสุด 52 สัปดาห์ ≥ ${DIP_DEEP_PERCENT}% แต่พื้นฐานยังดี (ROE รายได้ หนี้) และไม่เข้าข่ายกับดัก: กำไรคาดการณ์ไม่ลดลงเกิน 10% และราคาถูกกว่า P/E ในอดีตหรือ Fair Value` },
-  dividend: { label: "ปันผล", description: "คัดจากปันผล เงินสด และความสามารถจ่ายปันผล (ไม่จ่ายเกินกำไร/เงินสดอิสระ) ยังไม่ยืนยันความต่อเนื่องของปันผลหลายปี" },
-  short: { label: "เทรดสั้น", description: "คัดจากแนวโน้ม ปริมาณซื้อขาย และสภาพคล่อง ใช้เฉพาะวันที่ตลาดปิดแล้ว ไม่นับวันที่ยังซื้อขายอยู่" },
+  long: { label: "ถือยาว", tagline: "พื้นฐานดี ราคาต่ำกว่ามูลค่า", description: "คัดจากกำไร เงินสด มูลค่า และคุณภาพธุรกิจ (ROE รายได้ หนี้) ตัดหุ้นที่ราคายุติธรรมมีสัญญาณข้อมูลผิดปกติ ยังไม่ยืนยันการเติบโตหลายปี" },
+  dip: { label: "หุ้นดีลดราคา", tagline: "ลงลึก แต่พื้นฐานยังดี", description: `ราคาลงจากจุดสูงสุด 52 สัปดาห์ ≥ ${DIP_DEEP_PERCENT}% แต่พื้นฐานยังดี (ROE รายได้ หนี้) และไม่เข้าข่ายกับดัก: กำไรคาดการณ์ไม่ลดลงเกิน 10% และราคาถูกกว่า P/E ในอดีตหรือ Fair Value` },
+  momentum: { label: "หุ้นแกร่งไปต่อ", tagline: "พื้นฐานเยี่ยม ขาขึ้น ยังไม่ร้อนเกิน", description: "พื้นฐานดีมาก (ROE ≥ 15% อัตรากำไร ≥ 15% รายได้โต ≥ 10% กำไรคาดการณ์โต หนี้ต่ำ) อยู่ในขาขึ้น วิ่งแรงกว่าตลาด 6 เดือน ห่างจุดสูงสุดไม่เกิน 15% และยังไม่วิ่งเกินตัว (ห่างเส้น 50 วัน ≤ 15% · RSI ≤ 75 · PEG ≤ 2)" },
+  smallcap: { label: "หุ้นจิ๋วเตรียมพุ่ง", tagline: "บริษัทเล็ก โตเร็ว เริ่มมีแรงซื้อ", description: "บริษัทเล็ก (US < 2 พันล้าน USD · ไทย < 1 หมื่นล้านบาท) มีกำไรแล้ว รายได้โต ≥ 15% กำไรคาดการณ์โต ≥ 10% หนี้ไม่เยอะ และเริ่มมีแรงซื้อ: ราคาเหนือเส้น 50 วัน ใกล้จุดสูงสุด 3 เดือน Volume 5 วันล่าสุด ≥ 1.3 เท่า มีสภาพคล่องพอซื้อขาย · หุ้นเล็กผันผวนสูง ควรใช้เงินส่วนน้อย" },
+  dividend: { label: "ปันผลงาม", tagline: "ปันผลดี จ่ายไหว", description: "คัดจากปันผล เงินสด และความสามารถจ่ายปันผล (ไม่จ่ายเกินกำไร/เงินสดอิสระ) ยังไม่ยืนยันความต่อเนื่องของปันผลหลายปี" },
+  short: { label: "เทรดสั้น", tagline: "แนวโน้มและปริมาณซื้อขาย", description: "คัดจากแนวโน้ม ปริมาณซื้อขาย และสภาพคล่อง ใช้เฉพาะวันที่ตลาดปิดแล้ว ไม่นับวันที่ยังซื้อขายอยู่" },
 };
 export interface ScreeningCheck { label: string; value: string; passed: boolean | null; reason?: string }
 
@@ -57,7 +65,7 @@ export function valuationRiskFlags(f: StockData["fairValue"], level?: "hard" | "
 
 const fmt = (n: number, d = 2) => n.toFixed(d);
 
-export function screenStock(data: StockData, style: ScreeningStyle): ScreeningCheck[] {
+export function screenStock(data: StockData, style: ScreeningStyle, ctx?: MarketContext | null): ScreeningCheck[] {
   const f = data.fairValue;
   const q = f.quality ?? null;
   const unit = data.market === "TH" ? "THB" : "USD";
@@ -116,6 +124,51 @@ export function screenStock(data: StockData, style: ScreeningStyle): ScreeningCh
           ? { label: "หนี้สุทธิ ≤ 3 เท่าของ EBITDA", value: "เงินสดมากกว่าหนี้", passed: true, reason: "เงินสดมากกว่าหนี้สิน" }
           : check("หนี้สุทธิ ≤ 3 เท่าของ EBITDA", q?.netDebtToEbitda, n => n <= 3, " เท่า", v => `หนี้สุทธิ ${v}ของ EBITDA`),
       {label: "ข้อมูลกำไร/หน่วยหุ้นไม่ผิดปกติ", value: flags.length ? flags.join(" · ") : "ไม่มี", passed: flags.length === 0},
+    ];
+  }
+
+  if (style === "momentum" || style === "smallcap") {
+    const t = techSnapshot(data);
+    const financial = q?.sector === "Financial Services";
+    const debtCheck = (max: number): ScreeningCheck => financial ? { label: `หนี้สุทธิ ≤ ${max} เท่าของ EBITDA`, value: "ไม่ใช้กับกลุ่มการเงิน", passed: true }
+      : q?.netDebtToEbitda != null && Number.isFinite(q.netDebtToEbitda) && q.netDebtToEbitda <= 0
+        ? { label: `หนี้สุทธิ ≤ ${max} เท่าของ EBITDA`, value: "เงินสดมากกว่าหนี้", passed: true, reason: "เงินสดมากกว่าหนี้สิน" }
+        : check(`หนี้สุทธิ ≤ ${max} เท่าของ EBITDA`, q?.netDebtToEbitda, n => n <= max, " เท่า", v => `หนี้สุทธิ ${v}ของ EBITDA`);
+    if (style === "momentum") {
+      const trend = analyzeTrend(data);
+      const idx = ctx?.index6mPercent;
+      const rel = t?.ret6m != null && idx != null ? t.ret6m - idx : null;
+      const extendedSma = t?.sma50 != null ? (t.close / t.sma50 - 1) * 100 : null;
+      return [
+        check("ROE ≥ 15%", q?.roePercent, n => n >= 15, "%", v => `ROE ${v}`),
+        financial ? { label: "อัตรากำไรจากการดำเนินงาน ≥ 15%", value: "ไม่ใช้กับกลุ่มการเงิน", passed: true }
+          : check("อัตรากำไรจากการดำเนินงาน ≥ 15%", q?.operatingMarginPercent, n => n >= 15, "%", v => `อัตรากำไรจากการดำเนินงาน ${v}`),
+        check("รายได้โต ≥ 10%", q?.revenueGrowthPercent, n => n >= 10, "%", v => `รายได้โต ${v} เทียบปีก่อน`),
+        check("กำไรคาดการณ์โตต่อ", t?.epsGrowthPercent, n => n > 0, "%", v => `กำไรคาดการณ์โต ${v} จาก 12 เดือนล่าสุด`),
+        debtCheck(2),
+        { label: "แนวโน้มขาขึ้น", value: trend?.label ?? "ข้อมูลไม่พอ", passed: trend ? trend.kind === "up" : null, reason: trend?.kind === "up" ? `แนวโน้ม${trend.label}` : undefined },
+        check(`6 เดือนแรงกว่า${ctx?.indexName ?? "ตลาด"}`, rel, n => n > 0, " จุด%", v => `6 เดือน ${t!.ret6m! >= 0 ? "+" : ""}${t!.ret6m!.toFixed(1)}% แรงกว่า${ctx?.indexName ?? "ตลาด"} ${v}`),
+        check("ห่างจุดสูงสุด 52 สัปดาห์ ≤ 15%", t?.fromHigh52, n => n >= -15, "%", v => `ห่างจุดสูงสุด ${v}`),
+        check("ไม่แพงเกินการเติบโต (PEG ≤ 2)", t?.peg, n => n <= 2, "", v => `PEG ${v} (P/E ÷ การเติบโตของกำไร)`),
+        { label: "ยังไม่วิ่งเกินตัว (ห่างเส้น 50 วัน ≤ 15% · RSI ≤ 75)", value: extendedSma == null || t?.rsi == null ? "ข้อมูลไม่พอ" : `ห่างเส้น 50 วัน ${extendedSma.toFixed(1)}% · RSI ${t.rsi.toFixed(0)}`,
+          passed: extendedSma == null || t?.rsi == null ? null : extendedSma <= 15 && t.rsi <= 75,
+          reason: extendedSma != null && t?.rsi != null ? `ราคาห่างเส้น 50 วัน ${extendedSma.toFixed(1)}% · RSI ${t.rsi.toFixed(0)} ยังไม่ร้อนเกิน` : undefined },
+      ];
+    }
+    const cap = f.marketCap;
+    const capMax = SMALL_CAP_MAX[data.market];
+    const minValue = data.market === "TH" ? 5e6 : 1e6;
+    const aboveSma50 = t?.sma50 != null ? (t.close / t.sma50 - 1) * 100 : null;
+    return [
+      check(`บริษัทเล็ก (Market Cap < ${data.market === "TH" ? "1 หมื่นล้านบาท" : "2 พันล้าน USD"})`, cap != null ? cap / 1e9 : null, n => n * 1e9 < capMax, ` พันล้าน ${unit}`, v => `มูลค่าบริษัท ${v}`),
+      check("มีกำไรแล้ว (EPS > 0)", f.trailingEps, n => n > 0, "", v => `กำไรต่อหุ้น 12 เดือน ${v} ${unit}`),
+      check("รายได้โต ≥ 15%", q?.revenueGrowthPercent, n => n >= 15, "%", v => `รายได้โต ${v} เทียบปีก่อน`),
+      check("กำไรคาดการณ์โต ≥ 10%", t?.epsGrowthPercent, n => n >= 10, "%", v => `กำไรคาดการณ์โต ${v}`),
+      debtCheck(2.5),
+      check("ราคาเหนือเส้น 50 วัน", aboveSma50, n => n > 0, "%", v => `ราคาเหนือเส้น 50 วัน ${v}`),
+      check("ใกล้จุดสูงสุด 3 เดือน (≤ 10%)", t?.fromHigh3m, n => n >= -10, "%", v => `ห่างจุดสูงสุด 3 เดือน ${v} ใกล้ทะลุกรอบ`),
+      check("แรงซื้อเข้า (Volume 5 วัน ≥ 1.3 เท่า)", t?.volRatio5v50, n => n >= 1.3, " เท่า", v => `Volume 5 วันล่าสุด ${v}ของ 50 วันก่อนหน้า`),
+      check(`สภาพคล่อง ≥ ${data.market === "TH" ? "5 ล้านบาท" : "1 ล้าน USD"}/วัน`, t?.tradedValue20 != null ? t.tradedValue20 / 1e6 : null, n => n * 1e6 >= minValue, ` ล้าน ${unit}`, v => `มูลค่าซื้อขายเฉลี่ย ${v}/วัน`),
     ];
   }
 

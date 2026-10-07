@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getYahooAuth, USER_AGENT } from "@/lib/yahoo-auth";
-import { DISCOVERY_SECTORS, DISCOVERY_CAPS, capLimits, deepEnough, eligibleQuote, type DiscoveryQuote } from "@/lib/discovery";
+import { DISCOVERY_SECTORS, DISCOVERY_CAPS, capLimits, deepEnough, eligibleQuote, nearHigh, type DiscoveryQuote } from "@/lib/discovery";
 import { DIP_DEEP_PERCENT } from "@/lib/dip";
 export async function GET(request: NextRequest) {
   const p=request.nextUrl.searchParams;
   const market=p.get("market") || "US", sector=p.get("sector") || "", cap=p.get("cap") || "all";
   const offset=Number(p.get("offset") || 0);
   const dip=p.get("dip")==="1";
+  const near=p.get("near")==="1";
   if (!["US","TH"].includes(market) || !DISCOVERY_SECTORS.some(s=>s[0]===sector) || !DISCOVERY_CAPS.some(c=>c===cap) || !Number.isInteger(offset) || offset<0 || offset>10000)
     return NextResponse.json({error:"ตัวกรองไม่ถูกต้อง"},{status:400});
   try {
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest) {
     const result=json.finance?.result?.[0];
     if (!result || !Array.isArray(result.quotes) || !Number.isFinite(result.total)) throw new Error();
     const raw:DiscoveryQuote[]=result.quotes;
-    const quotes=raw.filter(q=>eligibleQuote(q,selectedMarket) && (!dip || deepEnough(q,DIP_DEEP_PERCENT)));
+    const quotes=raw.filter(q=>eligibleQuote(q,selectedMarket) && (!dip || deepEnough(q,DIP_DEEP_PERCENT)) && (!near || nearHigh(q,15)));
     const symbols=[...new Set(quotes.map(q=>market==="TH"?q.symbol!.replace(/\.BK$/,""):q.symbol!))];
     const next=offset+raw.length;
     return NextResponse.json({symbols,total:result.total,excluded:raw.length-quotes.length,offset,nextOffset:raw.length>0 && next<result.total && next<=10000?next:null,source:"Yahoo Finance",asOf:new Date().toISOString()});
