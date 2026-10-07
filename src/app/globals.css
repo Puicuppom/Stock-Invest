@@ -2824,3 +2824,5 @@ button.dash-jump:active { transform: scale(0.95); }
 .ss-brk.is-strong em { color: inherit; }
 
 .vol-ratio small { font-size: var(--t-meta); color: var(--muted); font-weight: 400; }
+
+.ss-short { margin: 6px 0 0; font-size: var(--t-meta); color: var(--muted); }

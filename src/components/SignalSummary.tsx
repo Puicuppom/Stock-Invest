@@ -2,7 +2,8 @@
 import { useState } from "react";
 import Gauge from "./Gauge";
 import SrLadder from "./SrLadder";
-import { analyzeReversal, type ReversalSignal } from "@/lib/reversal";
+import { analyzeReversal, rsiSeries, type ReversalSignal } from "@/lib/reversal";
+import { completedCandles } from "@/lib/screener";
 import type { SrHit } from "@/lib/sr-levels";
 import { TREND_METHOD, trendIcon, type TrendResult } from "@/lib/trend";
 import type { TradePlan } from "@/lib/trade-plan";
@@ -61,7 +62,11 @@ export default function SignalSummary(props: Props) {
 
   const valueText = upside == null ? null : upside >= 10 ? `ถูกกว่า ${upside.toFixed(0)}%` : upside <= -10 ? `แพงกว่า ${Math.abs(upside).toFixed(0)}%` : "ใกล้ราคายุติธรรม";
   const valueTone = upside == null ? "" : upside >= 10 ? "good" : upside <= -10 ? "bad" : "mid";
-  const rsi = reversal?.rsi ?? null;
+  // RSI ใช้แค่ 15 วัน — หุ้นเพิ่งเข้าตลาด (ข้อมูล <70 วัน) ยังแสดง RSI ได้แม้ยังวิเคราะห์แนวโน้ม/กลับตัวไม่ได้
+  const done = completedCandles(data);
+  const rsiFallback = done.length > 15 ? rsiSeries(done.map(c => c.close)).at(-1) : undefined;
+  const rsi = reversal?.rsi ?? (rsiFallback != null && Number.isFinite(rsiFallback) ? rsiFallback : null);
+  const shortHistory = !reversal || !trend ? done.length : null;
   const rsiText = rsi == null ? "" : rsi < 30 ? "ขายมากเกิน" : rsi > 70 ? "ซื้อมากเกิน" : "ปกติ";
   const rsiTone = rsi == null ? "" : rsi < 30 ? "good" : rsi > 70 ? "bad" : "mid";
 
@@ -181,6 +186,10 @@ export default function SignalSummary(props: Props) {
         )}
         <SrLadder pivot={data.pivot} zones={data.zones} price={price} mode={srMode} tolerancePercent={props.tolerancePercent} />
       </div>
+
+      {shortHistory != null && shortHistory < 70 && (
+        <p className="ss-short">ข้อมูลราคามี {shortHistory} วัน · แนวโน้มและสัญญาณกลับตัวต้องใช้อย่างน้อย 70 วัน</p>
+      )}
 
       {reversal && (
         <div className="ss-row ss-row-top">
