@@ -2,10 +2,30 @@ import { useEffect, useState } from "react";
 import { findSrHits, type SrHit } from "@/lib/sr-levels";
 import type { SrMode, StockData, WatchlistItem } from "@/lib/types";
 import { watchlistId } from "@/lib/watchlist-id";
+import { analyzeTrend, type TrendKind } from "@/lib/trend";
+import { eventBadges, type EventBadge } from "@/lib/events";
 
 const POLL_MS = 3 * 60 * 1000;
 
 export type WatchlistSrTags = Record<string, SrHit[]>;
+
+/** สัญญาณย่อสำหรับชิปใน Watchlist */
+export interface ChipSignal {
+  trend: TrendKind | null;
+  trendLabel: string | null;
+  changePercent: number;
+  /** งบ/XD ที่ใกล้ที่สุดภายใน 14 วัน */
+  event: EventBadge | null;
+}
+export type WatchlistSignals = Record<string, ChipSignal>;
+
+export function chipSignalOf(data: StockData): ChipSignal {
+  const trend = analyzeTrend(data);
+  const event = eventBadges(data.events, data.market)
+    .filter(b => b.tone !== "dim" && b.days >= 0)
+    .sort((a, b) => a.days - b.days)[0] ?? null;
+  return { trend: trend?.kind ?? null, trendLabel: trend?.label ?? null, changePercent: data.changePercent, event };
+}
 
 interface UseSrWatchlistTagsOptions {
   items: WatchlistItem[];
@@ -30,10 +50,12 @@ export function useSrWatchlistTags({
   srMode,
 }: UseSrWatchlistTagsOptions) {
   const [tags, setTags] = useState<WatchlistSrTags>({});
+  const [signals, setSignals] = useState<WatchlistSignals>({});
 
   useEffect(() => {
     if (!loaded || items.length === 0) {
       setTags({});
+      setSignals({});
       return;
     }
 
@@ -41,10 +63,12 @@ export function useSrWatchlistTags({
       if (document.visibilityState !== "visible") return;
 
       const next: WatchlistSrTags = {};
+      const nextSignals: WatchlistSignals = {};
 
       for (const item of items) {
         const data = await fetchStock(item);
         if (!data) continue;
+        nextSignals[watchlistId(item)] = chipSignalOf(data);
 
         const hits = findSrHits(
           data.pivot,
@@ -60,6 +84,7 @@ export function useSrWatchlistTags({
       }
 
       setTags(next);
+      setSignals(nextSignals);
     };
 
     runCheck();
@@ -78,5 +103,5 @@ export function useSrWatchlistTags({
     };
   }, [items, loaded, tolerancePercent, srMode]);
 
-  return tags;
+  return { tags, signals };
 }

@@ -5,13 +5,15 @@ import { createPortal } from "react-dom";
 import { displaySymbol, normalizeInput } from "@/lib/symbol";
 import { chipSrAriaLabel, chipSrClass } from "@/lib/chip-sr-style";
 import { watchlistId } from "@/lib/watchlist-id";
-import type { WatchlistSrTags } from "@/hooks/useSrWatchlistTags";
+import type { WatchlistSignals, WatchlistSrTags } from "@/hooks/useSrWatchlistTags";
+import { trendIcon } from "@/lib/trend";
 import type { WatchlistItem } from "@/lib/types";
 
 interface WatchlistProps {
   items: WatchlistItem[];
   selected: string;
   srTags?: WatchlistSrTags;
+  signals?: WatchlistSignals;
   onSelect: (id: string) => void;
   onRemove: (id: string) => void;
   onReorder: (fromId: string, toId: string) => void;
@@ -29,6 +31,7 @@ export default function Watchlist({
   items,
   selected,
   srTags = {},
+  signals = {},
   onSelect,
   onRemove,
   onReorder,
@@ -305,6 +308,10 @@ export default function Watchlist({
           const nearSupport = hits.some((hit) => hit.kind === "support");
           const srClass = chipSrClass(nearResistance, nearSupport);
           const srAria = chipSrAriaLabel(nearResistance, nearSupport);
+          const sig = signals[id];
+          const sigTitle = sig
+            ? [sig.trendLabel ? `แนวโน้ม: ${sig.trendLabel}` : null, `วันนี้ ${sig.changePercent >= 0 ? "+" : ""}${sig.changePercent.toFixed(2)}%`, sig.event?.title ?? null, srAria ?? null].filter(Boolean).join("\n")
+            : undefined;
 
           return (
             <button
@@ -319,6 +326,7 @@ export default function Watchlist({
               aria-label={
                 srAria ? `${symbolLabel} — ${srAria}` : symbolLabel
               }
+              title={sigTitle}
               onTouchStart={(event) => handleTouchStart(id, event)}
               onPointerDown={(event) => handlePointerDown(id, event)}
               onContextMenu={(event) => event.preventDefault()}
@@ -337,9 +345,22 @@ export default function Watchlist({
               >
                 ×
               </span>
-              <span className="chip-symbol" title={symbolLabel}>
+              <span className="chip-symbol">
                 {symbolLabel}
               </span>
+              {sig && (
+                <span className="chip-sig" aria-hidden="true">
+                  {sig.trend && <i className={`chip-trend t-${sig.trend}`}>{trendIcon(sig.trend)}</i>}
+                  <em className={sig.changePercent >= 0 ? "up" : "down"}>
+                    {sig.changePercent >= 0 ? "+" : ""}{sig.changePercent.toFixed(1)}%
+                  </em>
+                </span>
+              )}
+              {sig?.event && (
+                <span className={`chip-event ev-${sig.event.tone}`} aria-hidden="true">
+                  {sig.event.kind === "earnings" ? "📅" : "💰"}
+                </span>
+              )}
               {isDropTarget && <span className="chip-drop-label">วาง</span>}
             </button>
           );

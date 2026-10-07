@@ -6,6 +6,7 @@ import { calculateFairValue, fetchFundamentals } from "./fair-value";
 import { classifyInstrument } from "./instrument";
 import { calculatePivot } from "./pivot";
 import { detectMarket, resolveSymbol } from "./symbol";
+import { fetchCalendarEvents, type StockEvents } from "./events";
 import { clusterZones, findSwingPoints, topZones } from "./swing";
 import type { Candle, FairValueData, StockData } from "./types";
 
@@ -72,12 +73,20 @@ export async function getStockData(
   }
 
   const primary = PRIMARY_LISTINGS[resolvedSymbol];
-  const [daily, fundamentals, earnings, primaryDaily] = await Promise.all([
+  const eventMarket = detectMarket(resolvedSymbol);
+  const [daily, fundamentals, earnings, primaryDaily, listedEvents] = await Promise.all([
     fetchDailyCandles(resolvedSymbol),
     fetchFundamentals(resolvedSymbol),
     fetchAnnualEps(primary?.symbol ?? resolvedSymbol),
     primary ? fetchDailyCandles(primary.symbol).catch(() => null) : Promise.resolve(null),
+    options.screening ? Promise.resolve(null) : fetchCalendarEvents(resolvedSymbol, eventMarket),
   ]);
+  // ADR ที่เพิ่งเข้าตลาด Yahoo อาจยังไม่มีวันประกาศงบ → ใช้ของหุ้นต้นทาง (บริษัทเดียวกัน)
+  let events: StockEvents | null = listedEvents;
+  if (!options.screening && primary && !events?.earningsDate) {
+    const primaryEvents = await fetchCalendarEvents(primary.symbol, eventMarket);
+    if (primaryEvents?.earningsDate) events = { earningsDate: primaryEvents.earningsDate, earningsEstimate: primaryEvents.earningsEstimate, exDividendDate: events?.exDividendDate ?? null };
+  }
 
   if (fundamentals) fundamentals.historicalPE = historicalPE(
     primary ? primaryDaily?.candles ?? [] : daily.candles, earnings,
@@ -101,12 +110,15 @@ export async function getStockData(
       ? "ทองคำ spot · USD/oz"
       : longNameRaw;
 
-  return buildStockData(
-    input,
-    resolvedSymbol,
-    daily.candles,
-    fundamentals,
-    longName,
-    assetKind
-  );
+  return {
+    ...buildStockData(
+      input,
+      resolvedSymbol,
+      daily.candles,
+      fundamentals,
+      longName,
+      assetKind
+    ),
+    events,
+  };
 }

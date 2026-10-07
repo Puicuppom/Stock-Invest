@@ -3,6 +3,7 @@ import type { TradePlan } from "@/lib/trade-plan";
 import { assetKindLabel } from "@/lib/instrument";
 import type { AssetKind, FairValueResult } from "@/lib/types";
 import { trendIcon, type TrendResult } from "@/lib/trend";
+import { eventBadges, type StockEvents } from "@/lib/events";
 
 interface StockDashboardProps {
   symbol: string;
@@ -20,6 +21,7 @@ interface StockDashboardProps {
   loading: boolean;
   onRefresh: () => void;
   trend?: TrendResult | null;
+  events?: StockEvents | null;
 }
 
 /** เลื่อนไปยังส่วนที่เกี่ยวข้องในการ์ดสรุปสัญญาณ แล้วกะพริบไฮไลต์ */
@@ -78,7 +80,9 @@ export default function StockDashboard({
   loading,
   onRefresh,
   trend,
+  events,
 }: StockDashboardProps) {
+  const evBadges = eventBadges(events, market);
   const changePositive = change >= 0;
   const { range52w, dividendYieldPercent, dividendRate } = fairValue;
 
@@ -134,6 +138,11 @@ export default function StockDashboard({
             {nearResistance && (
               <button type="button" className="header-sr-tag header-sr-tag-res dash-jump" onClick={() => jumpTo("ss-sr")} title="ดูแนวรับ/แนวต้าน">ต้าน</button>
             )}
+            {evBadges.map((b) => (
+              <button key={b.kind} type="button" className={`ev-badge ev-${b.tone} dash-jump`} onClick={() => jumpTo("ss-plan")} title={b.title}>
+                {b.kind === "earnings" ? "📅" : "💰"} {b.text}
+              </button>
+            ))}
           </div>
         </div>
 

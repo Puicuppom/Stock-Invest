@@ -8,7 +8,7 @@ import SignalSummary from "@/components/SignalSummary";
 import StockChart from "@/components/StockChart";
 import Watchlist from "@/components/Watchlist";
 import { useSrTagSettings } from "@/hooks/useSrTagSettings";
-import { useSrWatchlistTags, type WatchlistSrTags } from "@/hooks/useSrWatchlistTags";
+import { chipSignalOf, useSrWatchlistTags, type WatchlistSrTags } from "@/hooks/useSrWatchlistTags";
 import { useWatchlist } from "@/hooks/useWatchlist";
 import { useSrMode } from "@/hooks/useSrMode";
 import { findSrHits } from "@/lib/sr-levels";
@@ -39,7 +39,7 @@ export default function StockApp() {
     toleranceOptions,
   } = useSrTagSettings();
 
-  const watchlistTags = useSrWatchlistTags({
+  const { tags: watchlistTags, signals: watchlistSignals } = useSrWatchlistTags({
     items,
     loaded: loaded && tagSettingsLoaded,
     tolerancePercent: tagSettings.tolerancePercent,
@@ -133,6 +133,12 @@ export default function StockApp() {
     return merged;
   }, [watchlistTags, liveTagCache]);
 
+  // หุ้นที่เปิดดูอยู่ใช้ข้อมูลล่าสุดเสมอ
+  const mergedSignals = useMemo(() => {
+    if (!selectedItem || !selectedData) return watchlistSignals;
+    return { ...watchlistSignals, [watchlistId(selectedItem)]: chipSignalOf(selectedData) };
+  }, [watchlistSignals, selectedItem, selectedData]);
+
   const handleAddStock = useCallback(
     (symbol: string, market: "TH" | "US") => {
       const normalized = normalizeInput(symbol);
@@ -225,6 +231,7 @@ export default function StockApp() {
           items={items}
           selected={selected}
           srTags={mergedWatchlistTags}
+          signals={mergedSignals}
           onSelect={setSelected}
           onRemove={removeStock}
           onReorder={reorderStock}
@@ -255,6 +262,7 @@ export default function StockApp() {
           loading={loading}
           onRefresh={() => fetchStock(true)}
           trend={trend}
+          events={selectedData.events}
         />
       )}
 

@@ -131,6 +131,8 @@ export interface StockData {
   change: number;
   changePercent: number;
   fairValue: FairValueResult;
+  /** วันประกาศงบ / วันขึ้น XD (ไม่มีในโหมดคัดหุ้น) */
+  events?: import("./events").StockEvents | null;
 }
 
 export interface WatchlistItem {

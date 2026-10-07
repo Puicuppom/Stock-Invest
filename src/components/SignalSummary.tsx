@@ -8,6 +8,7 @@ import type { SrHit } from "@/lib/sr-levels";
 import { TREND_METHOD, trendIcon, type TrendResult } from "@/lib/trend";
 import type { TradePlan } from "@/lib/trade-plan";
 import { analyzeVolume, VOLUME_METHOD } from "@/lib/volume";
+import { eventBadges } from "@/lib/events";
 import type { SrMode, StockData } from "@/lib/types";
 
 interface Props {
@@ -32,6 +33,7 @@ export default function SignalSummary(props: Props) {
   const price = data.lastClose;
   const reversal = analyzeReversal(data);
   const vol = analyzeVolume(data);
+  const eventWarn = eventBadges(data.events, data.market).filter(b => b.tone === "warn" || (b.kind === "earnings" && b.days < 0));
   const volMax = vol ? Math.max(...vol.bars.map(b => b.volume), vol.avg20) : 0;
   const fv = data.fairValue;
   const upside = fv.upsidePercent;
@@ -85,12 +87,20 @@ export default function SignalSummary(props: Props) {
         <button type="button" className="rev-info-btn" aria-label="วิธีอ่าน" aria-expanded={info} onClick={() => setInfo(!info)}>ⓘ</button>
       </div>
 
-      <div className="ss-row">
+      <div className="ss-row" id="ss-plan">
         <span className="ss-label">แผน</span>
         <div className="ss-body ss-plan">
           <span className={`ss-pill ss-pill-buy${plan.buy?.fallback ? " ss-fallback" : ""}`} title={plan.buy?.note}>ซื้อ <b>{plan.buy ? p2(plan.buy.price) : "—"}</b>{plan.buy?.fallback && <sup>*</sup>}</span>
           <span className={`ss-pill ss-pill-sell${plan.sell?.fallback ? " ss-fallback" : ""}`} title={plan.sell?.note}>ขาย <b>{plan.sell ? p2(plan.sell.price) : "—"}</b>{plan.sell?.fallback && <sup>*</sup>}</span>
           <span className={`ss-pill ss-pill-stop${plan.stop?.fallback ? " ss-fallback" : ""}`} title={plan.stop?.note}>Stop <b>{plan.stop ? p2(plan.stop.price) : "—"}</b>{plan.stop?.fallback && <sup>*</sup>}</span>
+          {eventWarn.map(b => (
+            <p key={b.kind} className={`ss-event-warn ev-${b.kind}`}>
+              {b.kind === "earnings"
+                ? (b.days < 0 ? "📅 เพิ่งประกาศงบ ราคาอาจยังเหวี่ยงแรง รอให้นิ่งก่อนค่อยใช้แผน"
+                  : `📅 ${b.text} · ช่วงงบราคามักเหวี่ยงแรง แนวรับ/ต้านอาจหลุดง่าย ควรรอหลังงบหรือซื้อน้อยลง`)
+                : `💰 ${b.text} · ถือก่อนวัน XD ถึงได้ปันผล และวัน XD ราคามักลดลงเท่าปันผล`}
+            </p>
+          ))}
         </div>
       </div>
 
