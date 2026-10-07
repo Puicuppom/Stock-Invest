@@ -31,11 +31,11 @@ export interface VolumeResult {
 const avg = (v: number[]) => v.reduce((s, x) => s + x, 0) / v.length;
 
 export const VOLUME_METHOD =
-  "Volume เทียบกับค่าเฉลี่ย 20 วันก่อนหน้า (ใช้เฉพาะวันที่ตลาดปิดแล้ว)\n" +
-  "• ≥1.5 เท่า วันขึ้น = แรงซื้อเข้า, วันลง = แรงขายออก\n" +
-  "• <0.6 เท่า = เบาบาง (ตลาดยังไม่เลือกทาง)\n" +
-  "• 10 วัน: Volume วันขึ้น ÷ วันลง ≥1.3 = ซื้อสะสม, ≤0.77 = ขายออก\n" +
-  "• ทะลุแนวรับ/ต้าน (Swing) ใน 3 วันล่าสุดพร้อม Volume ≥1.5 เท่า = ทะลุจริง, ต่ำกว่านั้น = ทะลุเบา (ระวังหลอก)";
+  "Volume = จำนวนหุ้นที่ซื้อขายกันในวันนั้น เทียบกับปกติ (ค่าเฉลี่ย 20 วัน)\n" +
+  "• คนแห่ซื้อ / คนแห่ขาย = ซื้อขายมากกว่าปกติ 1.5 เท่าขึ้นไป ในวันที่ราคาขึ้น / ลง\n" +
+  "• ซื้อขายเงียบ = น้อยกว่าปกติมาก ตลาดยังไม่เลือกทาง\n" +
+  "• 2 สัปดาห์: เทียบปริมาณในวันที่ราคาขึ้นกับวันที่ราคาลง ดูว่ามีคนทยอยซื้อหรือทยอยขาย\n" +
+  "• ทะลุแนว: ถ้ามีคนซื้อขายหนาแน่นตอนทะลุ = น่าเชื่อถือ ถ้าบางเบา = ระวังหลอกแล้วกลับ";
 
 /** วิเคราะห์ Volume — null ถ้าไม่มีข้อมูล Volume (เช่น ทองคำ spot) */
 export function analyzeVolume(data: StockData): VolumeResult | null {
@@ -53,18 +53,18 @@ export function analyzeVolume(data: StockData): VolumeResult | null {
   const lastRatio = vols[last] / avg20;
   const lastUp = isUp(last);
   const [label, tone]: [string, VolumeTone] =
-    lastRatio >= 1.5 ? (lastUp ? ["แรงซื้อเข้า", "good"] : ["แรงขายออก", "bad"])
-    : lastRatio < 0.6 ? ["เบาบาง", "dim"]
-    : ["ปกติ", "mid"];
+    lastRatio >= 1.5 ? (lastUp ? ["คนแห่ซื้อ", "good"] : ["คนแห่ขาย", "bad"])
+    : lastRatio < 0.6 ? ["ซื้อขายเงียบ", "dim"]
+    : ["ซื้อขายปกติ", "mid"];
 
   let upVol = 0, downVol = 0;
   for (let i = n - 10; i < n; i++) { if (isUp(i)) upVol += vols[i]; else downVol += vols[i]; }
   const balance = downVol > 0 ? upVol / downVol : upVol > 0 ? 9.9 : null;
   const [balanceLabel, balanceTone]: [string, VolumeTone] =
     balance == null ? ["—", "dim"]
-    : balance >= 1.3 ? ["ซื้อสะสม", "good"]
-    : balance <= 0.77 ? ["ขายออก", "bad"]
-    : ["สมดุล", "mid"];
+    : balance >= 1.3 ? ["ซื้อมากกว่าขาย", "good"]
+    : balance <= 0.77 ? ["ขายมากกว่าซื้อ", "bad"]
+    : ["ซื้อพอๆ กับขาย", "mid"];
 
   // ทะลุแนวรับ/แนวต้านแบบ Swing ใน 3 วันล่าสุด และราคายังอยู่ฝั่งใหม่
   const close = candles[last].close;

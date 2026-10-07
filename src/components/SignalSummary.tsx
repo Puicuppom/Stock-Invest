@@ -149,8 +149,8 @@ export default function SignalSummary(props: Props) {
               ))}
               <s style={{ bottom: `${(vol.avg20 / volMax) * 100}%` }} />
             </span>
-            <span className={`vol-ratio tone-${vol.tone}`}><b>{vol.lastRatio.toFixed(1)}×</b> {vol.label}</span>
-            <span className={`vol-bal tone-${vol.balanceTone}`}>10ว. {vol.balanceLabel}</span>
+            <span className={`vol-ratio tone-${vol.tone}`}><b>{vol.label}</b> <small>{vol.lastRatio.toFixed(1)} เท่าของปกติ</small></span>
+            <span className={`vol-bal tone-${vol.balanceTone}`}>2 สัปดาห์: {vol.balanceLabel}</span>
           </div>
         </div>
       )}
@@ -171,9 +171,11 @@ export default function SignalSummary(props: Props) {
         </div>
         {vol?.breakout && (
           <p className={`ss-brk ${vol.breakout.dir === "up" ? "is-up" : "is-down"}${vol.breakout.strong ? " is-strong" : ""}`}
-            title={`Volume วันที่ทะลุ ${vol.breakout.ratio.toFixed(1)} เท่าของค่าเฉลี่ย 20 วัน`}>
+            title={`วันที่ทะลุมีคนซื้อขาย ${vol.breakout.ratio.toFixed(1)} เท่าของปกติ`}>
             {vol.breakout.dir === "up" ? "▲ ทะลุแนวต้าน" : "▼ หลุดแนวรับ"} {p2(vol.breakout.level)}
-            <em>{vol.breakout.strong ? "Vol หนุน · ทะลุจริง" : "Vol เบา · ระวังหลอก"}</em>
+            <em>{vol.breakout.strong
+              ? (vol.breakout.dir === "up" ? "คนซื้อหนาแน่น · น่าเชื่อถือ" : "คนขายหนาแน่น · น่าเชื่อถือ")
+              : (vol.breakout.dir === "up" ? "คนซื้อบางเบา · ระวังหลอก" : "คนขายบางเบา · อาจเด้งกลับ")}</em>
             <small>{vol.breakout.daysAgo === 0 ? "วันล่าสุด" : `${vol.breakout.daysAgo} วันก่อน`}</small>
           </p>
         )}

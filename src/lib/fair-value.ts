@@ -199,7 +199,7 @@ function dividendYieldPercent(
   data: FairValueData,
   currentPrice: number
 ): number | null {
-  if (data.dividendYield != null) return data.dividendYield * 100;
+  if (data.dividendYield != null && data.dividendYield > 0) return data.dividendYield * 100;
   if (data.dividendRate != null && data.dividendRate > 0 && currentPrice > 0) {
     return (data.dividendRate / currentPrice) * 100;
   }
@@ -283,6 +283,12 @@ export function calculateFairValue(
       quality: null,
       source: "unknown",
     };
+  }
+
+  // ADR ที่แปลงงบแล้วบางตัว Yahoo ไม่มี EPS ย้อนหลังของหุ้นต้นทาง → คำนวณกลับจากราคา ÷ P/E ของตัวที่ซื้อขายจริง (สกุลเดียวกัน)
+  if ((data.trailingEps == null || !Number.isFinite(data.trailingEps)) && data.trailingPE != null && data.trailingPE > 0
+    && data.financialCurrency != null && data.financialCurrency === data.quoteCurrency) {
+    data = { ...data, trailingEps: currentPrice / data.trailingPE };
   }
 
   const blended = evaluateValuation(market, data);
