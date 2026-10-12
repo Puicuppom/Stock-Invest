@@ -46,6 +46,7 @@ export function convertPrimaryFundamentals(
   converted.sharesOutstanding = a / ratio;
   // These are observations/estimates for the actual US listing, already in USD.
   for (const key of ["analyst", "analystLow", "analystHigh", "fiftyTwoWeekHigh", "fiftyTwoWeekLow", "trailingPE", "forwardPE", "priceToBook", "marketCap", "enterpriseValue", "dividendYield"] as const) converted[key] = listed[key];
+  converted.analystView = listed.analystView ?? primary.analystView ?? null;
   converted.normalizationNotes = ["ใช้งบและ EPS จาก " + mapping.symbol + " (1 หน่วยซื้อขาย = " + ratio + " หุ้นต้นทาง) แปลง " + mapping.currency + " → " + mapping.quote + " ที่ " + fx.rate.toFixed(4) + " ณ " + new Date(fx.timestamp * 1000).toISOString().slice(0, 10) + " UTC จาก Yahoo Finance; ใช้ FX ล่าสุด ไม่ใช่อัตราเฉลี่ยของงวดงบ"];
   if (mapping.symbol === "NOVO-B.CO") {
     // Yahoo share counts may cover only B shares; EV must include A and B capital.

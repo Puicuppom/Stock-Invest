@@ -70,6 +70,7 @@ export interface FairValueData {
   /** Yahoo decimal e.g. 0.025 = 2.5% */
   dividendYield: number | null;
   dividendRate: number | null;
+  analystView?: AnalystView | null;
 }
 
 /** ตัวชี้วัดคุณภาพจาก Yahoo — ใช้ในหน้าคัดหุ้น (null = ไม่มีข้อมูล/สกุลเงินไม่ตรงกัน) */
@@ -83,7 +84,18 @@ export interface QualityMetrics {
   fcfDividendCoverage: number | null;
 }
 
+/** คำแนะนำนักวิเคราะห์จาก Yahoo (จำนวนคน · เดือนล่าสุด) */
+export interface AnalystView {
+  /** strong_buy | buy | hold | underperform | sell */
+  key: string | null;
+  /** 1 = ซื้อแรง … 5 = ขาย */
+  mean: number | null;
+  opinions: number | null;
+  strongBuy: number; buy: number; hold: number; sell: number; strongSell: number;
+}
+
 export interface FairValueResult {
+  analystView?: AnalystView | null;
   quality?: QualityMetrics | null;
   /** ช่วง P/E ย้อนหลังของหุ้นเอง (P25/มัธยฐาน/P75) */
   historicalPE?: { low: number; median: number; high: number; years: number } | null;

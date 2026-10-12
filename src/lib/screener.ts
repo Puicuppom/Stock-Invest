@@ -9,7 +9,7 @@ export const VISIBLE_STYLES: ScreeningStyle[] = ["dip", "momentum", "smallcap", 
 export const SMALL_CAP_MAX = { US: 2e9, TH: 10e9 } as const;
 export const screeningStyles = {
   long: { label: "ถือยาว", tagline: "พื้นฐานดี ราคาต่ำกว่ามูลค่า", description: "คัดจากกำไร เงินสด มูลค่า และคุณภาพธุรกิจ (ROE รายได้ หนี้) ตัดหุ้นที่ราคายุติธรรมมีสัญญาณข้อมูลผิดปกติ ยังไม่ยืนยันการเติบโตหลายปี" },
-  dip: { label: "หุ้นดีลดราคา", tagline: "ลงลึก แต่พื้นฐานยังดี", description: `ราคาลงจากจุดสูงสุด 52 สัปดาห์ ≥ ${DIP_DEEP_PERCENT}% แต่พื้นฐานยังดี (ROE รายได้ หนี้) และไม่เข้าข่ายกับดัก: กำไรคาดการณ์ไม่ลดลงเกิน 10% และราคาถูกกว่า P/E ในอดีตหรือ Fair Value` },
+  dip: { label: "หุ้นดีลดราคา", tagline: "ลงลึก แต่พื้นฐานยังดี", description: `ราคาลงจากจุดสูงสุด 52 สัปดาห์ ≥ ${DIP_DEEP_PERCENT}% แต่พื้นฐานยังดี (ROE รายได้ หนี้) และไม่เข้าข่ายกับดัก: กำไรคาดการณ์ไม่ลดลงเกิน 10% และราคาถูกกว่า P/E ในอดีตหรือต่ำกว่าเป้านักวิเคราะห์` },
   momentum: { label: "หุ้นแกร่งไปต่อ", tagline: "พื้นฐานเยี่ยม ขาขึ้น ยังไม่ร้อนเกิน", description: "พื้นฐานดีมาก (ROE ≥ 15% อัตรากำไร ≥ 15% รายได้โต ≥ 10% กำไรคาดการณ์โต หนี้ต่ำ) อยู่ในขาขึ้น วิ่งแรงกว่าตลาด 6 เดือน ห่างจุดสูงสุดไม่เกิน 15% และยังไม่วิ่งเกินตัว (ห่างเส้น 50 วัน ≤ 15% · RSI ≤ 75 · PEG ≤ 2)" },
   smallcap: { label: "หุ้นจิ๋วเตรียมพุ่ง", tagline: "บริษัทเล็ก โตเร็ว เริ่มมีแรงซื้อ", description: "บริษัทเล็ก (US < 2 พันล้าน USD · ไทย < 1 หมื่นล้านบาท) มีกำไรแล้ว รายได้โต ≥ 15% กำไรคาดการณ์โต ≥ 10% หนี้ไม่เยอะ และเริ่มมีแรงซื้อ: ราคาเหนือเส้น 50 วัน ใกล้จุดสูงสุด 3 เดือน Volume 5 วันล่าสุด ≥ 1.3 เท่า มีสภาพคล่องพอซื้อขาย · หุ้นเล็กผันผวนสูง ควรใช้เงินส่วนน้อย" },
   dividend: { label: "ปันผลงาม", tagline: "ปันผลดี จ่ายไหว", description: "คัดจากปันผล เงินสด และความสามารถจ่ายปันผล (ไม่จ่ายเกินกำไร/เงินสดอิสระ) ยังไม่ยืนยันความต่อเนื่องของปันผลหลายปี" },
@@ -55,8 +55,6 @@ const RISK_PATTERNS: [string, string, "hard" | "soft"][] = [
   ["EPS คาดการณ์ต่างจาก TTM มาก", "กำไรคาดการณ์ต่างจากกำไรปีล่าสุดมาก (อาจมีรายการพิเศษ)", "hard"],
   ["ยังไม่ยืนยันหน่วยหุ้น/อัตราส่วน ADR", "หุ้นจดทะเบียนต่างประเทศ ยืนยันหน่วยหุ้นไม่ได้", "hard"],
   ["แปลงสกุลเงินไม่สำเร็จ", "แปลงสกุลเงินงบการเงินไม่สำเร็จ", "hard"],
-  ["โมเดลให้ค่าต่างกันมาก", "โมเดลประเมินให้ราคาต่างกันมาก", "soft"],
-  ["P/E ย้อนหลังกระจายกว้าง", "P/E ย้อนหลังผันผวนสูง", "soft"],
 ];
 export function valuationRiskFlags(f: StockData["fairValue"], level?: "hard" | "soft"): string[] {
   const warnings = f.warnings ?? [];
@@ -106,11 +104,12 @@ export function screenStock(data: StockData, style: ScreeningStyle, ctx?: Market
     const epsRatio = ttm != null && Number.isFinite(ttm) && ttm > 0 && fwd != null && Number.isFinite(fwd) ? fwd / ttm : null;
     const hist = f.historicalPE, pe = f.trailingPE;
     const cheapVsHistory = hist && pe != null && Number.isFinite(pe) && pe > 0 ? pe <= hist.median : null;
-    const cheapVsFair = f.upsidePercent != null && Number.isFinite(f.upsidePercent) ? f.upsidePercent >= 15 : null;
+    const toTarget = f.analystTarget != null && f.analystTarget > 0 && data.lastClose > 0 ? (f.analystTarget / data.lastClose - 1) * 100 : null;
+    const cheapVsFair = toTarget != null ? toTarget >= 15 : null;
     const cheap: ScreeningCheck = cheapVsHistory === true || cheapVsFair === true
-      ? { label: "ถูกกว่า P/E ในอดีต หรือต่ำกว่า Fair Value ≥ 15%", value: "ผ่าน", passed: true,
-          reason: cheapVsHistory ? `P/E ${pe!.toFixed(1)} ต่ำกว่าค่ากลาง ${hist!.years} ปี (${hist!.median.toFixed(1)})` : `ต่ำกว่าราคายุติธรรม ${f.upsidePercent!.toFixed(1)}%` }
-      : { label: "ถูกกว่า P/E ในอดีต หรือต่ำกว่า Fair Value ≥ 15%", value: cheapVsHistory === null && cheapVsFair === null ? "ไม่มีข้อมูล" : "ยังไม่ถูก", passed: cheapVsHistory === null && cheapVsFair === null ? null : false };
+      ? { label: "ถูกกว่า P/E ในอดีต หรือต่ำกว่าเป้านักวิเคราะห์ ≥ 15%", value: "ผ่าน", passed: true,
+          reason: cheapVsHistory ? `P/E ${pe!.toFixed(1)} ต่ำกว่าค่ากลาง ${hist!.years} ปี (${hist!.median.toFixed(1)})` : `ต่ำกว่าเป้านักวิเคราะห์ ${toTarget!.toFixed(1)}%` }
+      : { label: "ถูกกว่า P/E ในอดีต หรือต่ำกว่าเป้านักวิเคราะห์ ≥ 15%", value: cheapVsHistory === null && cheapVsFair === null ? "ไม่มีข้อมูล" : "ยังไม่ถูก", passed: cheapVsHistory === null && cheapVsFair === null ? null : false };
     const flags = valuationRiskFlags(f, "hard");
     return [
       check(`ลงจากจุดสูงสุด 52 สัปดาห์ ≥ ${DIP_DEEP_PERCENT}%`, dd, n => n <= -DIP_DEEP_PERCENT, "%", v => `ราคาต่ำกว่าจุดสูงสุด 52 สัปดาห์ ${v}`),

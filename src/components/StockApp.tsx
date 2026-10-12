@@ -7,7 +7,7 @@ import StockDashboard from "@/components/StockDashboard";
 import CompanyCard from "./CompanyCard";
 import SignalSummary from "@/components/SignalSummary";
 import StockChart from "@/components/StockChart";
-import Watchlist from "@/components/Watchlist";
+import WatchlistList from "@/components/WatchlistList";
 import { useSrTagSettings } from "@/hooks/useSrTagSettings";
 import { chipSignalOf, useSrWatchlistTags, type WatchlistSrTags } from "@/hooks/useSrWatchlistTags";
 import { useWatchlist } from "@/hooks/useWatchlist";
@@ -22,7 +22,6 @@ import type { StockData } from "@/lib/types";
 export default function StockApp() {
   const {
     items,
-    selected,
     selectedItem,
     setSelected,
     addStock,
@@ -54,6 +53,25 @@ export default function StockApp() {
   const [toast, setToast] = useState("");
   const [toastError, setToastError] = useState(false);
   const [chartOpen, setChartOpen] = useState(false);
+  // หน้าแรก = รายการหุ้นแบบ Dime · แตะหุ้น = หน้าวิเคราะห์ (ปุ่มย้อนกลับของเบราว์เซอร์กลับมารายการได้)
+  const [view, setView] = useState<"list" | "detail">("list");
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("s")) setView("detail");
+    const onPop = () => setView(window.history.state?.investpuiDetail ? "detail" : "list");
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+  const openStock = useCallback((id: string) => {
+    setSelected(id);
+    setView("detail");
+    window.history.pushState({ investpuiDetail: true }, "");
+    window.scrollTo(0, 0);
+  }, [setSelected]);
+  const backToList = useCallback(() => {
+    if (window.history.state?.investpuiDetail) window.history.back();
+    else setView("list");
+    window.scrollTo(0, 0);
+  }, []);
   const [liveTagCache, setLiveTagCache] = useState<WatchlistSrTags>({});
 
   const selectedData =
@@ -75,7 +93,6 @@ export default function StockApp() {
 
   const tradePlan = useMemo(() => {
     if (!selectedData) return null;
-    const kind = selectedData.assetKind;
     return computeTradePlan(
       selectedData.pivot,
       selectedData.zones,
@@ -83,7 +100,7 @@ export default function StockApp() {
       srMode,
       tagSettings.tolerancePercent,
       selectedData.fairValue,
-      kind === "stock" || kind === "etf"
+      false // ไม่ใช้ราคายุติธรรมเป็นเป้าแล้ว
     );
   }, [selectedData, srMode, tagSettings.tolerancePercent]);
 
@@ -227,19 +244,24 @@ export default function StockApp() {
   return (
     <div className="app-shell">
       <AppNavigation active="stocks" />
-      <section className="watchlist-section">
-        <Watchlist
+      {view === "list" && (
+        <WatchlistList
           items={items}
-          selected={selected}
-          srTags={mergedWatchlistTags}
           signals={mergedSignals}
-          onSelect={setSelected}
+          srTags={mergedWatchlistTags}
+          onOpen={openStock}
           onRemove={removeStock}
           onReorder={reorderStock}
-          onAddClick={() => setAddOpen(true)}
+          onAdd={() => setAddOpen(true)}
+          syncStatus={syncStatus}
         />
-      </section>
-      <p className="dash-metric-sub" role="status">{syncStatus}</p>
+      )}
+      {view === "detail" && (
+        <div className="detail-bar">
+          <button type="button" className="detail-back" onClick={backToList}>← Watchlist</button>
+        </div>
+      )}
+      {view === "detail" && <>
       {loading && !selectedData && (
         <div className="state-banner">กำลังโหลด...</div>
       )}
@@ -318,6 +340,8 @@ export default function StockApp() {
           </section>
         </>
       )}
+
+      </>}
 
       <AddStockFab
         open={addOpen}

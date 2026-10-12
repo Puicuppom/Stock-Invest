@@ -23,7 +23,7 @@ export const DIP_DEEP_PERCENT = 25;
 
 export const DIP_METHOD =
   "ลงลึก = ต่ำกว่าจุดสูงสุด 52 สัปดาห์ · พื้นฐาน: ROE ≥ 10%, อัตรากำไรจากการดำเนินงาน ≥ 10%, รายได้ไม่หดตัว, หนี้สุทธิ ≤ 3 เท่า EBITDA · " +
-  "ถูกจริงหรือกับดัก: กำไรคาดการณ์ไม่ลดลงเกิน 10% จากกำไร 12 เดือนล่าสุด, P/E ต่ำกว่ามัธยฐานในอดีตของหุ้นเอง, ราคาต่ำกว่า Fair Value ≥ 15% · " +
+  "ถูกจริงหรือกับดัก: กำไรคาดการณ์ไม่ลดลงเกิน 10% จากกำไร 12 เดือนล่าสุด, P/E ต่ำกว่ามัธยฐานในอดีตของหุ้นเอง, ราคาต่ำกว่าเป้านักวิเคราะห์ ≥ 15% · " +
   "ข้อมูลจาก Yahoo ยังไม่ได้ปรับรายการพิเศษ ใช้คัดไปศึกษาต่อ ไม่ใช่คำแนะนำการลงทุน";
 
 export function drawdownFromHigh(data: StockData): { percent: number | null; high: number | null } {
@@ -70,10 +70,10 @@ export function analyzeDip(data: StockData): DipResult | null {
     state: !finite(pe) || pe <= 0 || !hist ? "na" : pe < hist.median * 0.95 ? "yes" : pe <= hist.median * 1.1 ? "partial" : "no",
     detail: !finite(pe) || pe <= 0 ? "ไม่มี P/E (กำไรติดลบหรือไม่มีข้อมูล)" : !hist ? `P/E ${f1(pe)} · ประวัติไม่พอเทียบ`
       : `P/E ${f1(pe)} เทียบค่ากลาง ${hist.years} ปี ${f1(hist.median)} (${f1((pe / hist.median - 1) * 100)}%)` });
-  const up = f.upsidePercent;
-  checks.push({ group: "value", short: "ต่ำกว่า FV", label: "ต่ำกว่า Fair Value ≥ 15%",
+  const up = finite(f.analystTarget) && data.lastClose > 0 ? (f.analystTarget / data.lastClose - 1) * 100 : null;
+  checks.push({ group: "value", short: "ต่ำกว่าเป้า", label: "ต่ำกว่าเป้านักวิเคราะห์ ≥ 15%",
     state: finite(up) ? (up >= 15 ? "yes" : up >= 0 ? "partial" : "no") : "na",
-    detail: finite(up) ? (up >= 0 ? `ต่ำกว่าราคายุติธรรม ${f1(up)}%` : `สูงกว่าราคายุติธรรม ${f1(-up)}%`) : "ไม่มีราคายุติธรรม" });
+    detail: finite(up) ? (up >= 0 ? `ต่ำกว่าเป้าเฉลี่ยนักวิเคราะห์ ${f1(up)}%` : `สูงกว่าเป้าเฉลี่ย ${f1(-up)}%`) : "ไม่มีเป้านักวิเคราะห์" });
 
   const quality = checks.filter(c => c.group === "quality");
   const value = checks.filter(c => c.group === "value");

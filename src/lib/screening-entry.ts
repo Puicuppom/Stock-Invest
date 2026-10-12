@@ -22,8 +22,7 @@ export function screeningEntry(data: StockData, style: ScreeningStyle): Screenin
   if (style === "dip") {
     const supports = data.zones.filter(z => z.type === "support" && positive(z.price) && z.price <= data.lastClose).map(z => z.price);
     if (supports.length) return { price: Math.max(...supports), basis: "แนวรับ Swing ใกล้สุดใต้ราคา · หุ้นที่ลงลึกอาจลงต่อ ควรแบ่งซื้อหลายไม้ตามแนวรับ" };
-    if (positive(f.fairValue) && hasValuationSupport(f)) return { price: f.fairValue * 0.8, basis: "ไม่มีแนวรับใต้ราคา (ราคาหลุดทุกแนว) จึงใช้ Fair Value × 80% · ควรรอสัญญาณกลับตัวก่อน" };
-    return { price: null, basis: "ไม่มีแนวรับใต้ราคาและยังประเมิน Fair Value ไม่ได้" };
+    return { price: null, basis: "ไม่มีแนวรับใต้ราคา (ราคาหลุดทุกแนว) · ควรรอสัญญาณกลับตัวก่อน" };
   }
   if (style === "momentum" || style === "smallcap") {
     const c = data.candles.slice(-50).map(x => x.close);

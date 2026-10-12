@@ -34,6 +34,9 @@ interface QuoteSummaryResponse {
         targetMeanPrice?: YahooRaw;
         targetLowPrice?: YahooRaw;
         targetHighPrice?: YahooRaw;
+        recommendationKey?: string;
+        recommendationMean?: YahooRaw;
+        numberOfAnalystOpinions?: YahooRaw;
         freeCashflow?: YahooRaw;
         operatingCashflow?: YahooRaw;
         ebitda?: YahooRaw;
@@ -41,6 +44,7 @@ interface QuoteSummaryResponse {
         earningsGrowth?: YahooRaw;
         revenueGrowth?: YahooRaw;
       };
+      recommendationTrend?: { trend?: Array<{ period?: string; strongBuy?: number; buy?: number; hold?: number; sell?: number; strongSell?: number }> };
       defaultKeyStatistics?: {
         trailingEps?: YahooRaw;
         forwardEps?: YahooRaw;
@@ -60,6 +64,19 @@ function num(value?: YahooRaw): number | null {
 }
 
 
+type QsRow = NonNullable<NonNullable<QuoteSummaryResponse["quoteSummary"]>["result"]>[number];
+/** คำแนะนำนักวิเคราะห์: จำนวนซื้อ/ถือ/ขาย (เดือนล่าสุด) + คำแนะนำรวม */
+function analystViewOf(row: QsRow): import("./types").AnalystView | null {
+  const t = row.recommendationTrend?.trend?.find(x => x.period === "0m") ?? row.recommendationTrend?.trend?.[0];
+  const n = (v?: number) => (v != null && Number.isFinite(v) ? v : 0);
+  const counts = t ? { strongBuy: n(t.strongBuy), buy: n(t.buy), hold: n(t.hold), sell: n(t.sell), strongSell: n(t.strongSell) } : null;
+  const total = counts ? counts.strongBuy + counts.buy + counts.hold + counts.sell + counts.strongSell : 0;
+  const key = row.financialData?.recommendationKey ?? null;
+  const opinions = num(row.financialData?.numberOfAnalystOpinions);
+  if (!total && !key && !opinions) return null;
+  return { key: key && key !== "none" ? key : null, mean: num(row.financialData?.recommendationMean), opinions, ...(counts ?? { strongBuy: 0, buy: 0, hold: 0, sell: 0, strongSell: 0 }) };
+}
+
 async function fetchRawFundamentals(
   resolvedSymbol: string
 ): Promise<FairValueData | null> {
@@ -70,7 +87,7 @@ async function fetchRawFundamentals(
     );
     url.searchParams.set(
       "modules",
-      "financialData,defaultKeyStatistics,summaryDetail,assetProfile,price"
+      "financialData,defaultKeyStatistics,summaryDetail,assetProfile,price,recommendationTrend"
     );
     url.searchParams.set("crumb", crumb);
 
@@ -101,6 +118,7 @@ async function fetchRawFundamentals(
       totalDebt: num(row.financialData?.totalDebt),
       totalCash: num(row.financialData?.totalCash),
       analyst: num(row.financialData?.targetMeanPrice),
+      analystView: analystViewOf(row),
       analystLow: num(row.financialData?.targetLowPrice),
       analystHigh: num(row.financialData?.targetHighPrice),
       trailingEps: num(row.defaultKeyStatistics?.trailingEps),
@@ -250,6 +268,7 @@ export function calculateFairValue(
   trailingEps?: number | null;
   historicalPE?: { low: number; median: number; high: number; years: number } | null;
   marketCap?: number | null;
+  analystView?: import("./types").AnalystView | null;
   forwardEps: number | null;
   peReferenceUpsidePercent: number | null;
   analystUpsidePercent: number | null;
@@ -369,6 +388,7 @@ export function calculateFairValue(
     dividendYieldPercent: dividendYieldPercent(data, currentPrice),
     dividendRate: data.dividendRate,
     quality: qualityMetrics(data),
+    analystView: data.analystView ?? null,
     marketCap: data.marketCap,
     historicalPE: data.historicalPE ? { low: data.historicalPE.low, median: data.historicalPE.median, high: data.historicalPE.high, years: data.historicalPE.years } : null,
     source,

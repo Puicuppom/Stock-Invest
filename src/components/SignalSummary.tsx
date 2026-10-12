@@ -39,7 +39,9 @@ export default function SignalSummary(props: Props) {
   const eventWarn = eventBadges(data.events, data.market).filter(b => b.tone === "warn" || (b.kind === "earnings" && b.days < 0));
   const volMax = vol ? Math.max(...vol.bars.map(b => b.volume), vol.avg20) : 0;
   const fv = data.fairValue;
-  const upside = fv.upsidePercent;
+  // ใช้เป้านักวิเคราะห์ (เฉลี่ย) แทนราคายุติธรรม
+  const target = fv.analystTarget;
+  const upside = target != null && price > 0 ? (target / price - 1) * 100 : null;
   const selected = reversal?.signals.find(s => s.label === openSignal) ?? null;
 
   // แผน: ใช้แนวรับ/ต้านตามโหมด ถ้าไม่มี (ราคาหลุดทุกแนว/ทำจุดสูงใหม่) ใช้ค่าสำรอง: Pivot แล้วค่อย 52 สัปดาห์
@@ -65,8 +67,8 @@ export default function SignalSummary(props: Props) {
     : null;
   const plan = { buy, sell, stop };
 
-  const valueText = upside == null ? null : upside >= 10 ? `ถูกกว่า ${upside.toFixed(0)}%` : upside <= -10 ? `แพงกว่า ${Math.abs(upside).toFixed(0)}%` : "ใกล้ราคายุติธรรม";
-  const valueTone = upside == null ? "" : upside >= 10 ? "good" : upside <= -10 ? "bad" : "mid";
+  const valueText = upside == null ? null : upside >= 0 ? `ต่ำกว่าเป้า ${upside.toFixed(0)}%` : `เกินเป้า ${Math.abs(upside).toFixed(0)}%`;
+  const valueTone = upside == null ? "" : upside >= 15 ? "good" : upside <= 0 ? "bad" : "mid";
   // RSI ใช้แค่ 15 วัน — หุ้นเพิ่งเข้าตลาด (ข้อมูล <70 วัน) ยังแสดง RSI ได้แม้ยังวิเคราะห์แนวโน้ม/กลับตัวไม่ได้
   const done = completedCandles(data);
   const rsiFallback = done.length > 15 ? rsiSeries(done.map(c => c.close)).at(-1) : undefined;
@@ -145,23 +147,23 @@ export default function SignalSummary(props: Props) {
         </div>
       )}
 
-      {((upside != null && fv.fairValue != null) || rsi != null) && (
+      {(upside != null || rsi != null) && (
         <div className="ss-gauges">
-          {upside != null && fv.fairValue != null && (
+          {upside != null && target != null && (
             <Gauge
-              title="มูลค่า"
-              value={50 - (upside * 50) / 40}
+              title="เป้านักวิเคราะห์"
+              value={50 - ((upside - 15) * 50) / 40}
               zones={[
                 { from: 0, to: 37.5, color: "var(--success, #4ade80)" },
                 { from: 37.5, to: 62.5, color: "var(--warning, #fbbf24)" },
                 { from: 62.5, to: 100, color: "var(--danger, #f87171)" },
               ]}
               main={valueText ?? ""}
-              sub={`FV ${p2(fv.fairValue)}`}
+              sub={`เป้า ${p2(target)}`}
               tone={valueTone as "good" | "bad" | "mid" | ""}
-              leftLabel="ถูก"
-              rightLabel="แพง"
-              hint="ราคาปัจจุบันเทียบราคายุติธรรม · เข็มซ้าย = ถูก ขวา = แพง (สุดหน้าปัด = ต่างกัน 40%)"
+              leftLabel="ห่างเป้า"
+              rightLabel="เกินเป้า"
+              hint="ราคาปัจจุบันเทียบเป้าราคาเฉลี่ยของนักวิเคราะห์ · เข็มซ้าย = ยังห่างเป้ามาก (มีช่องให้ขึ้น) · กลาง = ห่าง ~15% · ขวา = ราคาเกินเป้าแล้ว"
             />
           )}
           {rsi != null && (

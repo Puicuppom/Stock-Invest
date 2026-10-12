@@ -1118,13 +1118,13 @@ function getStockData(symbol) {
 }
 
 function formatFvHeader(symbol) {
+    // ใช้เป้านักวิเคราะห์ (เฉลี่ย) แทนราคายุติธรรมของแอป
     const fv = getStockData(symbol).fairValue;
+    const target = fv?.analystTarget;
     const price = getPrice(symbol);
-    if (!fv?.fairValue) return { fv: '—', opp: '', oppCls: 'muted' };
-    const up = fv.upsidePercent != null
-        ? fv.upsidePercent
-        : (price > 0 ? ((fv.fairValue - price) / price) * 100 : null);
-    const fvText = fmtUsd(fv.fairValue);
+    if (!target) return { fv: '—', opp: '', oppCls: 'muted' };
+    const up = price > 0 ? ((target - price) / price) * 100 : null;
+    const fvText = fmtUsd(target);
     if (up == null) return { fv: fvText, opp: '', oppCls: 'muted' };
     const sign = up > 0 ? '+' : '';
     return {
@@ -1148,12 +1148,12 @@ function formatSignalLine(tradeSignal) {
     return tradeSignal.sub ? `${tradeSignal.text} ${tradeSignal.sub}` : tradeSignal.text;
 }
 
-/* กำไร/ขาดทุนที่จะได้ถ้าราคาขึ้น (หรือลง) ไปถึงราคายุติธรรม คิดจากจำนวนหุ้นที่ถืออยู่ */
+/* กำไร/ขาดทุนที่จะได้ถ้าราคาขึ้น (หรือลง) ไปถึงเป้านักวิเคราะห์ คิดจากจำนวนหุ้นที่ถืออยู่ */
 function fvHeaderInnerHtml(symbol, asset) {
     const h = formatFvHeader(symbol);
     const oppHtml = h.opp ? ` <span class="asset-fv-opp ${h.oppCls}">${h.opp}</span>` : '';
     let gainHtml = '';
-    const fv = getStockData(symbol).fairValue?.fairValue;
+    const fv = getStockData(symbol).fairValue?.analystTarget;
     const price = getPrice(symbol);
     const shares = asset?.shares || 0;
     if (fv > 0 && price > 0 && shares > 0) {
@@ -1165,7 +1165,7 @@ function fvHeaderInnerHtml(symbol, asset) {
         const label = gain >= 0 ? 'ถ้าถึงราคานี้' : 'ถ้าลงถึงราคานี้';
         gainHtml = `<span class="asset-fv-gain"><span class="asset-fv-gain-label">${label}</span> <span class="${cls}">${sign}${fmtUsd(Math.abs(gain))}${thb}</span></span>`;
     }
-    return `<span class="asset-fv-main">ราคายุติธรรม <span class="asset-fv-price">${h.fv}</span>${oppHtml}</span>${gainHtml}`;
+    return `<span class="asset-fv-main">เป้านักวิเคราะห์ <span class="asset-fv-price">${h.fv}</span>${oppHtml}</span>${gainHtml}`;
 }
 
 function renderFvHeaderHtml(symbol, asset) {
@@ -1221,16 +1221,22 @@ function getTradeSignal(asset, diff, ideal) {
     if (profitAdvice) {
         return { text: profitAdvice.text, sub: profitAdvice.sub, cls: 'sell' };
     }
+    // สัญญาณตามคำแนะนำนักวิเคราะห์ (ซื้อ/ถือ/ขาย) — ไม่มีคำแนะนำ ใช้ส่วนต่างถึงเป้าเฉลี่ยแทน
     const fv = getStockData(asset.name).fairValue;
     const price = getPrice(asset.name) || asset.price || 0;
-    if (!fv?.fairValue || price <= 0) {
+    const key = fv?.analystView?.key || null;
+    const target = fv?.analystTarget || null;
+    const up = target && price > 0 ? (target / price - 1) * 100 : null;
+    const view = key ? (/buy/.test(key) ? 'buy' : /sell|underperform/.test(key) ? 'sell' : 'hold')
+        : up == null ? null : up >= 15 ? 'buy' : up <= 0 ? 'sell' : 'hold';
+    if (!view || price <= 0) {
         return { text: '—', sub: '', cls: 'hold' };
     }
-    if (price < fv.fairValue) {
+    if (view === 'buy') {
         const amount = diff > 0.01 ? diff : (ideal > 0 ? ideal * 0.1 : 0);
         return { text: 'ซื้อ', sub: formatTradeAmount(amount, asset), cls: 'buy' };
     }
-    if (price > fv.fairValue) {
+    if (view === 'sell') {
         const amount = diff < -0.01 ? Math.abs(diff) : (asset.value > 0 ? asset.value * 0.1 : 0);
         return { text: 'ขาย', sub: formatTradeAmount(amount, asset), cls: 'sell' };
     }
@@ -1760,7 +1766,7 @@ function computePriceLevels(asset) {
     if (isCashAsset(asset)) return null;
     const sr = priceCache[asset.name]?.srLevels?.[getSrMode()];
     if (!sr) return { loading: !priceCache[asset.name], buy: null, sell: null };
-    const fv = getStockData(asset.name).fairValue?.fairValue || null;
+    const fv = getStockData(asset.name).fairValue?.analystTarget || null;
     const price = getPrice(asset.name);
     const near = lv => lv && price > 0 && Math.abs(price - lv.price) / lv.price <= 0.01;
     return {
@@ -1782,7 +1788,7 @@ function renderPriceLevelsInner(asset) {
     let buyHtml, sellHtml;
     if (lv.buy) {
         const tags = (lv.buy.near ? ' <span class="lv-tag">✓ ใกล้แนวรับ</span>' : '')
-            + (lv.buy.aboveFv ? ' <span class="lv-warn">⚠ สูงกว่าราคายุติธรรม</span>' : '');
+            + (lv.buy.aboveFv ? ' <span class="lv-warn">⚠ สูงกว่าเป้านักวิเคราะห์</span>' : '');
         buyHtml = `<span class="lv-item lv-buy"><span class="lv-label">ซื้อไม่เกิน</span> <span class="lv-price">${fmtUsd(lv.buy.price)}</span>${note(lv.buy)}${tags}</span>`;
     } else {
         buyHtml = `<span class="lv-item lv-buy"><span class="lv-label">ซื้อไม่เกิน</span> <span class="lv-note">ไม่มีแนวรับใต้ราคานี้</span></span>`;

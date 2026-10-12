@@ -2951,3 +2951,99 @@ button.dash-jump:active { transform: scale(0.95); }
 .dash-symbol { display: flex; align-items: center; }
 .wr-sym b { display: inline-flex; align-items: center; }
 .wr-sym .stock-logo { margin-right: 4px; padding: 1px; }
+
+/* backtest */
+.screen-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.bt-link { font-size: var(--t-body); color: var(--accent); text-decoration: none; border: 1px solid var(--border); border-radius: 999px; padding: 4px 10px; }
+.bt h2 { margin: 12px 0 0; font-size: 1rem; }
+.bt-sec { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 10px; overflow-x: auto; }
+.bt-sec h3 { margin: 0 0 6px; font-size: var(--t-value); }
+.bt-sec table { width: 100%; border-collapse: collapse; font-size: 12px; white-space: nowrap; }
+.bt-sec th { color: var(--muted); font-weight: 500; text-align: right; padding: 3px 6px; }
+.bt-sec td { text-align: right; padding: 4px 6px; border-top: 1px solid var(--border); font-variant-numeric: tabular-nums; }
+.bt-sec th:first-child, .bt-sec td:first-child { text-align: left; }
+.bt-sec tr.good td { color: var(--success); }
+.bt-sec tr.bad td { color: var(--danger); }
+.bt-sec tr.dim td { opacity: .5; }
+
+/* analyst card (replaces fair value) */
+.fundamental-metrics.fm-v2 > .dash-metric, .fundamental-metrics.fm-v2 > .dash-metric:nth-child(-n+2) { grid-column: span 2; }
+.fundamental-metrics.fm-v2 > .an-card { grid-column: 1 / -1; }
+@media (max-width: 540px) {
+  .fundamental-metrics.fm-v2 > .dash-metric, .fundamental-metrics.fm-v2 > .dash-metric:nth-child(-n+2) { grid-column: span 2; }
+  .fundamental-metrics.fm-v2 > .dash-metric:nth-last-child(-n+2) { grid-column: span 3; }
+}
+.an-card { border: 1px solid var(--border); border-radius: 12px; background: var(--surface); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; text-align: left; }
+.an-head { display: flex; justify-content: space-between; align-items: baseline; font-size: var(--t-body); color: var(--muted); }
+.an-head small { font-size: var(--t-meta); }
+.an-mean { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.an-mean b { font-size: 1.35rem; font-weight: 800; color: var(--text); }
+.an-mean small { color: var(--muted); font-size: var(--t-meta); }
+.an-mean em { font-style: normal; font-weight: 700; font-size: var(--t-value); }
+.an-mean em.up { color: var(--success); }
+.an-mean em.down { color: var(--danger); }
+.an-mean-label { margin-left: auto; font-size: var(--t-meta); color: var(--muted); }
+.an-track { position: relative; height: 8px; border-radius: 4px; background: var(--surface-2); margin: 6px 0 4px; }
+.an-fill { position: absolute; top: 0; bottom: 0; border-radius: 4px; background: color-mix(in srgb, var(--accent) 45%, transparent); }
+.an-tick { position: absolute; top: -3px; width: 2px; height: 14px; background: var(--text); transform: translateX(-1px); border-radius: 1px; }
+.an-now { position: absolute; top: 50%; width: 12px; height: 12px; border-radius: 50%; background: var(--warning); border: 2px solid var(--surface); transform: translate(-6px, -50%); }
+.an-range-labels { display: flex; justify-content: space-between; gap: 6px; font-size: var(--t-meta); color: var(--muted); }
+.an-range-labels b { color: var(--text); font-weight: 600; }
+.an-now-label { color: var(--warning); }
+.an-rec-top { display: flex; justify-content: space-between; align-items: center; font-size: var(--t-body); color: var(--muted); }
+.an-key { padding: 2px 12px; border-radius: 999px; font-size: var(--t-value); }
+.an-key.buy { color: var(--success); background: color-mix(in srgb, var(--success) 15%, transparent); }
+.an-key.hold { color: var(--warning); background: color-mix(in srgb, var(--warning) 15%, transparent); }
+.an-key.sell { color: var(--danger); background: color-mix(in srgb, var(--danger) 15%, transparent); }
+.an-bar { display: flex; gap: 2px; height: 8px; border-radius: 4px; overflow: hidden; margin: 6px 0 4px; }
+.an-bar i.buy { background: var(--success); }
+.an-bar i.hold { background: var(--warning); }
+.an-bar i.sell { background: var(--danger); }
+.an-legend { display: flex; justify-content: space-between; font-size: var(--t-meta); }
+.an-legend .buy { color: var(--success); }
+.an-legend .hold { color: var(--warning); }
+.an-legend .sell { color: var(--danger); }
+.an-legend small { color: var(--muted); }
+
+/* Dime-style watchlist */
+.wl { display: flex; flex-direction: column; gap: 4px; }
+.wl-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 4px; }
+.wl-head h1 { margin: 0; font-size: 1.4rem; font-weight: 800; }
+.wl-head h1 small { font-size: .8rem; color: var(--muted); font-weight: 500; margin-left: 4px; }
+.wl-actions { display: flex; gap: 6px; }
+.wl-actions button { border: 1px solid var(--border); background: var(--surface-2); color: var(--text); border-radius: 999px; padding: 6px 14px; font: inherit; font-size: var(--t-body); cursor: pointer; }
+.wl-actions .wl-add { border-color: var(--accent); color: var(--accent); }
+.wl-actions .wl-edit.on { background: var(--accent); color: #04121f; }
+.wl-sync { margin: 0; font-size: var(--t-label); color: var(--muted); }
+.wl-list { list-style: none; margin: 4px 0 0; padding: 0; }
+.wl-row { display: flex; align-items: center; border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent); }
+.wl-main { flex: 1; min-width: 0; display: grid; grid-template-columns: 40px minmax(0, 1fr) auto 76px; align-items: center; gap: 12px; padding: 12px 2px; border: 0; background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.wl-main:disabled { cursor: default; }
+.wl-main:not(:disabled):active { background: color-mix(in srgb, var(--text) 4%, transparent); }
+.wl-logo { position: relative; width: 40px; height: 40px; border-radius: 50%; background: var(--accent); display: grid; place-items: center; overflow: hidden; }
+.wl-logo-text { font-size: 10px; font-weight: 800; color: #fff; }
+.wl-logo .wl-logo-img { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 4px; box-sizing: border-box; }
+.wl-name { display: flex; flex-direction: column; min-width: 0; }
+.wl-name b { font-size: 16px; font-weight: 800; display: inline-flex; align-items: center; gap: 3px; }
+.wl-name b i { font-style: normal; font-size: 12px; }
+.wl-name small { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wl-tag { font-style: normal; font-weight: 700; font-size: 10px; padding: 0 5px; border-radius: 999px; margin-right: 4px; }
+.wl-tag.sup { color: var(--success); background: color-mix(in srgb, var(--success) 15%, transparent); }
+.wl-tag.res { color: var(--danger); background: color-mix(in srgb, var(--danger) 15%, transparent); }
+.wl-price { display: flex; flex-direction: column; align-items: flex-end; }
+.wl-price b { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.wl-price small { font-size: 10px; color: var(--accent); }
+.wl-chg { justify-self: end; min-width: 72px; text-align: center; padding: 5px 0; border-radius: 8px; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; background: var(--surface-2); color: var(--muted); }
+.wl-chg.up { background: color-mix(in srgb, var(--success) 85%, #000); color: #fff; }
+.wl-chg.down { background: color-mix(in srgb, var(--danger) 85%, #000); color: #fff; }
+.wl-edit-btns { display: flex; gap: 4px; padding-left: 6px; }
+.wl-edit-btns button { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); cursor: pointer; }
+.wl-edit-btns button:disabled { opacity: .3; }
+.wl-edit-btns .del { color: var(--danger); }
+.wl-empty { color: var(--muted); text-align: center; padding: 24px 0; }
+.detail-bar { display: flex; align-items: center; }
+.detail-back { border: 0; background: transparent; color: var(--accent); font: inherit; font-weight: 600; padding: 4px 0; cursor: pointer; }
+@media (max-width: 420px) {
+  .wl-main { grid-template-columns: 38px minmax(0, 1fr) auto 68px; gap: 10px; }
+  .wl-chg { min-width: 66px; font-size: 12px; }
+}

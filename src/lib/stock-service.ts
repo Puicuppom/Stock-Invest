@@ -19,7 +19,7 @@ export const SWING_LOOKBACK_BARS = 126;
 
 import type { AssetKind } from "./instrument";
 
-function buildStockData(
+export function buildStockData(
   input: string,
   resolvedSymbol: string,
   candles: Candle[],

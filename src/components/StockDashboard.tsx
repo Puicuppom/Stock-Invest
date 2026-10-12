@@ -170,7 +170,7 @@ export default function StockDashboard({
         >
           <span className="refresh-icon" aria-hidden="true">↻</span>
         </button>
-        {!isGold && !isEtf && <FundamentalMetrics value={fairValue} market={market} />}
+        {!isGold && !isEtf && <FundamentalMetrics value={fairValue} market={market} price={currentPrice} />}
       </div>
 
       {isGold ? (
