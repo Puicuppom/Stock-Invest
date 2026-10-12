@@ -14,7 +14,23 @@ export function capLimits(market: "US"|"TH", size: string): [number, number | nu
   const mid = market === "US" ? 2e9 : 10e9;
   return size === "large" ? [large, null] : size === "mid" ? [mid, large] : size === "small" ? [0, mid] : [0, null];
 }
-export interface DiscoveryQuote {symbol?: string; shortName?: string; longName?: string; quoteType?: string; currency?: string; marketCap?: number; regularMarketPrice?: number; fiftyTwoWeekHigh?: number}
+export interface DiscoveryQuote {symbol?: string; shortName?: string; longName?: string; quoteType?: string; currency?: string; marketCap?: number; regularMarketPrice?: number; fiftyTwoWeekHigh?: number; fiftyDayAverage?: number; epsTrailingTwelveMonths?: number; trailingAnnualDividendYield?: number; dividendYield?: number}
+const num = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
+/** คัดเบื้องต้นจากข้อมูลราคาที่ได้มาพร้อมรายชื่อ (ไม่ต้องโหลดทีละตัว) — ไม่มีข้อมูล = ไม่ตัด */
+export function aboveAvg50(q: DiscoveryQuote, tolerancePercent = 3) {
+  const p = q.regularMarketPrice, a = q.fiftyDayAverage;
+  if (!num(p) || !num(a) || a <= 0) return true;
+  return p >= a * (1 - tolerancePercent / 100);
+}
+export function profitable(q: DiscoveryQuote) {
+  return !num(q.epsTrailingTwelveMonths) || q.epsTrailingTwelveMonths > 0;
+}
+export function dividendInRange(q: DiscoveryQuote) {
+  const t = q.trailingAnnualDividendYield, d = q.dividendYield;
+  const pct = num(t) && t > 0 ? t * 100 : num(d) && d > 0 ? (d < 0.2 ? d * 100 : d) : null;
+  if (pct == null) return !(num(t) && t === 0 && !(num(d) && d > 0));
+  return pct >= 1.5 && pct <= 10;
+}
 /** คัดเบื้องต้นสำหรับ "หุ้นดีลดราคา" — ตัดตัวที่ยังห่างจุดสูงสุดไม่ถึงเกณฑ์ (ไม่มีข้อมูล = ไม่ตัด ให้ตรวจละเอียดต่อ) */
 /** คัดเบื้องต้นสำหรับ "หุ้นแกร่งไปต่อ" — ใกล้จุดสูงสุด 52 สัปดาห์ (ไม่มีข้อมูล = ไม่ตัด) */
 export function nearHigh(q: DiscoveryQuote, maxDropPercent: number) {

@@ -3120,3 +3120,32 @@ button.dash-jump:active { transform: scale(0.95); }
 .chart-type-toggle { display: inline-flex; margin-left: auto; margin-right: 6px; border: 1px solid var(--border); border-radius: 999px; padding: 2px; gap: 2px; }
 .chart-type-toggle button { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 24px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); cursor: pointer; }
 .chart-type-toggle button.active { background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--accent); }
+/* หน้าคัดหุ้นจากตลาด แบบกระชับ */
+.scr-styles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.screener .scr-styles button { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px; min-height: 0; border-radius: 14px; font-size: 12px; line-height: 1.2; }
+.scr-styles .scr-ico { font-size: 20px; line-height: 1; }
+.screener .scr-styles button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--surface-2)); }
+.scr-filters { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.scr-seg { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; padding: 2px; background: var(--surface-2); }
+.screener .scr-seg button { border: 0; border-radius: 999px; background: transparent; min-height: 30px; padding: 4px 12px; font-size: 13px; color: var(--muted); }
+.screener .scr-seg button[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--accent); }
+.scr-pick { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--border); border-radius: 999px; padding: 0 4px 0 10px; background: var(--surface-2); font-size: 13px; }
+.screener .scr-pick select { border: 0; background: transparent; min-height: 34px; padding: 4px 6px; font-size: 13px; max-width: 9.5em; }
+.scr-go { display: flex; gap: 8px; align-items: stretch; }
+.screener .scr-go .scr-run { flex: 1; background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: 700; font-size: 15px; border-radius: 14px; }
+.screener .scr-go .scr-more { flex: 0 0 auto; border-radius: 14px; color: var(--accent); border-color: color-mix(in srgb, var(--accent) 50%, transparent); }
+.scr-progress { position: relative; flex: 1; min-height: 44px; border-radius: 14px; border: 1px solid var(--border); background: var(--surface-2); overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; }
+.scr-progress i { position: absolute; left: 0; top: 0; bottom: 0; background: color-mix(in srgb, var(--accent) 28%, transparent); transition: width .3s ease; }
+.scr-progress::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 18%, transparent), transparent); animation: scr-shimmer 1.2s linear infinite; }
+.scr-progress span { position: relative; z-index: 1; }
+@keyframes scr-shimmer { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+.screener .scr-go .scr-stop { flex: 0 0 48px; border-radius: 14px; color: var(--danger); font-size: 14px; }
+.scr-stat { display: flex; flex-wrap: wrap; gap: 12px; align-items: baseline; margin: 0; font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.scr-stat .up { color: var(--success); } .scr-stat .near { color: var(--warning); } .scr-stat .down { color: var(--danger); }
+.scr-stat small { color: var(--muted); font-weight: 400; margin-left: auto; }
+.scr-empty { margin: 0; font-size: 13px; color: var(--muted); }
+.scr-filters { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr); }
+.scr-pick { min-width: 0; padding-left: 8px; }
+.screener .scr-pick select { flex: 1; min-width: 0; max-width: none; width: 100%; padding: 4px 2px; }
+.screener .scr-seg button { padding: 4px 9px; }
+.screen-near.wl > summary { font-size: 14px; color: var(--warning); }

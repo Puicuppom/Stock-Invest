@@ -12,6 +12,9 @@ import { analyzeTrend, LEAN_GLYPH, LEAN_SHORT, trendLean } from "@/lib/trend";
 import { DISCOVERY_SECTORS } from "@/lib/discovery";
 import type { StockData } from "@/lib/types";
 type Row = { symbol: string; data?: StockData; error?: string };
+const CONCURRENCY = 8;
+const STYLE_ICON: Record<string, string> = { dip: "🏷️", momentum: "🚀", smallcap: "💎", dividend: "💰" };
+const STYLE_SHORT: Record<string, string> = { dip: "ลดราคา", momentum: "ไปต่อ", smallcap: "หุ้นจิ๋ว", dividend: "ปันผล" };
 type Snapshot = {
   style: ScreeningStyle; market: "US" | "TH"; source: "discover" | "watchlist";
   sector: string; cap: string; nextOffset: number | null; discoveryNote: string;
@@ -26,7 +29,6 @@ export default function StockScreener() {
   const [style,setStyle] = useState<ScreeningStyle>("dip");
   const [ctx,setCtx] = useState<MarketContext | null>(null);
   const [market,setMarket] = useState<"US"|"TH">("US");
-  const [source,setSource] = useState<"discover" | "watchlist">("discover");
   const [sector,setSector] = useState("");
   const [cap,setCap] = useState("all");
   const [nextOffset,setNextOffset] = useState<number | null>(null);
@@ -46,7 +48,7 @@ export default function StockScreener() {
   useEffect(()=>{
     if (savedSearch) {
       const s=savedSearch;
-      setStyle(VISIBLE_STYLES.includes(s.style) ? s.style : "dip");setCtx(s.ctx);setMarket(s.market);setSource(s.source);setSector(s.sector);setCap(s.cap);
+      setStyle(VISIBLE_STYLES.includes(s.style) ? s.style : "dip");setCtx(s.ctx);setMarket(s.market);setSector(s.sector);setCap(s.cap);
       setNextOffset(s.nextOffset);setDiscoveryNote(s.discoveryNote);setTotal(s.total);
       setRows(s.rows);setMessage(s.message);setScannedMarket(s.scannedMarket);
       pending.current=[...s.pending];cursor.current=s.cursor;seen.current=new Set(s.seen);
@@ -56,7 +58,7 @@ export default function StockScreener() {
   },[]);
   useEffect(()=>{
     if (!restored) return;
-    savedSearch={style,market,source,sector,cap,nextOffset,discoveryNote,total,rows,
+    savedSearch={style,market,source:"discover",sector,cap,nextOffset,discoveryNote,total,rows,
       message:busy ? "เก็บผลค้นหาไว้แล้ว · กดค้นหาต่อได้" : message,scannedMarket,
       pending:[...pending.current],cursor:cursor.current,seen:[...seen.current],ctx};
     return ()=>{
@@ -67,14 +69,21 @@ export default function StockScreener() {
         savedSearch.nextOffset=pending.current.length ? cursor.current ?? 0 : cursor.current;
       }
     };
-  },[restored,style,market,source,sector,cap,nextOffset,discoveryNote,total,rows,message,scannedMarket,busy,ctx]);
+  },[restored,style,market,sector,cap,nextOffset,discoveryNote,total,rows,message,scannedMarket,busy,ctx]);
+  async function loadRow(symbol: string, signal: AbortSignal): Promise<Row> {
+    try {
+      const response=await fetch("/api/stock/"+encodeURIComponent(symbol)+"?market="+market+"&mode=screen",{signal:AbortSignal.any([signal,AbortSignal.timeout(30000)])});
+      const data=await response.json();
+      if (!response.ok) throw new Error();
+      return {symbol,data};
+    } catch {return {symbol,error:"โหลดข้อมูลไม่สำเร็จ"};}
+  }
   async function scan(append = false) {
     controller.current?.abort();
     const abort = new AbortController(); controller.current=abort;
     if (!append) {
-      pending.current=[];cursor.current=source === "discover" ? 0 : null;seen.current.clear();
+      pending.current=[];cursor.current=0;seen.current.clear();
       setRows([]);setNextOffset(null);setDiscoveryNote("");
-      if (source === "watchlist") pending.current=[...new Set(items.filter(item=>item.market===market).map(item=>item.symbol))];
     }
     setBusy(true);setMessage("");setScannedMarket(market);setTotal(0);
     let scanCtx=ctx;
@@ -96,7 +105,7 @@ export default function StockScreener() {
         if (!pending.current.length) {
           if (cursor.current === null) break;
           const offset=cursor.current;
-          const params=new URLSearchParams({market,sector,cap:style==="smallcap"?"small":cap,offset:String(offset),...(style==="dip"?{dip:"1"}:style==="momentum"?{near:"1"}:{})});
+          const params=new URLSearchParams({market,sector,cap:style==="smallcap"?"small":cap,offset:String(offset),style,size:"100"});
           const response=await fetch("/api/discover?"+params,{signal:AbortSignal.any([abort.signal,AbortSignal.timeout(25000)])});
           const result=await response.json();
           if (!response.ok) throw new Error(result.error || "ค้นหารายชื่อไม่สำเร็จ");
@@ -104,34 +113,43 @@ export default function StockScreener() {
           if (!Array.isArray(result.symbols) || (result.nextOffset !== null && result.nextOffset <= offset)) throw new Error("ข้อมูลหน้าถัดไปไม่ถูกต้อง");
           cursor.current=result.nextOffset;
           pending.current=result.symbols.filter((symbol: string)=>!seen.current.has(symbol));
-          setDiscoveryNote("Yahoo พบ " + result.total.toLocaleString() + " รายการก่อนกรองชนิดสินทรัพย์ · ตรวจรายชื่อถึงลำดับ " + (result.nextOffset ?? result.total));
+          setDiscoveryNote(String(result.total));
           updateContinuation();
           if (!pending.current.length) continue;
         }
-        const batch=pending.current.slice(0,Math.min(5,30-passedInBatch));
-        const results=await Promise.all(batch.map(async(symbol):Promise<Row>=>{
-          try {
-            const response=await fetch("/api/stock/"+encodeURIComponent(symbol)+"?market="+market+"&mode=screen",{signal:AbortSignal.any([abort.signal,AbortSignal.timeout(30000)])});
-            const data=await response.json();
-            if (!response.ok) throw new Error();
-            return {symbol,data};
-          } catch {return {symbol,error:"โหลดข้อมูลไม่สำเร็จ ลองค้นหาใหม่เพื่อทดสอบอีกครั้ง"};}
-        }));
+        // โหลดพร้อมกัน 8 ตัวแบบต่อเนื่อง (ตัวไหนเสร็จก็หยิบตัวถัดไปทันที ไม่รอทั้งชุด)
+        // ตัวที่กำลังโหลดยังอยู่ใน pending จนเสร็จ → ออกจากหน้าแล้วกลับมาค้นหาต่อจะไม่ข้าม
+        await new Promise<void>(resolve=>{
+          const inflight=new Set<string>();
+          const pump=()=>{
+            if (abort.signal.aborted || passedInBatch>=30) { if (!inflight.size) resolve(); return; }
+            const next=pending.current.filter(sym=>!inflight.has(sym));
+            if (!next.length) { if (!inflight.size) resolve(); return; }
+            for (const symbol of next.slice(0,CONCURRENCY-inflight.size)) {
+              inflight.add(symbol);
+              loadRow(symbol,abort.signal).then(row=>{
+                inflight.delete(symbol);
+                if (abort.signal.aborted) { pump(); return; }
+                pending.current=pending.current.filter(sym=>sym!==symbol);
+                if (!seen.current.has(row.symbol)) {
+                  seen.current.add(row.symbol);
+                  const checks=row.data ? screenStock(row.data,style,scanCtx) : [];
+                  if (checks.length && checks.every(check=>check.passed===true)) passedInBatch++;
+                  setRows(previous=>[...previous,row]);
+                  setTotal(passedInBatch);
+                }
+                pump();
+              });
+            }
+          };
+          pump();
+        });
         if (abort.signal.aborted) return;
-        pending.current.splice(0,batch.length);
-        for (const row of results) {
-          if (seen.current.has(row.symbol)) continue;
-          seen.current.add(row.symbol);
-          const checks=row.data ? screenStock(row.data,style,scanCtx) : [];
-          if (checks.length && checks.every(check=>check.passed===true)) passedInBatch++;
-          setRows(previous=>[...previous,row]);
-        }
-        setTotal(passedInBatch);
         updateContinuation();
       }
-      if (!abort.signal.aborted) setMessage(passedInBatch===30 ? "พบหุ้นผ่านครบเพิ่ม 30 ตัวแล้ว" : "ตรวจครบขอบเขตที่แหล่งข้อมูลส่งให้แล้ว · ชุดนี้ผ่าน " + passedInBatch + " ตัว (หุ้นที่โหลดไม่ได้ยังยืนยันผลไม่ได้)");
+      if (!abort.signal.aborted) setMessage(passedInBatch>=30 ? "ครบ 30 ตัว" : "ตรวจครบทุกตัวแล้ว");
     } catch(error) {
-      if (!abort.signal.aborted) setMessage((error instanceof Error ? error.message : "ค้นหาไม่สำเร็จ") + " · ผลที่ตรวจแล้วเก็บไว้ กดค้นหาต่อได้");
+      if (!abort.signal.aborted) setMessage((error instanceof Error ? error.message : "ค้นหาไม่สำเร็จ") + " · กดหาเพิ่มเพื่อทำต่อ");
     } finally {
       if (controller.current===abort) {updateContinuation();setBusy(false);}
     }
@@ -153,40 +171,47 @@ export default function StockScreener() {
     <p className="dash-metric-sub" role="status">{syncStatus}</p>
     <header><h1>คัดหุ้น</h1></header>
     <div className="screen-styles screen-view" role="group" aria-label="มุมมอง">
-      <button aria-pressed={view==="watchlist"} onClick={()=>setView("watchlist")}>Watchlist ของฉัน</button>
-      <button aria-pressed={view==="market"} onClick={()=>setView("market")}>ค้นหาจากตลาด</button>
+      <button aria-pressed={view==="watchlist"} onClick={()=>setView("watchlist")}>⭐ Watchlist</button>
+      <button aria-pressed={view==="market"} onClick={()=>setView("market")}>🌐 ตลาด</button>
     </div>
     {view==="watchlist" ? <WatchlistReview items={items} loaded={loaded} /> : <>
-    <div className="screen-styles" role="group" aria-label="แนวทางคัดหุ้น">
-      {VISIBLE_STYLES.map(key=><button key={key} aria-pressed={style===key} disabled={busy} onClick={()=>{if (key !== style) {setStyle(key);clearResults();}}}>{screeningStyles[key].label}</button>)}
+    <div className="scr-styles" role="group" aria-label="แนวทางคัดหุ้น">
+      {VISIBLE_STYLES.map(key=><button key={key} type="button" aria-pressed={style===key} disabled={busy} title={screeningStyles[key].tagline} onClick={()=>{if (key !== style) {setStyle(key);clearResults();}}}>
+        <span className="scr-ico">{STYLE_ICON[key]}</span><span>{STYLE_SHORT[key]}</span>
+      </button>)}
     </div>
     <details className="screen-desc"><summary>{screeningStyles[style].tagline}</summary><p>{screeningStyles[style].description}</p></details>
-    <section className="screen-panel">
-      <label htmlFor="screen-market">ตลาด</label>
-      <select id="screen-market" value={market} disabled={busy} onChange={e=>{setMarket(e.target.value as "TH"|"US");clearResults();}}><option value="US">US</option><option value="TH">ไทย (BKK)</option></select>
-      <label htmlFor="screen-source">ค้นหาจาก</label>
-      <select id="screen-source" value={source} disabled={busy} onChange={e=>{setSource(e.target.value as "discover"|"watchlist");clearResults();}}>
-        <option value="discover">ค้นหาจากตลาด — Yahoo Finance</option>
-        <option value="watchlist">Watchlist ของฉัน</option>
-      </select>
-      {source === "discover" && <>
-        <label htmlFor="screen-sector">กลุ่มธุรกิจ</label>
-        <select id="screen-sector" value={sector} disabled={busy} onChange={e=>{setSector(e.target.value);clearResults();}}>{DISCOVERY_SECTORS.map(([value,label])=><option key={value} value={value}>{label}</option>)}</select>
-        {style !== "smallcap" && <><label htmlFor="screen-cap">ขนาดบริษัท (Market Cap)</label>
-        <select id="screen-cap" value={cap} disabled={busy} onChange={e=>{setCap(e.target.value);clearResults();}}><option value="all">ทุกขนาด</option><option value="large">ใหญ่</option><option value="mid">กลาง</option><option value="small">เล็ก</option></select></>}
-        
-        <details><summary>ขอบเขตการค้นหา</summary><p>ค้นหาต่อเนื่องตามตัวกรอง เรียง Market Cap จากมากไปน้อย จนพบหุ้นผ่านครบ 30 ตัวต่อชุด หรือหมดขอบเขตที่แหล่งข้อมูลส่งให้ หุ้นที่ไม่ผ่านหรือข้อมูลไม่ครบไม่นับรวม 30 ตัว ตัดรายการที่ Yahoo ระบุว่าเป็น DR/วอร์แรนต์ไทย รวมถึงรหัส -R/-F ออก กลุ่มธุรกิจใช้การจัดประเภทของ Yahoo และอาจมีข้อมูลขาดหรือคลาดเคลื่อน ขนาดบริษัทเป็นเกณฑ์ของแอปในสกุลเงินตลาด</p></details>
+    <div className="scr-filters">
+      <span className="scr-seg" role="group" aria-label="ตลาด">
+        {(["US","TH"] as const).map(m=><button key={m} type="button" aria-pressed={market===m} disabled={busy} onClick={()=>{if (m!==market) {setMarket(m);clearResults();}}}>{m==="US"?"🇺🇸 US":"🇹🇭 ไทย"}</button>)}
+      </span>
+      <label className="scr-pick" title="กลุ่มธุรกิจ"><span aria-hidden="true">🏢</span>
+        <select aria-label="กลุ่มธุรกิจ" value={sector} disabled={busy} onChange={e=>{setSector(e.target.value);clearResults();}}>{DISCOVERY_SECTORS.map(([value,label])=><option key={value} value={value}>{value ? label : "ทุกกลุ่ม"}</option>)}</select>
+      </label>
+      {style !== "smallcap" && <label className="scr-pick" title="ขนาดบริษัท"><span aria-hidden="true">📏</span>
+        <select aria-label="ขนาดบริษัท" value={cap} disabled={busy} onChange={e=>{setCap(e.target.value);clearResults();}}><option value="all">ทุกขนาด</option><option value="large">ใหญ่</option><option value="mid">กลาง</option><option value="small">เล็ก</option></select>
+      </label>}
+    </div>
+    <div className="scr-go">
+      {busy ? <>
+        <div className="scr-progress" aria-live="polite">
+          <i style={{width:`${Math.min(100,total/30*100)}%`}} />
+          <span>🔍 ตรวจ {rows.length} · ✓ {total}/30</span>
+        </div>
+        <button type="button" className="scr-stop" onClick={()=>{controller.current?.abort();setMessage("หยุดแล้ว");}} aria-label="หยุดค้นหา">■</button>
+      </> : <>
+        <button type="button" className="scr-run" disabled={!restored} onClick={()=>scan()}>🔍 {rows.length ? "ค้นหาใหม่" : "ค้นหา"}</button>
+        {nextOffset !== null && rows.length>0 && <button type="button" className="scr-more" onClick={()=>scan(true)}>＋ หาเพิ่ม</button>}
       </>}
-      <button disabled={!restored || busy || (source === "watchlist" && !loaded)} onClick={()=>scan()}>{busy ? "กำลังค้นหา… ผ่าน " + total + "/30 · ตรวจ " + rows.length + " ตัว" : rows.length > 0 || nextOffset !== null ? "↻ รีเฟรช · เริ่มค้นหาใหม่" : "ค้นหาหุ้นให้ฉัน"}</button>
-      {nextOffset !== null && <button disabled={busy} onClick={()=>scan(true)}>ค้นหาต่ออีก 30 ตัวที่ผ่านครบ</button>}
-      {busy && <button onClick={()=>{controller.current?.abort();setMessage("หยุดค้นหาแล้ว แสดงเฉพาะผลที่ตรวจเสร็จ");}}>หยุดค้นหา</button>}
-    </section>
-    {discoveryNote && <p>{discoveryNote}</p>}
-    <p role="status">{message}</p>
-    <div className="screen-actions"><span aria-live="polite">ตรวจแล้ว {rows.length} · ผ่าน {evaluated.filter(r=>r.passed).length} · เกือบผ่าน {evaluated.filter(r=>r.nearMiss).length} · โหลดไม่ได้ {rows.filter(r=>r.error).length}</span></div>
-    {!busy && rows.length===0 && <p>เลือกแนวทางที่ต้องการ แล้วกด “ค้นหาหุ้นให้ฉัน” โดยไม่ต้องกรอกชื่อหุ้น</p>}
-    {rows.length>0 && !evaluated.some(r=>r.passed) && <p>ยังไม่มีหุ้นผ่านครบทุกเกณฑ์ในรายการที่ตรวจแล้ว</p>}
-    <details className="screen-panel"><summary>เรียงความน่าสนใจมากไปน้อย · วิธีคิดคะแนน</summary><p>{RANKING_DESCRIPTION[style]}</p><p>คะแนนตามสูตรของแอป ใช้เปรียบเทียบเฉพาะหุ้นที่ค้นพบและผ่านครบ ยังไม่ใช่อันดับของทั้งตลาดหรือโอกาสทำกำไร หากคะแนนเท่ากันเรียงตามชื่อหุ้น</p></details>
+    </div>
+    {rows.length>0 && <p className="scr-stat" role="status">
+      <span title="ตรวจแล้ว">🔍 {rows.length}</span>
+      <span className="up" title="ผ่านครบ">✓ {evaluated.filter(r=>r.passed).length}</span>
+      <span className="near" title="เกือบผ่าน (ขาด 1 เกณฑ์)">≈ {evaluated.filter(r=>r.nearMiss).length}</span>
+      {rows.some(r=>r.error) && <span className="down" title="โหลดไม่ได้">⚠ {rows.filter(r=>r.error).length}</span>}
+      {message && <small>{message}</small>}
+    </p>}
+    {!busy && rows.length>0 && !evaluated.some(r=>r.passed) && <p className="scr-empty">ยังไม่พบตัวที่ผ่านครบ · ลอง ＋ หาเพิ่ม หรือดูกลุ่มเกือบผ่าน</p>}
     {evaluated.some(row=>row.passed) && <div className="wl"><ul className="wl-list scr-list">{evaluated.filter(row=>row.passed).map((row,index)=>{
       const lean=row.trend?trendLean(row.trend.kind,row.trend.label):null;
       const inList=items.some(item=>item.symbol===row.symbol && item.market===scannedMarket);
@@ -206,7 +231,7 @@ export default function StockScreener() {
       </ScreenRow>;
     })}</ul></div>}
     {evaluated.some(row=>row.nearMiss) && <details className="screen-near wl">
-      <summary>เกือบผ่าน · ขาด 1 เกณฑ์ ({evaluated.filter(row=>row.nearMiss).length} ตัว)</summary>
+      <summary>≈ เกือบผ่าน · ขาด 1 ข้อ ({evaluated.filter(row=>row.nearMiss).length})</summary>
       <ul className="wl-list scr-list">
       {[...evaluated].filter(row=>row.nearMiss).sort((a,b)=>b.score-a.score||a.symbol.localeCompare(b.symbol)).map(row=>{
         const inList=items.some(item=>item.symbol===row.symbol && item.market===scannedMarket);
