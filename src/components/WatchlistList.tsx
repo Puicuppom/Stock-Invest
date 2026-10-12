@@ -1,5 +1,6 @@
 "use client";
-import { useEffect, useRef, useState, type PointerEvent as RPointerEvent } from "react";
+import { useEffect, useRef, useState } from "react";
+import { attachRowGestures } from "@/lib/row-gestures";
 import StockLogo from "./StockLogo";
 import { displaySymbol, normalizeInput } from "@/lib/symbol";
 import { watchlistId } from "@/lib/watchlist-id";
@@ -25,16 +26,25 @@ export default function WatchlistList({ items, signals, quotes, onRefresh, refre
   onAdd?: () => void;
   syncStatus?: string;
 }) {
-  // ปัดซ้าย = โชว์ปุ่มลบ · กดค้าง = ลากจัดเรียง
-  const [swiped, setSwiped] = useState<string | null>(null);
-  const listRef = useRef<HTMLUListElement>(null);
-  const g = useRef<{ id: string; el: HTMLElement; x: number; y: number; mode: "idle" | "swipe" | "drag" | "scroll"; dx: number; timer: number | null; moved: boolean; base: number } | null>(null);
-  const suppressClick = useRef(false);
-  const SWIPE_W = 84;
   // เรียง: manual = ลำดับที่จัดเอง · up/down = % เปลี่ยนแปลงวันนี้
   const [sort, setSort] = useState<"manual" | "up" | "down">("manual");
   useEffect(() => { try { const v = localStorage.getItem("wlSort"); if (v === "up" || v === "down") setSort(v); } catch { /* ignore */ } }, []);
   const changeSort = (v: "manual" | "up" | "down") => { setSort(v); try { localStorage.setItem("wlSort", v); } catch { /* ignore */ } };
+  // ปัดซ้าย = โชว์ปุ่มลบ · กดค้าง = ลากจัดเรียง (ดู row-gestures.ts)
+  const listRef = useRef<HTMLUListElement>(null);
+  const live = useRef({ sort, onReorder, count: items.length });
+  live.current = { sort, onReorder, count: items.length };
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+    return attachRowGestures(el, {
+      row: ".wl-row",
+      swipeEl: r => r.querySelector<HTMLElement>(".wl-swipe"),
+      actionsWidth: () => 84,
+      canDrag: () => live.current.sort === "manual" && live.current.count > 1,
+      onCross: (r, n) => { if (r.dataset.id && n.dataset.id) live.current.onReorder(r.dataset.id, n.dataset.id); },
+    });
+  }, []);
   const chg = (it: WatchlistItem) => quotes[watchlistId(it)]?.changePercent ?? signals[watchlistId(it)]?.changePercent;
   const shown = sort === "manual" ? items : [...items].sort((a, b) => {
     const x = chg(a), y = chg(b);
@@ -43,98 +53,6 @@ export default function WatchlistList({ items, signals, quotes, onRefresh, refre
     if (y == null) return -1;
     return sort === "up" ? y - x : x - y;
   });
-  const blockScroll = (e: TouchEvent) => e.preventDefault();
-  const swipeEl = (li: HTMLElement) => li.querySelector<HTMLElement>(".wl-swipe");
-  const setX = (li: HTMLElement, x: number, anim: boolean) => {
-    const s = swipeEl(li);
-    if (!s) return;
-    s.style.transition = anim ? "transform .18s ease" : "none";
-    s.style.transform = x ? `translateX(${x}px)` : "";
-  };
-  const closeSwiped = () => {
-    if (!swiped) return;
-    const li = listRef.current?.querySelector<HTMLElement>(`[data-id="${CSS.escape(swiped)}"]`);
-    if (li) setX(li, 0, true);
-    setSwiped(null);
-  };
-  const endDrag = (st: NonNullable<typeof g.current>) => {
-    st.el.classList.remove("dragging");
-    st.el.style.transform = "";
-    document.removeEventListener("touchmove", blockScroll);
-  };
-  const onDown = (e: RPointerEvent<HTMLLIElement>, id: string) => {
-    if (e.button !== 0) return;
-    if (swiped && swiped !== id) closeSwiped();
-    const el = e.currentTarget;
-    const st = { id, el, x: e.clientX, y: e.clientY, mode: "idle" as const, dx: 0, timer: null as number | null, moved: false, base: swiped === id ? -SWIPE_W : 0 };
-    g.current = st;
-    suppressClick.current = false;
-    const pid = e.pointerId;
-    if (sort === "manual" && items.length > 1) {
-      st.timer = window.setTimeout(() => {
-        const cur = g.current;
-        if (!cur || cur.id !== id || cur.mode !== "idle") return;
-        cur.mode = "drag";
-        suppressClick.current = true;
-        setX(el, 0, true);
-        if (swiped) setSwiped(null);
-        el.classList.add("dragging");
-        document.addEventListener("touchmove", blockScroll, { passive: false });
-        try { el.setPointerCapture(pid); } catch { /* ignore */ }
-        navigator.vibrate?.(12);
-      }, 380);
-    }
-  };
-  const onMove = (e: RPointerEvent<HTMLLIElement>) => {
-    const st = g.current;
-    if (!st || st.el !== e.currentTarget) return;
-    const dx = e.clientX - st.x, dy = e.clientY - st.y;
-    if (st.mode === "idle") {
-      if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) * 1.2) {
-        st.mode = "swipe";
-        suppressClick.current = true;
-        try { st.el.setPointerCapture(e.pointerId); } catch { /* ignore */ }
-      } else if (Math.abs(dy) > 10) st.mode = "scroll";
-      if (st.mode !== "idle" && st.timer) { clearTimeout(st.timer); st.timer = null; }
-    }
-    if (st.mode === "swipe") {
-      st.dx = Math.max(-SWIPE_W - 20, Math.min(0, st.base + dx));
-      setX(st.el, st.dx, false);
-    } else if (st.mode === "drag") {
-      e.preventDefault();
-      let off = e.clientY - st.y;
-      const prev = st.el.previousElementSibling as HTMLElement | null;
-      const next = st.el.nextElementSibling as HTMLElement | null;
-      if (next && off > next.offsetHeight / 2 && next.dataset.id) {
-        onReorder(st.id, next.dataset.id);
-        st.y += next.offsetHeight; off -= next.offsetHeight;
-      } else if (prev && off < -prev.offsetHeight / 2 && prev.dataset.id) {
-        onReorder(st.id, prev.dataset.id);
-        st.y -= prev.offsetHeight; off += prev.offsetHeight;
-      }
-      st.el.style.transform = `translateY(${off}px)`;
-    }
-  };
-  const onUp = () => {
-    const st = g.current;
-    g.current = null;
-    if (!st) return;
-    if (st.timer) clearTimeout(st.timer);
-    if (st.mode === "swipe") {
-      const open = st.dx < -SWIPE_W / 2;
-      setX(st.el, open ? -SWIPE_W : 0, true);
-      setSwiped(open ? st.id : null);
-    } else if (st.mode === "drag") endDrag(st);
-  };
-  const onCancel = () => {
-    onUp();
-  };
-  const tap = (id: string) => {
-    if (suppressClick.current) { suppressClick.current = false; return; }
-    if (swiped) { closeSwiped(); return; }
-    onOpen(id);
-  };
-
   return (
     <section className="wl">
       <div className="wl-head">
@@ -166,10 +84,10 @@ export default function WatchlistList({ items, signals, quotes, onRefresh, refre
           const up = (change ?? 0) >= 0;
           const currency = item.market === "TH" ? "฿" : "$";
           return (
-            <li key={id} data-id={id} className="wl-row" onPointerDown={e => onDown(e, id)} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onCancel} onContextMenu={e => e.preventDefault()}>
-              <button type="button" className="wl-del" tabIndex={swiped === id ? 0 : -1} aria-hidden={swiped !== id} onClick={() => { setSwiped(null); onRemove(id); }}>ลบ</button>
+            <li key={id} data-id={id} className="wl-row">
+              <span className="row-actions"><button type="button" className="wl-del" onClick={() => onRemove(id)}>ลบ</button></span>
               <div className="wl-swipe">
-              <button type="button" className="wl-main" onClick={() => tap(id)}>
+              <button type="button" className="wl-main" onClick={() => onOpen(id)}>
                 <span className="wl-logo">
                   <span className="wl-logo-text">{sym.slice(0, 4)}</span>
                   <StockLogo symbol={item.market === "TH" ? `${item.symbol}.BK` : item.symbol} size={40} className="wl-logo-img" />

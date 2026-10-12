@@ -1569,3 +1569,16 @@ input, select, textarea { color: var(--ui-text); background: var(--ui-raised); b
 .rb-legend { font-size: 11px; color: var(--ui-muted); margin: 8px 2px 0; }
 /* ป้ายสัญญาณขนาดเท่ากัน */
 .cr-act { box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; height: 18px; min-width: 50px; line-height: 16px; border: 1px solid transparent; }
+/* ปัดซ้ายเผยปุ่ม ⚙ ตั้งค่า / ✕ ลบ · กดค้างลากจัดเรียง */
+.cr-swipe-wrap { position: relative; overflow: hidden; }
+.cr-swipe-wrap .cr-row { position: relative; z-index: 1; background: var(--ui-surface); touch-action: pan-y; -webkit-touch-callout: none; will-change: transform; }
+.asset-card.open .cr-swipe-wrap .cr-row { background: color-mix(in srgb, var(--ui-text, #fff) 3%, var(--ui-surface)); }
+.row-actions { position: absolute; top: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 6px; padding: 0 6px; }
+.row-actions button { width: 64px; height: calc(100% - 16px); min-height: 44px; border: 0; border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font: inherit; font-size: 17px; font-weight: 700; color: #fff; cursor: pointer; }
+.row-actions button small { font-size: 11px; font-weight: 600; }
+.row-actions .ra-gear { background: color-mix(in srgb, var(--ui-accent) 85%, #000); }
+.row-actions .ra-del { background: var(--red, #f87171); }
+.asset-card.dragging { position: relative; z-index: 5; box-shadow: 0 12px 30px rgba(0, 0, 0, .55); outline: 1px solid var(--ui-accent); transition: none; }
+.asset-card.dragging .row-actions { visibility: hidden; }
+.cr-row .drag-handle { display: none; }
+.cr-row { grid-template-columns: auto minmax(0, 1fr) auto auto; }
