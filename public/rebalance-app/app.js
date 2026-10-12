@@ -125,6 +125,7 @@ function isCashGroup(id) {
 }
 
 function groupUsesProfitTaking(groupId) {
+    return false;
     if (isCashGroup(groupId)) return false;
     return getGroupMeta(groupId)?.profitTaking === true;
 }
@@ -1205,7 +1206,11 @@ function formatTradeAmount(usd, asset) {
     return `${fmtUsd(usd)}${formatShareAdvice(usd, asset)}`;
 }
 
+/* ไม่ใช้สัญญาณซื้อขาย/ขายทำกำไรแล้ว — รีบาลานซ์ให้ตรงสัดส่วนที่ตั้งไว้อย่างเดียว */
 function getTradeSignal(asset, diff, ideal) {
+    return { text: '—', sub: '', cls: 'hold' };
+}
+function getTradeSignalLegacy(asset, diff, ideal) {
     if (isCashAsset(asset)) {
         if (diff > 0.01) {
             return { text: 'เติม', sub: formatTradeAmount(diff, asset), cls: 'buy' };
@@ -1570,12 +1575,11 @@ function refreshAssetSheet() {
     document.getElementById('asset-sheet-body').innerHTML = renderAssetSheetBody(item);
 }
 
-function updateAssetSheetLive({ cost, profit, profitPct, tradeSignal, asset }) {
+function updateAssetSheetLive({ cost, profit, profitPct, tradeSignal, asset, action }) {
     if (asset && isCashAsset(asset)) {
         const adviceEl = document.getElementById('asset-sheet-advice');
         if (adviceEl) {
-            const detail = tradeSignal.sub ? ` · ${tradeSignal.sub}` : '';
-            adviceEl.textContent = `สัดส่วน: ${tradeSignal.text}${detail}`;
+            adviceEl.textContent = action ? action.text : '—';
         }
         return;
     }
@@ -1587,13 +1591,13 @@ function updateAssetSheetLive({ cost, profit, profitPct, tradeSignal, asset }) {
     }
     const adviceEl = document.getElementById('asset-sheet-advice');
     if (adviceEl) {
-        const detail = tradeSignal.sub ? ` · ${tradeSignal.sub}` : '';
-        adviceEl.textContent = `สัญญาณ: ${tradeSignal.text}${detail}`;
+        adviceEl.textContent = action ? action.text : '—';
         adviceEl.style.display = '';
     }
 }
 
 function renderGroupSelectHtml(index, asset) {
+    return ''; // ไม่แยกกลุ่มแล้ว
     const cur = getAssetGroup(asset);
     const opts = portfolioGroups.map(g =>
         `<option value="${g.id}"${g.id === cur ? ' selected' : ''}>${getGroupLabel(g.id)}</option>`
@@ -1630,10 +1634,9 @@ function updateAssetGroup(index, newGroup) {
     renderAndCalculate();
 }
 
-function renderAssetSheetBody({ index, asset, cost, profit, profitPct, tradeSignal }) {
+function renderAssetSheetBody({ index, asset, cost, profit, profitPct, tradeSignal, action }) {
     if (isCashAsset(asset)) {
-        const adviceDetail = tradeSignal.sub ? ` · ${tradeSignal.sub}` : '';
-        const adviceText = `สัดส่วน: ${tradeSignal.text}${adviceDetail}`;
+        const adviceText = action ? action.text : '—';
         return `
         <div class="setting-hint" style="margin-bottom:12px">เงินสด · กรอกยอดเป็น USD</div>
         ${renderGroupSelectHtml(index, asset)}
@@ -1658,8 +1661,7 @@ function renderAssetSheetBody({ index, asset, cost, profit, profitPct, tradeSign
     }
     const role = getAssetRole(asset.name);
     const profitFmt = cost > 0 ? formatProfit(profit, profitPct) : { text: '—', cls: '' };
-    const adviceDetail = tradeSignal.sub ? ` · ${tradeSignal.sub}` : '';
-    const adviceText = `สัญญาณ: ${tradeSignal.text}${adviceDetail}`;
+    const adviceText = action ? action.text : '—';
     return `
         ${role ? `<div class="setting-hint" style="margin-bottom:12px">${role}</div>` : ''}
         ${renderGroupSelectHtml(index, asset)}
