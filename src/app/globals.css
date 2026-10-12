@@ -1605,7 +1605,7 @@ select option:checked { background-color: color-mix(in srgb, var(--accent) 30%, 
 .se-chip.na { border-style: dashed; }
 /* Watchlist: ทุกแถวสูงเท่ากัน */
 .wl-list .wl-main.has-spark { height: 78px; padding-top: 0; padding-bottom: 0; }
-.wl-main.has-spark .wl-line2 { flex-wrap: nowrap; overflow: hidden; height: 22px; min-height: 22px; -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent); mask-image: linear-gradient(90deg, #000 85%, transparent); }
+.wl-main.has-spark .wl-line2 { flex-wrap: nowrap; overflow: hidden; height: 22px; min-height: 22px; -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent); mask-image: linear-gradient(90deg, #000 92%, transparent); }
 .wl-main.has-spark .wl-line2 > * { flex-shrink: 0; }
 .wl-main.has-spark .wl-price { min-height: 50px; justify-content: center; }
 /* คอลัมน์กว้างคงที่ ให้กราฟจิ๋วและราคาตรงแนวกันทุกแถว */
@@ -1624,10 +1624,16 @@ select option:checked { background-color: color-mix(in srgb, var(--accent) 30%, 
 .se-detail.fail b { color: var(--danger); }
 .se-detail span { color: var(--muted); }
 /* Watchlist: ป้ายเป็นไอคอนอย่างเดียว ขนาดเท่ากัน */
-.wl-line2 .wl-ico { display: inline-flex; align-items: center; justify-content: center; gap: 1px; width: 30px; height: 22px; padding: 0; border-radius: 999px; border: 1px solid var(--border); font-style: normal; font-size: 13px; line-height: 1; position: relative; }
+.wl-line2 .wl-ico { display: inline-flex; align-items: center; justify-content: center; gap: 1px; width: 26px; height: 22px; padding: 0; border-radius: 999px; flex: none; border: 1px solid var(--border); font-style: normal; font-size: 13px; line-height: 1; position: relative; }
 .wl-line2 .wl-ico.sup { border-color: color-mix(in srgb, var(--success) 50%, transparent); background: color-mix(in srgb, var(--success) 12%, transparent); }
 .wl-line2 .wl-ico.res { border-color: color-mix(in srgb, var(--danger) 50%, transparent); background: color-mix(in srgb, var(--danger) 12%, transparent); }
 .wl-line2 .wl-ico.dip-good { border-color: color-mix(in srgb, var(--success) 50%, transparent); }
 .wl-line2 .wl-ico.dip-trap { border-color: color-mix(in srgb, var(--warning) 50%, transparent); }
-.wl-line2 .wl-ico.ev { width: 38px; }
-.wl-line2 .wl-ico sub { font-size: 10px; font-weight: 700; color: var(--muted); vertical-align: baseline; }
+
+/* watchlist: ไอคอนแนวโน้ม + ปฏิทินขนาดเท่ากัน */
+.wl-line2 .wl-ico.lean { font-size: 13px; font-weight: 800; font-style: normal; }
+.wl-ico.lean-up { color: #16a34a; background: rgba(22,163,74,.12); }
+.wl-ico.lean-upish { color: #22c55e; background: rgba(34,197,94,.10); }
+.wl-ico.lean-flat { color: #64748b; background: rgba(100,116,139,.12); }
+.wl-ico.lean-downish { color: #f97316; background: rgba(249,115,22,.10); }
+.wl-ico.lean-down { color: #dc2626; background: rgba(220,38,38,.12); }
