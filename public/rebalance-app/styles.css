@@ -341,17 +341,6 @@
         .asset-fv-opp.gain { color: var(--green); }
         .asset-fv-opp.loss { color: var(--red); }
         .stat-num.muted, .stat-sub.muted { color: var(--ui-muted); font-weight: 600; }
-        .btn-card-gear {
-            flex-shrink: 0;
-            background: var(--ui-raised);
-            border: 1px solid var(--border);
-            color: var(--muted);
-            font-size: 12px;
-            line-height: 1;
-            padding: 4px 7px;
-            border-radius: 7px;
-            cursor: pointer;
-        }
         .asset-sheet-grid {
             display: flex;
             flex-direction: column;
@@ -748,18 +737,6 @@
         .buy { color: var(--green); }
         .sell { color: var(--red); }
         .hold { color: var(--muted); font-weight: 600; }
-        .btn-delete {
-            flex-shrink: 0;
-            background: none;
-            border: none;
-            color: var(--red);
-            font-size: 16px;
-            line-height: 1;
-            padding: 2px 4px;
-            cursor: pointer;
-            opacity: 0.45;
-        }
-        .btn-delete:active { opacity: 1; }
         .cell-value {
             display: block;
             font-size: 16px;

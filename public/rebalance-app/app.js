@@ -1671,8 +1671,6 @@ function appendAssetCard(list, payload) {
                 <div class="asset-shares">${formatSharesLabel(asset)}</div>
             </div>
             ${renderFvHeaderHtml(asset.name, asset)}
-            <button class="btn-card-gear" type="button" aria-label="ตั้งค่า ${asset.name}" onclick="openAssetSheet(${index})">⚙</button>
-            <button class="btn-delete" type="button" aria-label="ลบ ${asset.name}" onclick="deleteAsset(${index})">×</button>
         </div>
         ${renderAssetGrid(index, asset, curPct, ideal, profitFmt, cost, profit, profitPct, tradeSignal, action)}
         </div>`;
