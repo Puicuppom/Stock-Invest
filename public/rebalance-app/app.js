@@ -761,10 +761,6 @@ function updateTabUI() {
     if (addInput) {
         addInput.placeholder = 'ชื่อย่อ เช่น MSFT · เงินสดพิมพ์ USD';
     }
-    const fab = document.querySelector('.fab');
-    if (fab) {
-        fab.innerHTML = '<span>＋</span> เพิ่มสินทรัพย์';
-    }
 }
 
 function renderGroupAllocationSettings() {
