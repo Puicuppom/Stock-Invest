@@ -1614,3 +1614,12 @@ select option:checked { background-color: color-mix(in srgb, var(--accent) 30%, 
 .wl-main.has-spark .wl-price b { font-size: 15px; white-space: nowrap; }
 @media (max-width: 420px) { .wl-main.has-spark { grid-template-columns: 38px minmax(0, 1fr) 44px 84px 68px; gap: 8px; } .wl-main.has-spark .wl-price b { font-size: 14px; } }
 @media (max-width: 340px) { .wl-main.has-spark { grid-template-columns: 38px minmax(0, 1fr) 80px 64px; } }
+/* ชิปเหตุผลแบบไอคอนอย่างเดียว · แตะเพื่อดูรายละเอียด */
+.se-chip.ico { width: 34px; height: 30px; padding: 0; justify-content: center; font-size: 15px; cursor: pointer; font-family: inherit; position: relative; }
+.se-chip.ico[aria-pressed="true"] { outline: 2px solid var(--accent); outline-offset: 1px; }
+.se-chip.ico.fail::after, .se-chip.ico.na::after { content: ""; position: absolute; top: 3px; right: 3px; width: 6px; height: 6px; border-radius: 50%; background: var(--danger); }
+.se-chip.ico.na::after { background: var(--muted); }
+.se-detail { margin: 0; display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: 10px; font-size: 13px; background: color-mix(in srgb, var(--text) 5%, transparent); }
+.se-detail b.pass, .se-detail.pass b { color: var(--success); }
+.se-detail.fail b { color: var(--danger); }
+.se-detail span { color: var(--muted); }

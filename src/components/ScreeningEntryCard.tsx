@@ -1,3 +1,5 @@
+"use client";
+import { useState } from "react";
 import { screeningEntry } from "@/lib/screening-entry";
 import type { StockData } from "@/lib/types";
 import { screenStock, type ScreeningCheck, type ScreeningStyle } from "@/lib/screener";
@@ -55,6 +57,9 @@ export default function ScreeningEntryCard({ data, style, ctx }: { data: StockDa
   const lo = Math.min(...pts), hi = Math.max(...pts);
   const pos = (v: number) => (hi > lo ? ((v - lo) / (hi - lo)) * 100 : 50);
   const checks = screenStock(data, style, ctx).map(c => ({ c, chip: chipOf(c) })).filter(x => x.chip);
+  // หน้าการ์ดโชว์แค่ไอคอน · แตะไอคอนเพื่อดูรายละเอียด
+  const [openKey, setOpenKey] = useState<string | null>(null);
+  const opened = checks.find(x => x.c.label === openKey);
 
   return (
     <section className="screen-entry se2" aria-label="สรุปจุดซื้อและเหตุผล">
@@ -70,13 +75,21 @@ export default function ScreeningEntryCard({ data, style, ctx }: { data: StockDa
           {ok(now) && <i className="se-dot now" style={{ left: `${pos(now)}%` }} />}
         </div>
       )}
-      <div className="se-chips">
+      <div className="se-chips" role="group" aria-label="เกณฑ์ (แตะเพื่อดูรายละเอียด)">
         {checks.map(({ c, chip }) => (
-          <span key={c.label} className={`se-chip ${c.passed === true ? "pass" : c.passed === false ? "fail" : "na"}`} title={`${c.label}: ${c.reason ?? c.value}`}>
-            <i>{chip!.icon}</i>{chip!.text}
-          </span>
+          <button key={c.label} type="button" aria-pressed={openKey === c.label} aria-label={`${c.label}: ${c.value}`}
+            className={`se-chip ico ${c.passed === true ? "pass" : c.passed === false ? "fail" : "na"}`}
+            onClick={() => setOpenKey(openKey === c.label ? null : c.label)}>
+            {chip!.icon}
+          </button>
         ))}
       </div>
+      {opened && (
+        <p className={`se-detail ${opened.c.passed === true ? "pass" : opened.c.passed === false ? "fail" : "na"}`}>
+          <b>{opened.c.passed === true ? "✓" : opened.c.passed === false ? "✗" : "?"} {opened.chip!.text}</b>
+          <span>{opened.c.reason ?? `${opened.c.label} · ${opened.c.value}`}</span>
+        </p>
+      )}
     </section>
   );
 }
