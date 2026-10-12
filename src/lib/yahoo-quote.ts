@@ -130,3 +130,51 @@ export function pickExtended(row: V7ExtRow, nowSec = Date.now() / 1000): Extende
   if (state.startsWith("PRE")) return make("pre", row.preMarketPrice, row.preMarketTime) ?? make("post", row.postMarketPrice, row.postMarketTime);
   return make("post", row.postMarketPrice, row.postMarketTime);
 }
+
+/** ราคาแบบเร็วสำหรับ Watchlist — ดึงหลายตัวในคำขอเดียว */
+export interface LiveQuote {
+  symbol: string;
+  price: number;
+  changePercent: number;
+  name: string | null;
+  marketState: string | null;
+  /** ราคาก่อนเปิด/หลังปิด (หุ้นสหรัฐ) */
+  ext: ExtendedQuote | null;
+}
+
+interface V7LiveRow extends V7ExtRow {
+  symbol?: string;
+  regularMarketChangePercent?: number;
+  regularMarketPreviousClose?: number;
+  shortName?: string;
+  longName?: string;
+}
+
+export async function fetchLiveQuotes(resolvedSymbols: string[]): Promise<LiveQuote[]> {
+  if (!resolvedSymbols.length) return [];
+  const { cookie, crumb } = await getYahooAuth();
+  const url = new URL("https://query1.finance.yahoo.com/v7/finance/quote");
+  url.searchParams.set("symbols", resolvedSymbols.join(","));
+  url.searchParams.set("crumb", crumb);
+  const res = await fetch(url.toString(), {
+    headers: { "User-Agent": USER_AGENT, Cookie: cookie },
+    cache: "no-store",
+    signal: AbortSignal.timeout(6000),
+  });
+  if (!res.ok) throw new Error(`quote ${res.status}`);
+  const rows = ((await res.json()) as { quoteResponse?: { result?: V7LiveRow[] } }).quoteResponse?.result ?? [];
+  return rows.flatMap(row => {
+    const price = row.regularMarketPrice;
+    if (!row.symbol || !price || price <= 0) return [];
+    const prev = row.regularMarketPreviousClose;
+    const changePercent = row.regularMarketChangePercent ?? (prev && prev > 0 ? (price / prev - 1) * 100 : 0);
+    return [{
+      symbol: row.symbol,
+      price,
+      changePercent,
+      name: row.longName ?? row.shortName ?? null,
+      marketState: row.marketState ?? null,
+      ext: row.symbol.endsWith(".BK") ? null : pickExtended(row),
+    }];
+  });
+}

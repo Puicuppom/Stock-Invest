@@ -39,7 +39,7 @@ export default function StockApp() {
     toleranceOptions,
   } = useSrTagSettings();
 
-  const { tags: watchlistTags, signals: watchlistSignals } = useSrWatchlistTags({
+  const { tags: watchlistTags, signals: watchlistSignals, quotes: watchlistQuotes, refresh: refreshWatchlist, refreshing: watchlistRefreshing, updatedAt: watchlistUpdatedAt } = useSrWatchlistTags({
     items,
     loaded: loaded && tagSettingsLoaded,
     tolerancePercent: tagSettings.tolerancePercent,
@@ -248,6 +248,10 @@ export default function StockApp() {
         <WatchlistList
           items={items}
           signals={mergedSignals}
+          quotes={watchlistQuotes}
+          onRefresh={refreshWatchlist}
+          refreshing={watchlistRefreshing}
+          updatedAt={watchlistUpdatedAt}
           srTags={mergedWatchlistTags}
           onOpen={openStock}
           onRemove={removeStock}

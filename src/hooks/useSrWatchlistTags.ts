@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import type { LiveQuote } from "@/lib/yahoo-quote";
 import { findSrHits, type SrHit } from "@/lib/sr-levels";
 import type { SrMode, StockData, WatchlistItem } from "@/lib/types";
 import { watchlistId } from "@/lib/watchlist-id";
@@ -54,6 +55,26 @@ async function fetchStock(item: WatchlistItem): Promise<StockData | null> {
   return (await res.json()) as StockData;
 }
 
+export type WatchlistQuotes = Record<string, LiveQuote>;
+
+const QUOTE_POLL_MS = 30 * 1000;
+const CONCURRENCY = 4;
+
+async function fetchQuotes(items: WatchlistItem[]): Promise<WatchlistQuotes | null> {
+  const q = items.map(it => `${encodeURIComponent(it.symbol)}:${it.market}`).join(",");
+  try {
+    const res = await fetch(`/api/quotes?items=${q}`, { cache: "no-store" });
+    if (!res.ok) return null;
+    return ((await res.json()) as { quotes?: WatchlistQuotes }).quotes ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * ราคา: ดึงทุกตัวในคำขอเดียว ทุก 30 วินาที (เร็ว)
+ * สัญญาณ (แนวโน้ม/แนวรับ/ลดราคา): วิเคราะห์เต็มทีละ 4 ตัวพร้อมกัน ทุก 3 นาที แสดงทีละตัวเมื่อเสร็จ
+ */
 export function useSrWatchlistTags({
   items,
   loaded,
@@ -62,57 +83,74 @@ export function useSrWatchlistTags({
 }: UseSrWatchlistTagsOptions) {
   const [tags, setTags] = useState<WatchlistSrTags>({});
   const [signals, setSignals] = useState<WatchlistSignals>({});
+  const [quotes, setQuotes] = useState<WatchlistQuotes>({});
+  const [refreshing, setRefreshing] = useState(false);
+  const [updatedAt, setUpdatedAt] = useState<number | null>(null);
+  const [tick, setTick] = useState(0);
 
+  // ราคาเร็ว
+  useEffect(() => {
+    if (!loaded || items.length === 0) { setQuotes({}); return; }
+    let alive = true;
+    const run = async () => {
+      if (document.visibilityState !== "visible") return;
+      setRefreshing(true);
+      const q = await fetchQuotes(items);
+      if (!alive) return;
+      setRefreshing(false);
+      if (q) { setQuotes(prev => ({ ...prev, ...q })); setUpdatedAt(Date.now()); }
+    };
+    run();
+    const timer = window.setInterval(run, QUOTE_POLL_MS);
+    const onVisible = () => { if (document.visibilityState === "visible") run(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => { alive = false; window.clearInterval(timer); document.removeEventListener("visibilitychange", onVisible); };
+  }, [items, loaded, tick]);
+
+  // สัญญาณจากการวิเคราะห์เต็ม
   useEffect(() => {
     if (!loaded || items.length === 0) {
       setTags({});
       setSignals({});
       return;
     }
+    let alive = true;
 
     const runCheck = async () => {
       if (document.visibilityState !== "visible") return;
-
-      const next: WatchlistSrTags = {};
-      const nextSignals: WatchlistSignals = {};
-
-      for (const item of items) {
-        const data = await fetchStock(item);
-        if (!data) continue;
-        nextSignals[watchlistId(item)] = chipSignalOf(data);
-
-        const hits = findSrHits(
-          data.pivot,
-          data.zones,
-          data.lastClose,
-          srMode,
-          tolerancePercent
-        );
-
-        if (hits.length > 0) {
-          next[watchlistId(item)] = hits;
+      const queue = [...items];
+      const worker = async () => {
+        for (let item = queue.shift(); item; item = queue.shift()) {
+          const data = await fetchStock(item).catch(() => null);
+          if (!alive || !data) continue;
+          const id = watchlistId(item);
+          const hits = findSrHits(data.pivot, data.zones, data.lastClose, srMode, tolerancePercent);
+          setSignals(prev => ({ ...prev, [id]: chipSignalOf(data) }));
+          setTags(prev => {
+            const next = { ...prev };
+            if (hits.length > 0) next[id] = hits; else delete next[id];
+            return next;
+          });
         }
-      }
-
-      setTags(next);
-      setSignals(nextSignals);
+      };
+      await Promise.all(Array.from({ length: Math.min(CONCURRENCY, items.length) }, worker));
     };
 
     runCheck();
     const timer = window.setInterval(runCheck, POLL_MS);
-
     const onVisible = () => {
-      if (document.visibilityState === "visible") {
-        runCheck();
-      }
+      if (document.visibilityState === "visible") runCheck();
     };
     document.addEventListener("visibilitychange", onVisible);
 
     return () => {
+      alive = false;
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [items, loaded, tolerancePercent, srMode]);
+  }, [items, loaded, tolerancePercent, srMode, tick]);
 
-  return { tags, signals };
+  const refresh = useCallback(() => setTick(t => t + 1), []);
+
+  return { tags, signals, quotes, refresh, refreshing, updatedAt };
 }

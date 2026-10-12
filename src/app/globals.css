@@ -3099,3 +3099,20 @@ button.dash-jump:active { transform: scale(0.95); }
 .scr-chip.rank, .scr-chip.score { min-width: 30px; padding: 0 7px; }
 .wl-line2 .wl-tag, .wl-line2 i { box-sizing: border-box; height: 20px; line-height: 18px; display: inline-flex; align-items: center; padding: 0 7px; border-radius: 999px; border: 1px solid transparent; font-size: 11px; }
 .wl-line2 i { border-color: var(--border); }
+/* watchlist: ปุ่มอัปเดตราคา + ราคาก่อนเปิด/หลังปิด */
+.wl-actions .wl-refresh { width: 34px; padding: 6px 0; font-size: 15px; line-height: 1; }
+.wl-actions .wl-refresh.spin { animation: wl-spin .8s linear infinite; opacity: .7; }
+@keyframes wl-spin { to { transform: rotate(360deg); } }
+.wl-price small.wl-ext { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.15; margin-top: 2px; font-size: 10px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.wl-price small.wl-ext span:first-child { color: var(--muted); }
+.wl-price small.wl-ext.up { color: var(--success); }
+.wl-price small.wl-ext.down { color: var(--danger); }
+/* watchlist: ลากจัดเรียง + ปัดซ้ายลบ */
+.wl-list .wl-row { position: relative; overflow: hidden; touch-action: pan-y; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.wl-swipe { position: relative; z-index: 1; flex: 1; min-width: 0; display: flex; background: var(--bg); will-change: transform; }
+.wl-del { position: absolute; top: 0; right: 0; bottom: 0; width: 84px; border: 0; background: var(--danger); color: #fff; font: inherit; font-weight: 700; font-size: 14px; cursor: pointer; }
+.wl-list .wl-row.dragging { overflow: visible; z-index: 5; transition: none; }
+.wl-list .wl-row.dragging .wl-swipe { background: var(--surface); border-radius: 12px; box-shadow: 0 10px 28px rgba(0, 0, 0, .55); outline: 1px solid var(--accent); transform: scale(1.02); }
+.wl-list .wl-row.dragging .wl-del { display: none; }
+.wl-hint { margin: 0; font-size: var(--t-label); color: var(--muted); opacity: .8; }
+.wl-del { top: 8px; bottom: 8px; right: 4px; width: 74px; border-radius: 14px; box-shadow: 0 4px 12px color-mix(in srgb, var(--danger) 35%, transparent); }
