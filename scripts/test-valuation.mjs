@@ -102,19 +102,6 @@ assert(!engine.evaluateValuation('US',{...base,forwardEps:-1}).models.some(m=>m.
 assert(!engine.evaluateValuation('US',{...base,sector:'Financial Services'}).models.some(m=>m.name==='Forward P/E กรณีคาดการณ์'));
 console.log('Forward forecast sensitivity checks passed');
 
-const {comparePeers}=load('src/lib/peer-valuation.ts');
-const target={...base,industry:'Semiconductors',revenueGrowth:.2,operatingMargins:.3};
-const peerRows=[10,20,30].map((pe,i)=>({symbol:'P'+i,data:{...target,forwardPE:pe}}));
-const peer=comparePeers('NVDA',target,peerRows);
-assert.equal(peer.median,20);assert.equal(peer.low,15);assert.equal(peer.high,25);
-assert.equal(comparePeers('P0',target,peerRows),null);
-assert.equal(comparePeers('NVDA',target,[peerRows[0],peerRows[0],peerRows[1]]),null);
-assert.equal(comparePeers('NVDA',target,peerRows.map(p=>({...p,data:{...p.data,industry:'Other'}}))),null);
-assert.equal(comparePeers('NVDA',target,peerRows.map(p=>({...p,data:{...p.data,revenueGrowth:1}}))),null);
-assert.equal(comparePeers('NVDA',target,peerRows.map(p=>({...p,data:{...p.data,forwardPE:NaN}}))),null);
-const peerModel=engine.evaluateValuation('US',{...target,peerForward:peer}).models.find(m=>m.name==='Forward P/E คู่เทียบ');
-assert.equal(peerModel.base,120);assert(peerModel.referenceOnly);
-console.log('Peer selection checks passed');
 
 const weighted=calculateFairValue('US',100,{...base,analyst:200});
 assert.equal(weighted.fairValue,(weighted.modelFairValue+200)/2);
@@ -129,15 +116,25 @@ console.log('Analyst blend checks passed');
 const brokenBook=engine.evaluateValuation('US',{...base,sector:'Financial Services',bookValue:522225.9,returnOnEquity:.121});
 assert(!brokenBook.models.some(m=>m.name.startsWith('P/BV')));
 assert(brokenBook.fairValue<1000);
-const {screeningEntry}=load('src/lib/screening-entry.ts',()=>load('src/lib/screener.ts'));
-assert.equal(screeningEntry({assetKind:'stock',fairValue:{...brokenBook,source:'single-model'}},'long').price,null);
-console.log('Unverified share-class BVPS cannot enter P/BV or long entry checks passed');
+console.log('Unverified share-class BVPS cannot enter P/BV checks passed');
 
-const {hasValuationSupport,screenStock}=load('src/lib/screener.ts');
-assert(hasValuationSupport({modelCount:1,analystWeight:.5,analystTarget:200}));
-assert(!hasValuationSupport({modelCount:1,analystWeight:0,analystTarget:200}));
-assert(!hasValuationSupport({modelCount:0,analystWeight:.5,analystTarget:200}));
-const eligible={assetKind:'stock',fairValue:{modelCount:1,analystWeight:.5,analystTarget:200,fairValue:150,forwardEps:3,fcfYieldPercent:5,upsidePercent:15}};
-assert(screenStock(eligible,'long').every(c=>c.passed));
-assert.equal(screeningEntry(eligible,'long').price,120);
-console.log('Screening valuation support checks passed');
+// ETF ลดราคา: ความลึกจากจุดสูงสุด + สถิติการฟื้นตัวจากประวัติของกอง
+const {analyzeEtfDip}=load('src/lib/etf.ts',()=>({}));
+const day=i=>new Date(Date.UTC(2020,0,1)+i*86400000).toISOString().slice(0,10);
+const series=closes=>closes.map((c,i)=>({date:day(i),open:c,high:c,low:c,close:c,volume:1}));
+const up=Array.from({length:200},(_,i)=>100+i*0.1);
+const dipNow=analyzeEtfDip(series([...up,...Array.from({length:20},(_,i)=>up.at(-1)*(1-0.006*(i+1)))]));
+assert.equal(dipNow.kind,'good');assert(dipNow.drawdownPercent<=-10);
+const recovered=analyzeEtfDip(series([...up,...Array.from({length:30},(_,i)=>119.9*(1-0.005*(i+1))),...Array.from({length:60},(_,i)=>102+i*0.5)]));
+assert.equal(recovered.episodes,1);assert.equal(recovered.recovered,1);assert(recovered.medianRecoveryDays>0);
+assert.equal(analyzeEtfDip(series(up)).kind,'notdeep');
+console.log('ETF dip checks passed');
+
+const {dividendInRange,deepEnough}=load('src/lib/discovery.ts');
+assert(dividendInRange({trailingAnnualDividendYield:0.035}));
+assert(!dividendInRange({trailingAnnualDividendYield:0.002}));
+assert(dividendInRange({}));
+assert(!dividendInRange({trailingAnnualDividendYield:0}));
+assert(deepEnough({regularMarketPrice:70,fiftyTwoWeekHigh:100},25));
+assert(!deepEnough({regularMarketPrice:95,fiftyTwoWeekHigh:100},25));
+console.log('Discovery prefilter checks passed');

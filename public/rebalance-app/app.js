@@ -116,10 +116,6 @@ function getGroupLabel(id) {
     return getGroupMeta(id)?.name || id;
 }
 
-function getGroupHint(id) {
-    return getGroupMeta(id)?.hint || '';
-}
-
 function isCashGroup(id) {
     return getGroupMeta(id)?.kind === 'cash';
 }
@@ -1036,10 +1032,6 @@ function persistPortfolio() {
     scheduleCloudSave();
 }
 
-function getTargetByKind(kind) {
-    return myPortfolio.filter(a => a.kind === kind).reduce((s, a) => s + (a.target || 0), 0);
-}
-
 function getTargetByGroup(group) {
     const assets = myPortfolio.filter(a => getAssetGroup(a) === group);
     if (assets.length) return assets.reduce((s, a) => s + (a.target || 0), 0);
@@ -1062,58 +1054,6 @@ function updatePeakValues() {
     });
 }
 
-function getProfitAdvice(asset, profitPct, cost) {
-    if (!cost || cost <= 0 || !groupUsesProfitTaking(getAssetGroup(asset)) || isCashAsset(asset)) return null;
-
-    const t1 = profitTiers[0];
-    const t2 = profitTiers[1];
-    const t3 = profitTiers[2];
-    const peak = asset.peakValue || asset.value || 0;
-    const dropFromPeak = peak > 0 ? ((peak - asset.value) / peak) * 100 : 0;
-    const peakProfitPct = ((peak - cost) / cost) * 100;
-    const cumulative2 = (t1.sellPct || 0) + (t2.sellPct || 0);
-    const remaining = Math.max(0, 100 - cumulative2);
-
-    if (peakProfitPct >= (t2.profitPct || 0) && profitPct >= (t1.profitPct || 0)
-        && dropFromPeak >= (t3.trailingPct || 10) && remaining > 0) {
-        const sellAmount = asset.value * (remaining / 100);
-        return {
-            type: 'trailing',
-            sellPct: remaining,
-            sellAmount,
-            text: 'ขาย',
-            sub: `${fmtUsd(sellAmount)}${formatShareAdvice(sellAmount, asset)} · Trailing ${fmtPct(remaining)}`
-        };
-    }
-
-    if (profitPct >= (t2.profitPct || 0)) {
-        const sellAmount = asset.value * (cumulative2 / 100);
-        return {
-            type: 'profit',
-            tier: 2,
-            sellPct: cumulative2,
-            sellAmount,
-            text: 'ขาย',
-            sub: `${fmtUsd(sellAmount)}${formatShareAdvice(sellAmount, asset)} · ${fmtPct(cumulative2)}`
-        };
-    }
-
-    if (profitPct >= (t1.profitPct || 0)) {
-        const pct = t1.sellPct || 0;
-        const sellAmount = asset.value * (pct / 100);
-        return {
-            type: 'profit',
-            tier: 1,
-            sellPct: pct,
-            sellAmount,
-            text: 'ขาย',
-            sub: `${fmtUsd(sellAmount)}${formatShareAdvice(sellAmount, asset)} · ${fmtPct(pct)}`
-        };
-    }
-
-    return null;
-}
-
 function getStockData(symbol) {
     return priceCache[symbol] || {};
 }
@@ -1133,20 +1073,6 @@ function formatFvHeader(symbol) {
         opp: `${sign}${fmt(up, 2)}%`,
         oppCls: up > 0 ? 'gain' : up < 0 ? 'loss' : 'muted',
     };
-}
-
-function formatCostCell(asset, profitPct, cost) {
-    const pl = formatPlPct(profitPct, cost);
-    return {
-        main: asset.avgCost > 0 ? fmtUsd(asset.avgCost) : '—',
-        empty: !asset.avgCost,
-        sub: pl.text,
-        subCls: pl.cls,
-    };
-}
-
-function formatSignalLine(tradeSignal) {
-    return tradeSignal.sub ? `${tradeSignal.text} ${tradeSignal.sub}` : tradeSignal.text;
 }
 
 /* กำไร/ขาดทุนที่จะได้ถ้าราคาขึ้น (หรือลง) ไปถึงเป้านักวิเคราะห์ คิดจากจำนวนหุ้นที่ถืออยู่ */
@@ -1183,29 +1109,6 @@ function updateFvHeader(card, symbol, asset) {
     el.innerHTML = fvHeaderInnerHtml(symbol, asset);
 }
 
-function updateCostLine(card, costCell) {
-    const el = card.querySelector('.asset-cost-line');
-    if (!el) return;
-    if (costCell.empty) {
-        el.textContent = '—';
-        el.className = 'stat-num asset-cost-line muted';
-        return;
-    }
-    el.innerHTML = `<span class="hi">${costCell.main}</span><span class="${costCell.subCls}">${costCell.sub}</span>`;
-    el.className = 'stat-num asset-cost-line';
-}
-
-function renderCostLineHtml(costCell) {
-    if (costCell.empty) return '<span class="stat-num asset-cost-line muted">—</span>';
-    return `<span class="stat-num asset-cost-line"><span class="hi">${costCell.main}</span><span class="${costCell.subCls}">${costCell.sub}</span></span>`;
-}
-
-function formatTradeAmount(usd, asset) {
-    if (!usd || usd < 0.01) return '';
-    if (isCashAsset(asset)) return fmtUsd(usd);
-    return `${fmtUsd(usd)}${formatShareAdvice(usd, asset)}`;
-}
-
 /* สัญญาณจากแนวรับ/แนวต้าน (แยกจากการปรับสัดส่วน)
  * ราคาห่างแนวรับไม่เกิน 1% = ซื้อ · ห่างแนวต้านไม่เกิน 1% = ขาย · นอกนั้น = รอ */
 function getTradeSignal(asset) {
@@ -1229,43 +1132,6 @@ function rowActsHtml(asset, action, sig) {
     }
     return html;
 }
-function getTradeSignalLegacy(asset, diff, ideal) {
-    if (isCashAsset(asset)) {
-        if (diff > 0.01) {
-            return { text: 'เติม', sub: formatTradeAmount(diff, asset), cls: 'buy' };
-        }
-        if (diff < -0.01) {
-            return { text: 'ลด', sub: formatTradeAmount(Math.abs(diff), asset), cls: 'sell' };
-        }
-        return { text: 'พอดี', sub: '', cls: 'hold' };
-    }
-    const cost = asset.cost || 0;
-    const profitPct = cost > 0 ? ((asset.value - cost) / cost) * 100 : 0;
-    const profitAdvice = getProfitAdvice(asset, profitPct, cost);
-    if (profitAdvice) {
-        return { text: profitAdvice.text, sub: profitAdvice.sub, cls: 'sell' };
-    }
-    // สัญญาณตามคำแนะนำนักวิเคราะห์ (ซื้อ/ถือ/ขาย) — ไม่มีคำแนะนำ ใช้ส่วนต่างถึงเป้าเฉลี่ยแทน
-    const fv = getStockData(asset.name).fairValue;
-    const price = getPrice(asset.name) || asset.price || 0;
-    const key = fv?.analystView?.key || null;
-    const target = fv?.analystTarget || null;
-    const up = target && price > 0 ? (target / price - 1) * 100 : null;
-    const view = key ? (/buy/.test(key) ? 'buy' : /sell|underperform/.test(key) ? 'sell' : 'hold')
-        : up == null ? null : up >= 15 ? 'buy' : up <= 0 ? 'sell' : 'hold';
-    if (!view || price <= 0) {
-        return { text: '—', sub: '', cls: 'hold' };
-    }
-    if (view === 'buy') {
-        const amount = diff > 0.01 ? diff : (ideal > 0 ? ideal * 0.1 : 0);
-        return { text: 'ซื้อ', sub: formatTradeAmount(amount, asset), cls: 'buy' };
-    }
-    if (view === 'sell') {
-        const amount = diff < -0.01 ? Math.abs(diff) : (asset.value > 0 ? asset.value * 0.1 : 0);
-        return { text: 'ขาย', sub: formatTradeAmount(amount, asset), cls: 'sell' };
-    }
-    return { text: 'ถือ', sub: '', cls: 'hold' };
-}
 
 function updateTier(index, field, val) {
     profitTiers[index][field] = parseFloat(val) || 0;
@@ -1274,50 +1140,9 @@ function updateTier(index, field, val) {
     scheduleRecalculate();
 }
 
-
 renderTierSettings();
 
 let dipBuyPct = parseFloat(store.getItem('dipBuyPct')) || 10;
-
-function updateDipBuy(val) {
-    dipBuyPct = parseFloat(val) || 0;
-    store.setItem('dipBuyPct', dipBuyPct);
-    scheduleCloudSave();
-}
-
-function getBuyAlerts(asset, diff, curPct) {
-    const alerts = [];
-    if (diff > 0.01) {
-        alerts.push({
-            type: 'rebalance',
-            amount: diff,
-            gap: asset.target - curPct,
-            text: `ปรับสัดส่วน ${fmtUsd(diff)} (ต่ำเป้า ${fmtPct(asset.target - curPct)})`
-        });
-    }
-    return alerts;
-}
-
-/* แปลงดอลลาร์เป็นข้อความเงินบาท เช่น "13,424 บาท" (ปัดเป็นบาทเต็ม) — ว่างถ้ายังไม่มีอัตราแลกเปลี่ยน */
-function thbText(usd, sign = '') {
-    if (!(usdThbRate > 0)) return '';
-    return `${sign}${fmt(Math.abs(usd) * usdThbRate, 0)} บาท`;
-}
-
-/* มือถือ: ตัวเลขเต็ม แต่ใช้สัญลักษณ์ ฿ แทนคำว่า "บาท" ให้สั้นพออยู่บรรทัดเดียวกับดอลลาร์ */
-function usdShortText(usd) {
-    return fmtUsd(Math.abs(usd));
-}
-
-function thbShortText(usd, sign = '') {
-    if (!(usdThbRate > 0)) return '';
-    return `${sign}฿${fmt(Math.abs(usd) * usdThbRate, 0)}`;
-}
-
-/* แสดงทั้งแบบเต็ม (จอคอม) และแบบย่อ (มือถือ) — CSS เลือกแสดงตามขนาดจอ */
-function dualText(full, short) {
-    return full === short ? full : `<span class="t-full">${full}</span><span class="t-short">${short}</span>`;
-}
 
 function usdDual(usd, sign = '') {
     return sign + fmtUsd(Math.abs(usd));
@@ -1325,12 +1150,6 @@ function usdDual(usd, sign = '') {
 
 function thbDual(usd, sign = '') {
     return '';
-}
-
-function thbDualLegacy(usd, sign = '') {
-    const full = thbText(usd, sign);
-    if (!full) return '';
-    return `(${dualText(full, thbShortText(usd, sign))})`;
 }
 
 function fmt(n, dec = 2) {
@@ -1493,35 +1312,6 @@ function updateSummary(totalValue, totalTarget) {
     updateTabUI();
 }
 
-function renderAdviceRow(tradeSignal, action) {
-    const leftCls = tradeSignal.cls + ' advice';
-    const signalText = formatSignalLine(tradeSignal);
-    const rightCls = 'asset-rebalance ' + action.cls;
-    return `
-                <div class="stat-pair">
-                    <div class="stat-col">
-                        <span class="stat-label">สัญญาณ</span>
-                        <span class="stat-num asset-trade-signal ${leftCls}">${signalText}</span>
-                    </div>
-                    <div class="stat-col">
-                        <span class="stat-label">สัดส่วน</span>
-                        <span class="stat-num ${rightCls}">${action.text}</span>
-                    </div>
-                </div>`;
-}
-
-function updateAdviceRow(card, tradeSignal, action) {
-    const leftNum = card.querySelector('.asset-trade-signal');
-    const rightEl = card.querySelector('.asset-rebalance');
-    if (!leftNum || !rightEl) return;
-
-    const leftCls = tradeSignal.cls + ' advice';
-    leftNum.textContent = formatSignalLine(tradeSignal);
-    leftNum.className = 'stat-num asset-trade-signal ' + leftCls;
-    rightEl.textContent = action.text;
-    rightEl.className = 'stat-num asset-rebalance ' + action.cls;
-}
-
 function recalculate() {
     const { totalValue, totalTarget, assets } = computePortfolio();
     updateSummary(totalValue, totalTarget);
@@ -1562,15 +1352,6 @@ function recalculate() {
     if (document.getElementById('settings-overlay')?.classList.contains('open')) {
         updateGroupTargetSum();
     }
-}
-
-function formatPlPct(profitPct, cost) {
-    if (!cost) return { text: '—', cls: 'muted' };
-    const sign = profitPct >= 0 ? '+' : '';
-    return {
-        text: sign + fmt(profitPct, 2) + '%',
-        cls: profitPct >= 0 ? 'gain' : 'loss'
-    };
 }
 
 let assetSheetIndex = null;
@@ -1753,15 +1534,6 @@ function profitCellHtml(asset, cost, profit, profitPct) {
     const cls = profit > 0 ? 'gain' : profit < 0 ? 'loss' : 'muted';
     return `<span class="stat-num asset-pl ${cls}">${sign}${fmt(Math.abs(profitPct), 2)}%</span>`
         + `<span class="stat-line"><span class="stat-sub ${cls}">${usdDual(profit, sign)}</span>${thbInline(profit, sign, cls)}</span>`;
-}
-
-function formatValuePl(asset, cost, profit, profitPct) {
-    if (isCashAsset(asset) || !(cost > 0) || !(getPrice(asset.name) > 0)) return { text: '', cls: 'muted' };
-    const sign = profit > 0 ? '+' : profit < 0 ? '−' : '';
-    return {
-        text: `${sign}${fmt(Math.abs(profitPct), 2)}% (${sign}${fmtUsd(Math.abs(profit))})`,
-        cls: profit > 0 ? 'gain' : profit < 0 ? 'loss' : 'muted'
-    };
 }
 
 /* แยก 2 สัญญาณ: ⚖ ปรับสัดส่วน (ให้ตรงเป้า) · 📍 แนวรับ/ต้าน (จังหวะราคา) */
@@ -2535,9 +2307,6 @@ btnInstall.addEventListener('click', async () => {
     deferredPrompt = null;
     btnInstall.classList.remove('visible');
 });
-
-
-
 
 /* ── จัดการหลายพอร์ต ── */
 function escapePfHtml(s) {
