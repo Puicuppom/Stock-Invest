@@ -1582,3 +1582,6 @@ input, select, textarea { color: var(--ui-text); background: var(--ui-raised); b
 .asset-card.dragging .row-actions { visibility: hidden; }
 .cr-row .drag-handle { display: none; }
 .cr-row { grid-template-columns: auto minmax(0, 1fr) auto auto; }
+/* ดร็อปดาวน์ธีมมืด อ่านออกทุกตัว */
+:root { color-scheme: dark; }
+select option, select optgroup { background-color: var(--ui-surface); color: var(--ui-text); }

@@ -183,7 +183,7 @@ export default function StockScreener() {
     <details className="screen-desc"><summary>{screeningStyles[style].tagline}</summary><p>{screeningStyles[style].description}</p></details>
     <div className="scr-filters">
       <span className="scr-seg" role="group" aria-label="ตลาด">
-        {(["US","TH"] as const).map(m=><button key={m} type="button" aria-pressed={market===m} disabled={busy} onClick={()=>{if (m!==market) {setMarket(m);clearResults();}}}>{m==="US"?"🇺🇸 US":"🇹🇭 ไทย"}</button>)}
+        {(["US","TH"] as const).map(m=><button key={m} type="button" aria-pressed={market===m} disabled={busy} onClick={()=>{if (m!==market) {setMarket(m);clearResults();}}}>{m==="US"?"US":"ไทย"}</button>)}
       </span>
       <label className="scr-pick" title="กลุ่มธุรกิจ"><span aria-hidden="true">🏢</span>
         <select aria-label="กลุ่มธุรกิจ" value={sector} disabled={busy} onChange={e=>{setSector(e.target.value);clearResults();}}>{DISCOVERY_SECTORS.map(([value,label])=><option key={value} value={value}>{value ? label : "ทุกกลุ่ม"}</option>)}</select>

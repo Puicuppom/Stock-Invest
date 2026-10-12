@@ -3149,3 +3149,7 @@ button.dash-jump:active { transform: scale(0.95); }
 .screener .scr-pick select { flex: 1; min-width: 0; max-width: none; width: 100%; padding: 4px 2px; }
 .screener .scr-seg button { padding: 4px 9px; }
 .screen-near.wl > summary { font-size: 14px; color: var(--warning); }
+/* ดร็อปดาวน์: ให้รายการตัวเลือกเป็นธีมมืด อ่านออกทุกตัว (Windows/Chrome ใช้พื้นขาวถ้าไม่กำหนด) */
+:root { color-scheme: dark; }
+select option, select optgroup { background-color: var(--surface); color: var(--text); }
+select option:checked { background-color: color-mix(in srgb, var(--accent) 30%, var(--surface)); color: var(--text); }
