@@ -1682,3 +1682,24 @@ select option:checked { background-color: color-mix(in srgb, var(--accent) 30%, 
 .rev-bear .rev-chip.rev-yes { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, transparent); background: color-mix(in srgb, var(--danger) 12%, var(--surface-2)); }
 .rev-bear .rev-verdict-confirmed, .rev-bear .rev-verdict-clear { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, transparent); background: color-mix(in srgb, var(--danger) 12%, var(--surface-2)); }
 .rev-bear .rev-chip.rev-yes .rev-icon { color: var(--danger); }
+
+/* คัดหุ้น: การ์ดสรุปผล แตะเพื่อไปยังกลุ่ม */
+.scr-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 10px 0 6px; }
+.scr-card { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; height: 72px; padding: 6px 4px; border-radius: 14px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font: inherit; cursor: pointer; transition: transform .12s, border-color .12s; }
+.scr-card i { font-style: normal; font-size: 0.95rem; line-height: 1; }
+.scr-card b { font-size: 1.15rem; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.scr-card small { font-size: 0.68rem; color: var(--muted); white-space: nowrap; }
+button.scr-card:not(:disabled):active { transform: scale(.96); }
+button.scr-card:disabled { opacity: .45; cursor: default; }
+.scr-card.all { cursor: default; }
+.scr-card.pass { color: var(--success); border-color: color-mix(in srgb, var(--success) 35%, var(--border)); background: color-mix(in srgb, var(--success) 8%, var(--surface)); }
+.scr-card.near { color: var(--warning); border-color: color-mix(in srgb, var(--warning) 35%, var(--border)); background: color-mix(in srgb, var(--warning) 8%, var(--surface)); }
+.scr-card.err { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 35%, var(--border)); background: color-mix(in srgb, var(--danger) 8%, var(--surface)); }
+.scr-card.pass b, .scr-card.near b, .scr-card.err b { color: inherit; }
+.scr-msg { margin: 0 0 6px; font-size: 0.75rem; color: var(--muted); text-align: center; }
+#scr-pass, #scr-near, #scr-err { scroll-margin-top: 84px; }
+#scr-pass.flash, #scr-near.flash, #scr-err.flash { animation: scr-flash 1s ease-out; }
+@keyframes scr-flash { 0% { box-shadow: 0 0 0 2px var(--accent); border-radius: 14px; } 100% { box-shadow: 0 0 0 2px transparent; } }
+.scr-err-list { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px; }
+.scr-err-list span { padding: 3px 8px; border-radius: 999px; border: 1px solid var(--border); font-size: 0.75rem; font-weight: 700; }
+.scr-err-note { margin: 0 0 6px; font-size: 0.7rem; color: var(--muted); }

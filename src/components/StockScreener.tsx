@@ -166,6 +166,14 @@ export default function StockScreener() {
     const trend=row.data ? analyzeTrend(row.data) : null;
     return {...row,checks,count,passed,incomplete,failed,nearMiss,flags,trend,score:row.data ? interestScore(row.data,style,ctx) : 0};
   }).sort((a,b)=>Number(b.passed)-Number(a.passed)||b.score-a.score||a.symbol.localeCompare(b.symbol));
+  // แตะการ์ดสรุป → เลื่อนไปยังกลุ่มนั้น (กลุ่มที่พับไว้จะกางออก)
+  const goTo=(id:string)=>{
+    const el=document.getElementById(id);
+    if (!el) return;
+    if (el instanceof HTMLDetailsElement) el.open=true;
+    el.scrollIntoView({behavior:"smooth",block:"start"});
+    el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash");
+  };
   return <main className="app-shell screener">
     <AppNavigation active="screener" />
     <p className="dash-metric-sub" role="status">{syncStatus}</p>
@@ -204,15 +212,20 @@ export default function StockScreener() {
         {nextOffset !== null && rows.length>0 && <button type="button" className="scr-more" onClick={()=>scan(true)}>＋ หาเพิ่ม</button>}
       </>}
     </div>
-    {rows.length>0 && <p className="scr-stat" role="status">
-      <span title="ตรวจแล้ว">🔍 {rows.length}</span>
-      <span className="up" title="ผ่านครบ">✓ {evaluated.filter(r=>r.passed).length}</span>
-      <span className="near" title="เกือบผ่าน (ขาด 1 เกณฑ์)">≈ {evaluated.filter(r=>r.nearMiss).length}</span>
-      {rows.some(r=>r.error) && <span className="down" title="โหลดไม่ได้">⚠ {rows.filter(r=>r.error).length}</span>}
-      {message && <small>{message}</small>}
-    </p>}
+    {rows.length>0 && (()=>{
+      const passN=evaluated.filter(r=>r.passed).length, nearN=evaluated.filter(r=>r.nearMiss).length, errN=rows.filter(r=>r.error).length;
+      return <>
+        <nav className="scr-cards" aria-label="สรุปผลค้นหา">
+          <div className="scr-card all"><i aria-hidden="true">🔍</i><b>{rows.length}</b><small>ตรวจแล้ว</small></div>
+          <button type="button" className="scr-card pass" disabled={!passN} onClick={()=>goTo("scr-pass")}><i aria-hidden="true">✓</i><b>{passN}</b><small>ผ่าน</small></button>
+          <button type="button" className="scr-card near" disabled={!nearN} onClick={()=>goTo("scr-near")}><i aria-hidden="true">≈</i><b>{nearN}</b><small>เกือบผ่าน</small></button>
+          <button type="button" className="scr-card err" disabled={!errN} onClick={()=>goTo("scr-err")}><i aria-hidden="true">⚠</i><b>{errN}</b><small>โหลดไม่ได้</small></button>
+        </nav>
+        {message && <p className="scr-msg" role="status">{message}</p>}
+      </>;
+    })()}
     {!busy && rows.length>0 && !evaluated.some(r=>r.passed) && <p className="scr-empty">ยังไม่พบตัวที่ผ่านครบ · ลอง ＋ หาเพิ่ม หรือดูกลุ่มเกือบผ่าน</p>}
-    {evaluated.some(row=>row.passed) && <div className="wl"><ul className="wl-list scr-list">{evaluated.filter(row=>row.passed).map((row,index)=>{
+    {evaluated.some(row=>row.passed) && <div className="wl" id="scr-pass"><ul className="wl-list scr-list">{evaluated.filter(row=>row.passed).map((row,index)=>{
       const lean=row.trend?trendLean(row.trend.kind,row.trend.label):null;
       const inList=items.some(item=>item.symbol===row.symbol && item.market===scannedMarket);
       return <ScreenRow key={row.symbol} symbol={row.symbol} market={scannedMarket} name={row.data?.longName} price={row.data?.lastClose} changePercent={row.data?.changePercent}
@@ -232,7 +245,7 @@ export default function StockScreener() {
         </div>}
       </ScreenRow>;
     })}</ul></div>}
-    {evaluated.some(row=>row.nearMiss) && <details className="screen-near wl">
+    {evaluated.some(row=>row.nearMiss) && <details className="screen-near wl" id="scr-near">
       <summary>≈ เกือบผ่าน · ขาด 1 ข้อ ({evaluated.filter(row=>row.nearMiss).length})</summary>
       <ul className="wl-list scr-list">
       {[...evaluated].filter(row=>row.nearMiss).sort((a,b)=>b.score-a.score||a.symbol.localeCompare(b.symbol)).map(row=>{
@@ -245,6 +258,11 @@ export default function StockScreener() {
         </ScreenRow>;
       })}
       </ul>
+    </details>}
+    {rows.some(r=>r.error) && <details className="screen-near wl scr-errs" id="scr-err">
+      <summary>⚠ โหลดไม่ได้ ({rows.filter(r=>r.error).length})</summary>
+      <p className="scr-err-list">{rows.filter(r=>r.error).map(r=><span key={r.symbol} title={r.error ?? ""}>{r.symbol}</span>)}</p>
+      <p className="scr-err-note">ข้อมูลไม่พอหรือแหล่งข้อมูลไม่ตอบ · ไม่นับเป็นผ่าน</p>
     </details>}
     </>}
     <footer className="app-footer">เกณฑ์เริ่มต้นสำหรับคัดไปศึกษาต่อ ไม่ใช่คะแนนรับรองคุณภาพหรือคำสั่งซื้อ ข้อมูลที่ขาดจะไม่นับว่าผ่าน</footer>
