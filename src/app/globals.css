@@ -1623,3 +1623,11 @@ select option:checked { background-color: color-mix(in srgb, var(--accent) 30%, 
 .se-detail b.pass, .se-detail.pass b { color: var(--success); }
 .se-detail.fail b { color: var(--danger); }
 .se-detail span { color: var(--muted); }
+/* Watchlist: ป้ายเป็นไอคอนอย่างเดียว ขนาดเท่ากัน */
+.wl-line2 .wl-ico { display: inline-flex; align-items: center; justify-content: center; gap: 1px; width: 30px; height: 22px; padding: 0; border-radius: 999px; border: 1px solid var(--border); font-style: normal; font-size: 13px; line-height: 1; position: relative; }
+.wl-line2 .wl-ico.sup { border-color: color-mix(in srgb, var(--success) 50%, transparent); background: color-mix(in srgb, var(--success) 12%, transparent); }
+.wl-line2 .wl-ico.res { border-color: color-mix(in srgb, var(--danger) 50%, transparent); background: color-mix(in srgb, var(--danger) 12%, transparent); }
+.wl-line2 .wl-ico.dip-good { border-color: color-mix(in srgb, var(--success) 50%, transparent); }
+.wl-line2 .wl-ico.dip-trap { border-color: color-mix(in srgb, var(--warning) 50%, transparent); }
+.wl-line2 .wl-ico.ev { width: 38px; }
+.wl-line2 .wl-ico sub { font-size: 10px; font-weight: 700; color: var(--muted); vertical-align: baseline; }

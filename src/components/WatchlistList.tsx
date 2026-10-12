@@ -132,10 +132,11 @@ export default function WatchlistList({ items, signals, quotes, onRefresh, refre
                   {/* แสดงบรรทัดที่ 2 เสมอ (ว่างได้) ให้ทุกแถวสูงเท่ากัน */}
                   {(
                     <span className="wl-line2">
-                      {nearSup && <em className="wl-tag sup">ใกล้รับ</em>}
-                      {nearRes && <em className="wl-tag res">ใกล้ต้าน</em>}
-                      {sig?.dipKind && DIP_ICON[sig.dipKind] && <i title={sig.dipLabel ?? ""}>{DIP_ICON[sig.dipKind]} {sig.dipShort ?? (sig.dipKind === "good" ? "ดีลดราคา" : sig.dipKind === "trap" ? "ระวังกับดัก" : "น่าจับตา")}</i>}
-                      {sig?.event && <i title={sig.event.title}>{sig.event.kind === "earnings" ? "📅" : "💰"} {sig.event.text}</i>}
+                      {/* ไอคอนอย่างเดียว · ความหมายเต็มอยู่ใน title / หน้าวิเคราะห์ */}
+                      {nearSup && <em className="wl-ico sup" title="ใกล้แนวรับ" aria-label="ใกล้แนวรับ">🛡️</em>}
+                      {nearRes && <em className="wl-ico res" title="ใกล้แนวต้าน" aria-label="ใกล้แนวต้าน">🧱</em>}
+                      {sig?.dipKind && DIP_ICON[sig.dipKind] && <em className={`wl-ico dip-${sig.dipKind}`} title={sig.dipLabel ?? sig.dipShort ?? ""} aria-label={sig.dipShort ?? sig.dipLabel ?? ""}>{DIP_ICON[sig.dipKind]}</em>}
+                      {sig?.event && <em className="wl-ico ev" title={`${sig.event.text} · ${sig.event.title}`} aria-label={sig.event.title}>{sig.event.kind === "earnings" ? "📅" : "💰"}<sub>{sig.event.days}</sub></em>}
                     </span>
                   )}
                 </span>
