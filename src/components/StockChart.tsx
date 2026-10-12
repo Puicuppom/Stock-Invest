@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  AreaSeries,
   CandlestickSeries,
   ColorType,
   createChart,
@@ -73,10 +74,15 @@ export default function StockChart({
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+  const areaRef = useRef<ISeriesApi<"Area"> | null>(null);
+  // แท่งเทียน / กราฟเส้น (จำค่าที่เลือกไว้)
+  const [chartType, setChartType] = useState<"candle" | "line">("candle");
+  useEffect(() => { try { if (localStorage.getItem("chartType") === "line") setChartType("line"); } catch { /* ignore */ } }, []);
+  const changeChartType = (t: "candle" | "line") => { setChartType(t); try { localStorage.setItem("chartType", t); } catch { /* ignore */ } };
   const maSeriesRef = useRef<
     Record<(typeof CHART_MA_PERIODS)[number], ISeriesApi<"Line"> | null>
   >({ 20: null, 50: null, 200: null });
-  const priceLinesRef = useRef<ReturnType<ISeriesApi<"Candlestick">["createPriceLine"]>[]>([]);
+  const priceLinesRef = useRef<{ series: ISeriesApi<"Candlestick"> | ISeriesApi<"Area">; line: ReturnType<ISeriesApi<"Candlestick">["createPriceLine"]> }[]>([]);
   const [timeRange, setTimeRange] = useState<ChartTimeRange>(DEFAULT_CHART_RANGE);
   const [candles, setCandles] = useState<Candle[]>([]);
   const [chartLoading, setChartLoading] = useState(true);
@@ -149,13 +155,17 @@ export default function StockChart({
   }, [visibleCandles]);
 
   const applyChartData = useCallback(() => {
-    const series = seriesRef.current;
+    const candleSeries = seriesRef.current;
+    const area = areaRef.current;
     const chart = chartRef.current;
-    if (!series || !chart || candles.length === 0) return;
+    if (!candleSeries || !area || !chart || candles.length === 0) return;
 
     const visibleStart = visibleCandles[0]?.date;
-    series.setData(
-      visibleCandles.map((c) => ({
+    const isLine = chartType === "line";
+    candleSeries.applyOptions({ visible: !isLine });
+    area.applyOptions({ visible: isLine });
+    candleSeries.setData(
+      isLine ? [] : visibleCandles.map((c) => ({
         time: toChartTime(c.date),
         open: c.open,
         high: c.high,
@@ -163,6 +173,11 @@ export default function StockChart({
         close: c.close,
       }))
     );
+    const firstClose = visibleCandles[0]?.close ?? 0, lastClose = visibleCandles.at(-1)?.close ?? 0;
+    const lineColor = lastClose >= firstClose ? CHART_COLORS.up : CHART_COLORS.down;
+    area.applyOptions({ lineColor, topColor: `${lineColor}55`, bottomColor: `${lineColor}05` });
+    area.setData(isLine ? visibleCandles.map(c => ({ time: toChartTime(c.date), value: c.close })) : []);
+    const series = isLine ? area : candleSeries;
 
     for (const period of CHART_MA_PERIODS) {
       const maSeries = maSeriesRef.current[period];
@@ -181,7 +196,7 @@ export default function StockChart({
       }
     }
 
-    priceLinesRef.current.forEach((line) => series.removePriceLine(line));
+    priceLinesRef.current.forEach(({ series: s, line }) => s.removePriceLine(line));
     priceLinesRef.current = [];
 
     const addLine = (price: number, color: string, title: string, style = LineStyle.Dashed) => {
@@ -193,7 +208,7 @@ export default function StockChart({
         axisLabelVisible: true,
         title,
       });
-      priceLinesRef.current.push(line);
+      priceLinesRef.current.push({ series, line });
     };
 
     if (mode === "pivot") {
@@ -231,7 +246,7 @@ export default function StockChart({
 
     chart.timeScale().applyOptions(spacing);
     chart.timeScale().fitContent();
-  }, [candles, visibleCandles, pivot, zones, mode, timeRange]);
+  }, [candles, visibleCandles, pivot, zones, mode, timeRange, chartType]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -269,6 +284,16 @@ export default function StockChart({
       wickDownColor: CHART_COLORS.down,
     });
 
+    // กราฟเส้นแบบพื้นที่ (ซ่อนไว้จนกว่าจะเลือก)
+    const area = chart.addSeries(AreaSeries, {
+      lineColor: CHART_COLORS.up,
+      topColor: `${CHART_COLORS.up}55`,
+      bottomColor: `${CHART_COLORS.up}05`,
+      lineWidth: 2,
+      visible: false,
+    });
+    areaRef.current = area;
+
     const maColors: Record<(typeof CHART_MA_PERIODS)[number], string> = {
       20: CHART_COLORS.ema20,
       50: CHART_COLORS.ema50,
@@ -303,6 +328,7 @@ export default function StockChart({
       chart.remove();
       chartRef.current = null;
       seriesRef.current = null;
+      areaRef.current = null;
       maSeriesRef.current = { 20: null, 50: null, 200: null };
       priceLinesRef.current = [];
       setChartReady(false);
@@ -327,6 +353,14 @@ export default function StockChart({
             </span>
           ))}
         </div>
+        <span className="chart-type-toggle" role="group" aria-label="รูปแบบกราฟ">
+          <button type="button" className={chartType === "candle" ? "active" : ""} onClick={() => changeChartType("candle")} aria-label="แท่งเทียน" title="แท่งเทียน">
+            <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M4 1v3M4 11v4M12 3v2M12 12v2" stroke="currentColor" strokeWidth="1.4" /><rect x="2.5" y="4" width="3" height="7" rx=".6" fill="currentColor" /><rect x="10.5" y="5" width="3" height="7" rx=".6" fill="none" stroke="currentColor" strokeWidth="1.2" /></svg>
+          </button>
+          <button type="button" className={chartType === "line" ? "active" : ""} onClick={() => changeChartType("line")} aria-label="กราฟเส้น" title="กราฟเส้น">
+            <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M1 12l4-5 3 3 4-6 3 3" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          </button>
+        </span>
         <span className="chart-interval-badge">{intervalLabel}</span>
       </div>
       <div className="chart-period-extremes" aria-live="polite">
