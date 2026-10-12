@@ -1206,9 +1206,28 @@ function formatTradeAmount(usd, asset) {
     return `${fmtUsd(usd)}${formatShareAdvice(usd, asset)}`;
 }
 
-/* ไม่ใช้สัญญาณซื้อขาย/ขายทำกำไรแล้ว — รีบาลานซ์ให้ตรงสัดส่วนที่ตั้งไว้อย่างเดียว */
-function getTradeSignal(asset, diff, ideal) {
-    return { text: '—', sub: '', cls: 'hold' };
+/* สัญญาณจากแนวรับ/แนวต้าน (แยกจากการปรับสัดส่วน)
+ * ราคาห่างแนวรับไม่เกิน 1% = ซื้อ · ห่างแนวต้านไม่เกิน 1% = ขาย · นอกนั้น = รอ */
+function getTradeSignal(asset) {
+    if (isCashAsset(asset)) return { text: '—', sub: '', cls: 'hold' };
+    const lv = computePriceLevels(asset);
+    if (!lv || lv.loading || (!lv.buy && !lv.sell)) return { text: '—', sub: '', cls: 'hold' };
+    if (lv.buy?.near) return { text: 'ซื้อ', sub: `ใกล้แนวรับ ${fmtUsd(lv.buy.price)}`, cls: 'buy' };
+    if (lv.sell?.near) return { text: 'ขาย', sub: `ใกล้แนวต้าน ${fmtUsd(lv.sell.price)}`, cls: 'sell' };
+    return { text: 'รอ', sub: lv.buy ? `ยังไม่ถึงแนวรับ ${fmtUsd(lv.buy.price)}` : '', cls: 'hold' };
+}
+
+/* ชิปบนแถวย่อ: ⚖ = ปรับสัดส่วน · 📍 = แนวรับ/แนวต้าน */
+function rowActsHtml(asset, action, sig) {
+    const cash = isCashAsset(asset);
+    let html = '';
+    if (action && action.cls !== 'hold') {
+        html += `<span class="cr-act ${action.cls}" title="ปรับสัดส่วน: ${action.text}">⚖ ${action.cls === 'buy' ? (cash ? 'เติม' : 'ซื้อ') : (cash ? 'ลด' : 'ขาย')}</span>`;
+    }
+    if (!cash && sig && sig.cls !== 'hold') {
+        html += `<span class="cr-act sr ${sig.cls}" title="แนวรับ/ต้าน: ${sig.sub}">📍 ${sig.text}</span>`;
+    }
+    return html;
 }
 function getTradeSignalLegacy(asset, diff, ideal) {
     if (isCashAsset(asset)) {
@@ -1392,7 +1411,7 @@ function computePortfolio() {
         const cost = asset.cost || 0;
         const profit = cost > 0 ? asset.value - cost : 0;
         const profitPct = cost > 0 ? (profit / cost) * 100 : 0;
-        const tradeSignal = getTradeSignal(asset, diff, ideal);
+        const tradeSignal = getTradeSignal(asset);
         return { index, asset, curPct, ideal, diff, action: getAction(diff, asset), cost, profit, profitPct, tradeSignal };
     });
 
@@ -1531,6 +1550,8 @@ function recalculate() {
         if (levelsEl) levelsEl.innerHTML = renderPriceLevelsInner(asset);
         const adviceEl = card.querySelector('.asset-advice');
         if (adviceEl) adviceEl.innerHTML = renderAdviceInner(tradeSignal, action);
+        const actsEl = card.querySelector('.cr-acts');
+        if (actsEl) actsEl.innerHTML = rowActsHtml(asset, action, tradeSignal);
     });
 
     if (assetSheetIndex != null) {
@@ -1743,15 +1764,13 @@ function formatValuePl(asset, cost, profit, profitPct) {
     };
 }
 
-/* แถวคำแนะนำ — ถ้าสัญญาณกับการปรับสัดส่วนพูดเรื่องเดียวกัน แสดงครั้งเดียว */
+/* แยก 2 สัญญาณ: ⚖ ปรับสัดส่วน (ให้ตรงเป้า) · 📍 แนวรับ/ต้าน (จังหวะราคา) */
 function renderAdviceInner(tradeSignal, action) {
-    const item = (label, text, cls) =>
-        `<span class="advice-item"><span class="advice-label">${label}</span> <span class="advice-text ${cls}">${text}</span></span>`;
-    const signalText = formatSignalLine(tradeSignal);
-    const same = signalText.replace(/\s+/g, ' ').trim() === action.text.replace(/\s+/g, ' ').trim();
-    if (same) return item('แนะนำ', action.text, tradeSignal.cls);
-    if (tradeSignal.text === '—') return item('ปรับสัดส่วน', action.text, action.cls);
-    return item('สัญญาณ', signalText, tradeSignal.cls) + item('ปรับสัดส่วน', action.text, action.cls);
+    const item = (cls, label, text, tcls, sub) =>
+        `<div class="advice-item ${cls}"><span class="advice-label">${label}</span> <span class="advice-text ${tcls}">${text}</span>${sub ? ` <span class="advice-sub">${sub}</span>` : ''}</div>`;
+    let html = item('rb', '⚖ ปรับสัดส่วน', action.text, action.cls);
+    if (tradeSignal.text !== '—') html += item('sr', '📍 แนวรับ/ต้าน', tradeSignal.text, tradeSignal.cls, tradeSignal.sub);
+    return html;
 }
 
 /* ซื้อไม่เกิน = แนวรับใกล้สุดใต้ราคา, ขาย = แนวต้านใกล้สุดเหนือราคา
@@ -1853,15 +1872,15 @@ function appendAssetCard(list, payload) {
         ? `<b class="${up ? 'gain' : 'loss'}">${up ? '↗' : '↘'} ${up ? '+' : '−'}${fmtPct(Math.abs(profitPct))}</b>
            <small class="${up ? 'gain' : 'loss'}">(${up ? '+' : '−'}${fmtUsd(Math.abs(profit))})</small>`
         : `<b class="muted">—</b><small class="muted">${cash ? 'เงินสด' : 'ยังไม่ใส่ทุน'}</small>`;
-    const act = action && action.cls !== 'hold'
-        ? `<span class="cr-act ${action.cls}">${action.cls === 'buy' ? (cash ? 'เติม' : 'ซื้อ') : (cash ? 'ลด' : 'ขาย')}</span>` : '';
+    const act = `<span class="cr-acts">${rowActsHtml(asset, action, tradeSignal)}</span>`;
     row.innerHTML = `
         <div class="cr-row" onclick="toggleRow('${asset.name}', event)" role="button" tabindex="0" aria-expanded="${open}">
             <span class="drag-handle" aria-label="สลับลำดับ ${asset.name}">≡</span>
             <div class="asset-badge">${asset.name.slice(0, 4)}${logoImg(asset)}</div>
             <div class="cr-name">
                 <b>${asset.name}</b>
-                <small>◔ ${fmtPct(curPct)} <span class="cr-target">/ ${fmtPct(asset.target || 0)}</span>${act}</small>
+                <small>◔ ${fmtPct(curPct)} <span class="cr-target">/ ${fmtPct(asset.target || 0)}</span></small>
+                ${act}
             </div>
             <div class="cr-value"><b>${fmtUsd(asset.value || 0)}</b><small>${other}</small></div>
             <div class="cr-profit">${profitHtml}</div>

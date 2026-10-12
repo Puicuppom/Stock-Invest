@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import StockLogo from "./StockLogo";
+import ScreenRow from "./ScreenRow";
 import { screenStock, screeningStyles, valuationRiskFlags, type ScreeningStyle } from "@/lib/screener";
 import { analyzeDip } from "@/lib/dip";
 import { analyzeMomentum, returnPercent, type MarketContext } from "@/lib/momentum";
@@ -59,12 +59,13 @@ export default function WatchlistReview({ items, loaded }: { items: WatchlistIte
   }, [loaded, items.length]);
 
   return (
-    <section className="wr">
+    <section className="wr wl">
       <div className="screen-actions">
         <span>{busy ? `กำลังวิเคราะห์ ${rows.filter(r => r.data || r.error).length}/${items.length}` : `${items.length} ตัว`}</span>
         <button type="button" disabled={busy || !items.length} onClick={run}>↻ วิเคราะห์ใหม่</button>
       </div>
-      <p className="wr-legend">{STYLES.map(s => `${s.icon} ${screeningStyles[s.key].label}`).join(" · ")} · ✓ ผ่าน ● ขาด 1 ข้อ</p>
+      <p className="wr-legend">🏷️ ดีลดราคา · 🚀 แกร่งไปต่อ · 💎 จิ๋วเตรียมพุ่ง · 💰 ปันผลงาม · ● ขาด 1 ข้อ</p>
+      <ul className="wl-list scr-list">
       {rows.map(({ item, data, error }) => {
         const id = watchlistId(item);
         const c = ctx[item.market] ?? null;
@@ -77,40 +78,32 @@ export default function WatchlistReview({ items, loaded }: { items: WatchlistIte
         const mom = data ? analyzeMomentum(data, c) : null;
         const trend = data ? analyzeTrend(data) : null;
         const flags = data ? valuationRiskFlags(data.fairValue, "hard") : [];
-        const detail = open === id ? results : [];
+        const lean = trend ? trendLean(trend.kind, trend.label) : null;
+        const hits = results.filter(r => r.pass || r.near);
         return (
-          <article key={id} className="wr-row">
-            <button type="button" className="wr-head" onClick={() => setOpen(open === id ? null : id)} aria-expanded={open === id}>
-              <span className="wr-sym"><b><StockLogo symbol={item.market === "TH" ? `${item.symbol}.BK` : item.symbol} size={20} />{item.symbol}</b><small>{item.market === "TH" ? "BKK" : "US"}</small></span>
-              {data ? <>
-                <span className="wr-price">{data.lastClose.toFixed(2)} <em className={data.changePercent >= 0 ? "up" : "down"}>{data.changePercent >= 0 ? "+" : ""}{data.changePercent.toFixed(1)}%</em></span>
-                <span className="wr-styles">
-                  {trend && (() => { const l = trendLean(trend.kind, trend.label); return (
-                    <span className={`wr-trend lean-${l}`} title={trend.label}><b>{LEAN_GLYPH[l]}</b><small>{LEAN_SHORT[l]}</small></span>
-                  ); })()}
-                  {results.map(r => (
-                    <span key={r.key} className={`wr-st${r.pass ? " pass" : r.near ? " near" : ""}`} title={screeningStyles[r.key].label}>
-                      {r.icon}<small>{r.pass ? "✓" : r.near ? "●" : "–"}</small>
-                    </span>
-                  ))}
-                </span>
-              </> : <span className="wr-price">{error ? "โหลดไม่ได้" : "…"}</span>}
-            </button>
-            {detail.length > 0 && data && (
+          <ScreenRow key={id} symbol={item.symbol} market={item.market} name={data?.longName} price={data?.lastClose}
+            changePercent={data?.changePercent} loading={!data && !error} error={error ? "โหลดไม่ได้" : null}
+            open={open === id} onToggle={() => setOpen(open === id ? null : id)}
+            line2={data && <>
+              {lean && <em className={`scr-chip ico lean lean-${lean}`} title={`${LEAN_SHORT[lean]} · ${trend!.label}`} aria-label={LEAN_SHORT[lean]}>{LEAN_GLYPH[lean]}</em>}
+              {hits.map(r => <em key={r.key} className={`scr-chip ico ${r.pass ? "pass" : "near"}`} title={`${screeningStyles[r.key].label}${r.pass ? "" : " · ขาด 1 ข้อ"}`} aria-label={screeningStyles[r.key].label}>{r.icon}{r.pass ? "" : <sup>●</sup>}</em>)}
+            </>}>
+            {data && (
               <div className="wr-detail">
                 {dip && dip.kind !== "na" && <p>ลดราคา: <b>{dip.verdict}</b>{dip.drawdownPercent != null && ` (${dip.drawdownPercent.toFixed(0)}% จากจุดสูงสุด)`}</p>}
                 {mom && mom.kind !== "na" && <p>ไปต่อ: <b>{mom.verdict}</b></p>}
                 {flags.length > 0 && <p className="screen-flags">⚠ {flags.join(" · ")}</p>}
-                {detail.map(r => (
+                {results.map(r => (
                   <p key={r.key} className="wr-why">{r.icon} {screeningStyles[r.key].label}: {r.pass ? <b className="up">ผ่านครบ</b>
                     : <>ไม่ผ่าน {r.failed.slice(0, 3).map(f => f.label).join(" · ")}{r.failed.length > 3 ? ` +${r.failed.length - 3}` : ""}</>}</p>
                 ))}
                 <Link className="wr-open" href={`/?s=${encodeURIComponent(id)}`}>เปิดหน้าวิเคราะห์ →</Link>
               </div>
             )}
-          </article>
+          </ScreenRow>
         );
       })}
+      </ul>
       {loaded && !items.length && <p>ยังไม่มีหุ้นใน Watchlist</p>}
     </section>
   );

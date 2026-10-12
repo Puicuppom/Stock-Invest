@@ -3,11 +3,12 @@ import { useEffect, useRef, useState } from "react";
 import AppNavigation from "./AppNavigation";
 import ScreeningEntryCard from "./ScreeningEntryCard";
 import WatchlistReview from "./WatchlistReview";
+import ScreenRow from "./ScreenRow";
 import { useWatchlist } from "@/hooks/useWatchlist";
-import { isLastCandleComplete, screeningStyles, screenStock, valuationRiskFlags, VISIBLE_STYLES, type ScreeningStyle } from "@/lib/screener";
+import { screeningStyles, screenStock, valuationRiskFlags, VISIBLE_STYLES, type ScreeningStyle } from "@/lib/screener";
 import { returnPercent, type MarketContext } from "@/lib/momentum";
 import { interestScore, RANKING_DESCRIPTION } from "@/lib/screener-ranking";
-import { analyzeTrend, TREND_METHOD, trendIcon } from "@/lib/trend";
+import { analyzeTrend, LEAN_GLYPH, LEAN_SHORT, trendLean } from "@/lib/trend";
 import { DISCOVERY_SECTORS } from "@/lib/discovery";
 import type { StockData } from "@/lib/types";
 type Row = { symbol: string; data?: StockData; error?: string };
@@ -21,6 +22,7 @@ type Snapshot = {
 let savedSearch: Snapshot | null = null;
 export default function StockScreener() {
   const [view,setView] = useState<"watchlist" | "market">("watchlist");
+  const [openRow,setOpenRow] = useState<string | null>(null);
   const [style,setStyle] = useState<ScreeningStyle>("dip");
   const [ctx,setCtx] = useState<MarketContext | null>(null);
   const [market,setMarket] = useState<"US"|"TH">("US");
@@ -185,25 +187,37 @@ export default function StockScreener() {
     {!busy && rows.length===0 && <p>เลือกแนวทางที่ต้องการ แล้วกด “ค้นหาหุ้นให้ฉัน” โดยไม่ต้องกรอกชื่อหุ้น</p>}
     {rows.length>0 && !evaluated.some(r=>r.passed) && <p>ยังไม่มีหุ้นผ่านครบทุกเกณฑ์ในรายการที่ตรวจแล้ว</p>}
     <details className="screen-panel"><summary>เรียงความน่าสนใจมากไปน้อย · วิธีคิดคะแนน</summary><p>{RANKING_DESCRIPTION[style]}</p><p>คะแนนตามสูตรของแอป ใช้เปรียบเทียบเฉพาะหุ้นที่ค้นพบและผ่านครบ ยังไม่ใช่อันดับของทั้งตลาดหรือโอกาสทำกำไร หากคะแนนเท่ากันเรียงตามชื่อหุ้น</p></details>
-    {evaluated.filter(row=>row.passed).map((row,index)=><article className="screen-panel" key={row.symbol}>
-      <div className="screen-actions"><h2>#{index+1} {row.symbol} <small>{scannedMarket==="TH"?"BKK":"US"}</small></h2><strong>{row.error?"โหลดไม่ได้":row.passed?"ผ่านครบ":row.incomplete?`ข้อมูลไม่ครบ · ผ่าน ${row.count}/${row.checks.length}`:`ผ่าน ${row.count}/${row.checks.length}`}</strong></div>
-      {row.data && <p>{row.data.longName} · {isLastCandleComplete(row.data) ? "ราคาปิด" : "ราคาล่าสุด (ตลาดยังเปิด)"} {row.data.lastClose.toFixed(2)} {row.data.market==="TH"?"THB":"USD"} · {row.data.candles.at(-1)?.date}</p>}
-      {row.trend && <p className="screen-trend" title={TREND_METHOD}><span className={`trend-badge trend-${row.trend.kind}${row.trend.strong ? " trend-strong" : ""}`}>{trendIcon(row.trend.kind, row.trend.label)} {row.trend.label}</span>{row.trend.change3mPercent != null && <span>3 เดือน {row.trend.change3mPercent > 0 ? "+" : ""}{row.trend.change3mPercent.toFixed(1)}%</span>}</p>}
-      {row.flags.length>0 && <p className="screen-flags" role="note">⚠ {row.flags.join(" · ")}</p>}
-      {row.data && <p title={RANKING_DESCRIPTION[style]}>คะแนนความน่าสนใจ <strong style={{color: "var(--accent)"}}>{row.score}/100</strong></p>}
-      {row.data && <ScreeningEntryCard data={row.data} style={style} ctx={ctx} />}
-      {row.error && <p role="alert">{row.error}</p>}
-      {row.data && <button disabled={!loaded||items.some(item=>item.symbol===row.symbol && item.market===scannedMarket)} onClick={()=>{if(addStock(row.symbol,scannedMarket))setMessage(`เพิ่ม ${row.symbol} ใน Watchlist แล้ว`);}}>{items.some(item=>item.symbol===row.symbol && item.market===scannedMarket)?"อยู่ใน Watchlist แล้ว":"+ เพิ่ม Watchlist"}</button>}
-    </article>)}
-    {evaluated.some(row=>row.nearMiss) && <details className="screen-panel screen-near">
+    {evaluated.some(row=>row.passed) && <div className="wl"><ul className="wl-list scr-list">{evaluated.filter(row=>row.passed).map((row,index)=>{
+      const lean=row.trend?trendLean(row.trend.kind,row.trend.label):null;
+      const inList=items.some(item=>item.symbol===row.symbol && item.market===scannedMarket);
+      return <ScreenRow key={row.symbol} symbol={row.symbol} market={scannedMarket} name={row.data?.longName} price={row.data?.lastClose} changePercent={row.data?.changePercent}
+        open={openRow===row.symbol} onToggle={()=>setOpenRow(openRow===row.symbol?null:row.symbol)} error={row.error?"โหลดไม่ได้":null}
+        line2={<>
+          <em className="scr-chip rank">#{index+1}</em>
+          {row.data && <em className="scr-chip score" title={`คะแนน · ${RANKING_DESCRIPTION[style]}`}>★ {row.score}</em>}
+          {lean && <em className={`scr-chip ico lean lean-${lean}`} title={`${LEAN_SHORT[lean]} · ${row.trend!.label}`} aria-label={LEAN_SHORT[lean]}>{LEAN_GLYPH[lean]}</em>}
+          {row.flags.length>0 && <em className="scr-chip warn" title={row.flags.join(" · ")}>⚠</em>}
+        </>}>
+        {row.flags.length>0 && <p className="screen-flags" role="note">⚠ {row.flags.join(" · ")}</p>}
+        {row.data && <ScreeningEntryCard data={row.data} style={style} ctx={ctx} />}
+        {row.data && <div className="scr-actions">
+          <button disabled={!loaded||inList} onClick={()=>{if(addStock(row.symbol,scannedMarket))setMessage(`เพิ่ม ${row.symbol} ใน Watchlist แล้ว`);}}>{inList?"อยู่ใน Watchlist แล้ว":"+ เพิ่ม Watchlist"}</button>
+        </div>}
+      </ScreenRow>;
+    })}</ul></div>}
+    {evaluated.some(row=>row.nearMiss) && <details className="screen-near wl">
       <summary>เกือบผ่าน · ขาด 1 เกณฑ์ ({evaluated.filter(row=>row.nearMiss).length} ตัว)</summary>
-      <p className="screen-near-note">ผ่านทุกข้อยกเว้นหนึ่งข้อ เรียงตามคะแนน ใช้ดูว่าตัวไหนน่าศึกษาต่อ ไม่นับรวมในหุ้นที่ผ่านครบ</p>
-      {[...evaluated].filter(row=>row.nearMiss).sort((a,b)=>b.score-a.score||a.symbol.localeCompare(b.symbol)).map(row=><div className="screen-near-row" key={row.symbol}>
-        <div className="screen-actions"><strong>{row.symbol} <small>{scannedMarket==="TH"?"BKK":"US"}</small>{row.trend && <span className={`trend-badge trend-${row.trend.kind}${row.trend.strong ? " trend-strong" : ""}`} title={TREND_METHOD}>{trendIcon(row.trend.kind, row.trend.label)} {row.trend.label}</span>}</strong><span>คะแนน {row.score}/100</span></div>
-        {row.data && <small>{row.data.longName} · {row.data.lastClose.toFixed(2)} {row.data.market==="TH"?"THB":"USD"}</small>}
-        {row.failed.map(c=><p key={c.label} className="screen-near-fail">✗ {c.label} <span>({c.value})</span></p>)}
-        {row.data && <button disabled={!loaded||items.some(item=>item.symbol===row.symbol && item.market===scannedMarket)} onClick={()=>{if(addStock(row.symbol,scannedMarket))setMessage(`เพิ่ม ${row.symbol} ใน Watchlist แล้ว`);}}>{items.some(item=>item.symbol===row.symbol && item.market===scannedMarket)?"อยู่ใน Watchlist แล้ว":"+ เพิ่ม Watchlist"}</button>}
-      </div>)}
+      <ul className="wl-list scr-list">
+      {[...evaluated].filter(row=>row.nearMiss).sort((a,b)=>b.score-a.score||a.symbol.localeCompare(b.symbol)).map(row=>{
+        const inList=items.some(item=>item.symbol===row.symbol && item.market===scannedMarket);
+        return <ScreenRow key={row.symbol} symbol={row.symbol} market={scannedMarket} name={row.data?.longName} price={row.data?.lastClose} changePercent={row.data?.changePercent}
+          open={openRow===`n:${row.symbol}`} onToggle={()=>setOpenRow(openRow===`n:${row.symbol}`?null:`n:${row.symbol}`)}
+          line2={<>{row.data && <em className="scr-chip score" title="คะแนน">★ {row.score}</em>}{row.failed.map(c=><em key={c.label} className="scr-chip fail">✗ {c.label}</em>)}</>}>
+          {row.failed.map(c=><p key={c.label} className="screen-near-fail">✗ {c.label} <span>({c.value})</span></p>)}
+          {row.data && <div className="scr-actions"><button disabled={!loaded||inList} onClick={()=>{if(addStock(row.symbol,scannedMarket))setMessage(`เพิ่ม ${row.symbol} ใน Watchlist แล้ว`);}}>{inList?"อยู่ใน Watchlist แล้ว":"+ เพิ่ม Watchlist"}</button></div>}
+        </ScreenRow>;
+      })}
+      </ul>
     </details>}
     </>}
     <footer className="app-footer">เกณฑ์เริ่มต้นสำหรับคัดไปศึกษาต่อ ไม่ใช่คะแนนรับรองคุณภาพหรือคำสั่งซื้อ ข้อมูลที่ขาดจะไม่นับว่าผ่าน</footer>
