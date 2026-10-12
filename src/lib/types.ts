@@ -1,0 +1,166 @@
+import type { AssetKind } from "./instrument";
+
+export type { AssetKind };
+
+export interface Candle {
+  date: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
+export interface PivotLevels {
+  pivot: number;
+  r1: number;
+  r2: number;
+  r3: number;
+  s1: number;
+  s2: number;
+  s3: number;
+}
+
+export interface SwingPoint {
+  date: string;
+  price: number;
+  type: "high" | "low";
+}
+
+export interface PriceZone {
+  price: number;
+  type: "resistance" | "support";
+  strength: number;
+}
+
+export interface FairValueData {
+  bookValueVerified?: boolean;
+  industry?: string | null;
+  operatingMargins?: number | null;
+  returnOnEquity?: number | null;
+  cashflowCurrency?: string | null;
+  historicalPE?: import("./historical-valuation").HistoricalPE | null;
+  normalizationNotes?: string[];
+  sector?: string | null;
+  financialCurrency?: string | null;
+  quoteCurrency?: string | null;
+  totalDebt?: number | null;
+  totalCash?: number | null;
+  analyst: number | null;
+  analystLow: number | null;
+  analystHigh: number | null;
+  trailingEps: number | null;
+  forwardEps: number | null;
+  trailingPE: number | null;
+  forwardPE: number | null;
+  fiftyTwoWeekHigh: number | null;
+  fiftyTwoWeekLow: number | null;
+  freeCashflow: number | null;
+  operatingCashflow: number | null;
+  ebitda: number | null;
+  revenuePerShare: number | null;
+  earningsGrowth: number | null;
+  revenueGrowth: number | null;
+  bookValue: number | null;
+  priceToBook: number | null;
+  enterpriseValue: number | null;
+  sharesOutstanding: number | null;
+  marketCap: number | null;
+  /** Yahoo decimal e.g. 0.025 = 2.5% */
+  dividendYield: number | null;
+  dividendRate: number | null;
+  analystView?: AnalystView | null;
+}
+
+/** ตัวชี้วัดคุณภาพจาก Yahoo — ใช้ในหน้าคัดหุ้น (null = ไม่มีข้อมูล/สกุลเงินไม่ตรงกัน) */
+export interface QualityMetrics {
+  sector: string | null;
+  roePercent: number | null;
+  operatingMarginPercent: number | null;
+  revenueGrowthPercent: number | null;
+  netDebtToEbitda: number | null;
+  payoutPercent: number | null;
+  fcfDividendCoverage: number | null;
+}
+
+/** คำแนะนำนักวิเคราะห์จาก Yahoo (จำนวนคน · เดือนล่าสุด) */
+export interface AnalystView {
+  /** strong_buy | buy | hold | underperform | sell */
+  key: string | null;
+  /** 1 = ซื้อแรง … 5 = ขาย */
+  mean: number | null;
+  opinions: number | null;
+  strongBuy: number; buy: number; hold: number; sell: number; strongSell: number;
+}
+
+export interface FairValueResult {
+  analystView?: AnalystView | null;
+  quality?: QualityMetrics | null;
+  /** ช่วง P/E ย้อนหลังของหุ้นเอง (P25/มัธยฐาน/P75) */
+  historicalPE?: { low: number; median: number; high: number; years: number } | null;
+  marketCap?: number | null;
+  modelFairValue?: number | null;
+  analystWeight?: number;
+  trailingEps?: number | null;
+  confidence?: "low" | "medium" | "unavailable";
+  warnings?: string[];
+  models?: import("./valuation-engine").ValuationModel[];
+  /** Primary: median of available independent valuation approaches */
+  fairValue: number | null;
+  fairValueLow: number | null;
+  fairValueHigh: number | null;
+  /** P/E multiples model (one of the blended models) */
+  peReference: number | null;
+  upsidePercent: number | null;
+  upsideLowPercent: number | null;
+  upsideHighPercent: number | null;
+  verdict: "undervalued" | "fair" | "overvalued" | "unknown";
+  analystTarget: number | null;
+  analystRange: { low: number; high: number } | null;
+  modelRange: { low: number; high: number } | null;
+  modelCount: number;
+  range52w: { low: number; high: number } | null;
+  trailingPE: number | null;
+  forwardPE: number | null;
+  forwardEps: number | null;
+  peReferenceUpsidePercent: number | null;
+  analystUpsidePercent: number | null;
+  fcfYieldPercent: number | null;
+  dividendYieldPercent: number | null;
+  dividendRate: number | null;
+  source: "multi-model" | "pe-fallback" | "single-model" | "unknown";
+}
+
+export interface StockData {
+  symbol: string;
+  resolvedSymbol: string;
+  longName: string | null;
+  assetKind: AssetKind;
+  market: "TH" | "US";
+  candles: Candle[];
+  pivot: PivotLevels;
+  swings: SwingPoint[];
+  zones: PriceZone[];
+  lastClose: number;
+  change: number;
+  changePercent: number;
+  fairValue: FairValueResult;
+  /** วันประกาศงบ / วันขึ้น XD (ไม่มีในโหมดคัดหุ้น) */
+  events?: import("./events").StockEvents | null;
+  /** ข้อมูลธุรกิจ + งบรายปี (ไม่มีในโหมดคัดหุ้น) */
+  company?: import("./financials").CompanyInfo | null;
+  /** ราคาก่อนเปิด/หลังปิด (หุ้นสหรัฐ) */
+  extended?: import("./yahoo-quote").ExtendedQuote | null;
+  /** ข้อมูลเฉพาะ ETF: ค่าธรรมเนียม ขนาด หุ้นที่ถือ สัดส่วนกลุ่ม */
+  etf?: import("./etf").EtfInfo | null;
+}
+
+export interface WatchlistItem {
+  symbol: string;
+  market: "TH" | "US";
+}
+
+export const WATCHLIST_KEY = "stock-sr-watchlist";
+
+/** swing = ถือยาว (6 เดือน), pivot = เทรดสั้น (วันถัดไป) */
+export type SrMode = "swing" | "pivot";

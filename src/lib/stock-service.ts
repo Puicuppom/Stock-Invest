@@ -1,0 +1,136 @@
+import { fetchAnnualEps, historicalPE } from "./historical-valuation";
+import { PRIMARY_LISTINGS } from "./valuation-currency";
+import { fetchDailyCandles } from "./chart-service";
+import { calculateFairValue, fetchFundamentals } from "./fair-value";
+import { classifyInstrument } from "./instrument";
+import { calculatePivot } from "./pivot";
+import { detectMarket, resolveSymbol } from "./symbol";
+import { fetchCalendarEvents, type StockEvents } from "./events";
+import { fetchCompanyInfo } from "./financials";
+import { fetchExtendedQuote } from "./yahoo-quote";
+import { fetchEtfInfo } from "./etf";
+import { clusterZones, findSwingPoints, topZones } from "./swing";
+import type { Candle, FairValueData, StockData } from "./types";
+
+export const revalidate = 900;
+
+/** ~6 months of trading days for swing S/R */
+export const SWING_LOOKBACK_BARS = 126;
+
+import type { AssetKind } from "./instrument";
+
+export function buildStockData(
+  input: string,
+  resolvedSymbol: string,
+  candles: Candle[],
+  fundamentals: FairValueData | null,
+  longName: string | null,
+  assetKind: AssetKind
+): StockData {
+  const prev = candles[candles.length - 2];
+  const last = candles[candles.length - 1];
+  const pivot = calculatePivot(prev);
+  const swingCandles = candles.slice(-SWING_LOOKBACK_BARS);
+  const swings = findSwingPoints(swingCandles, 5);
+  const zones = topZones(clusterZones(swings), last.close, 4);
+  const detectedMarket = detectMarket(resolvedSymbol);
+  const change = last.close - prev.close;
+  const changePercent = (change / prev.close) * 100;
+
+  const fairValueCalc = calculateFairValue(
+    detectedMarket,
+    last.close,
+    fundamentals
+  );
+
+  return {
+    symbol: input.toUpperCase(),
+    resolvedSymbol,
+    longName,
+    assetKind,
+    market: detectedMarket,
+    candles,
+    pivot,
+    swings,
+    zones,
+    lastClose: last.close,
+    change,
+    changePercent,
+    fairValue: {
+      ...fairValueCalc,
+      trailingPE: fundamentals?.trailingPE ?? null,
+      forwardPE: fundamentals?.forwardPE ?? null,
+    },
+  };
+}
+
+export async function getStockData(
+  input: string,
+  market: "TH" | "US" = "US",
+  options: { screening?: boolean } = {}
+): Promise<StockData> {
+  const resolvedSymbol = resolveSymbol(input, market);
+  if (!resolvedSymbol) {
+    throw new Error("Stock not found");
+  }
+
+  const primary = PRIMARY_LISTINGS[resolvedSymbol];
+  const eventMarket = detectMarket(resolvedSymbol);
+  const [daily, fundamentals, earnings, primaryDaily, listedEvents, listedCompany, extended] = await Promise.all([
+    fetchDailyCandles(resolvedSymbol),
+    fetchFundamentals(resolvedSymbol),
+    fetchAnnualEps(primary?.symbol ?? resolvedSymbol),
+    primary ? fetchDailyCandles(primary.symbol).catch(() => null) : Promise.resolve(null),
+    options.screening ? Promise.resolve(null) : fetchCalendarEvents(resolvedSymbol, eventMarket),
+    options.screening ? Promise.resolve(null) : fetchCompanyInfo(resolvedSymbol),
+    options.screening || eventMarket !== "US" ? Promise.resolve(null) : fetchExtendedQuote(resolvedSymbol),
+  ]);
+  let company = listedCompany;
+  if (!options.screening && primary && !company?.revenue.length) {
+    const primaryCompany = await fetchCompanyInfo(primary.symbol);
+    if (primaryCompany) company = { ...primaryCompany, summary: company?.summary ?? primaryCompany.summary, website: company?.website ?? primaryCompany.website };
+  }
+  // ADR ที่เพิ่งเข้าตลาด Yahoo อาจยังไม่มีวันประกาศงบ → ใช้ของหุ้นต้นทาง (บริษัทเดียวกัน)
+  let events: StockEvents | null = listedEvents;
+  if (!options.screening && primary && !events?.earningsDate) {
+    const primaryEvents = await fetchCalendarEvents(primary.symbol, eventMarket);
+    if (primaryEvents?.earningsDate) events = { earningsDate: primaryEvents.earningsDate, earningsEstimate: primaryEvents.earningsEstimate, exDividendDate: events?.exDividendDate ?? null };
+  }
+
+  if (fundamentals) fundamentals.historicalPE = historicalPE(
+    primary ? primaryDaily?.candles ?? [] : daily.candles, earnings,
+    primary?.currency ?? fundamentals.quoteCurrency ?? ""
+  );
+
+
+  if (daily.candles.length < 10) {
+    throw new Error("Stock not found");
+  }
+
+  const longNameRaw = daily.longName ?? daily.shortName;
+  const assetKind = classifyInstrument(
+    resolvedSymbol,
+    longNameRaw,
+    daily.instrumentType
+  );
+  const longName =
+    assetKind === "gold-spot"
+      ? "ทองคำ spot · USD/oz"
+      : longNameRaw;
+  const etf = assetKind === "etf" || assetKind === "gold-etf" ? await fetchEtfInfo(resolvedSymbol, longNameRaw) : null;
+
+  return {
+    ...buildStockData(
+      input,
+      resolvedSymbol,
+      daily.candles,
+      fundamentals,
+      longName,
+      assetKind
+    ),
+    events,
+    company,
+    extended,
+    etf,
+  };
+}
