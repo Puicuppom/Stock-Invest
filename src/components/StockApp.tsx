@@ -265,6 +265,7 @@ export default function StockApp() {
           trend={trend}
           events={selectedData.events}
           extended={selectedData.extended}
+          logoSymbol={selectedData.resolvedSymbol}
         />
       )}
 

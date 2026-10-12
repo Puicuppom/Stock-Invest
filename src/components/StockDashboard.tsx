@@ -1,4 +1,5 @@
 import FundamentalMetrics from "./FundamentalMetrics";
+import StockLogo from "./StockLogo";
 import type { TradePlan } from "@/lib/trade-plan";
 import { assetKindLabel } from "@/lib/instrument";
 import type { AssetKind, FairValueResult } from "@/lib/types";
@@ -24,6 +25,7 @@ interface StockDashboardProps {
   trend?: TrendResult | null;
   events?: StockEvents | null;
   extended?: ExtendedQuote | null;
+  logoSymbol?: string;
 }
 
 /** เลื่อนไปยังส่วนที่เกี่ยวข้องในการ์ดสรุปสัญญาณ แล้วกะพริบไฮไลต์ */
@@ -84,6 +86,7 @@ export default function StockDashboard({
   trend,
   events,
   extended,
+  logoSymbol,
 }: StockDashboardProps) {
   const evBadges = eventBadges(events, market);
   const changePositive = change >= 0;
@@ -109,7 +112,7 @@ export default function StockDashboard({
       <div className={`dash-top${!isGold && !isEtf ? " dash-top-with-metrics" : ""}`}>
         <div className="dash-quote">
           <p className="eyebrow">InvestPui.com</p>
-          <h1 className="dash-symbol">{symbol}</h1>
+          <h1 className="dash-symbol">{logoSymbol && <StockLogo symbol={logoSymbol} size={30} />}{symbol}</h1>
           {companyName && <p className="dash-company">{companyName}</p>}
           <div className="dash-price-row">
             <span className="dash-price">{formatPrice(currentPrice)}</span>

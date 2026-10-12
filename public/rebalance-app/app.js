@@ -1850,7 +1850,7 @@ function appendAssetCard(list, payload) {
     row.innerHTML = `
         <div class="cr-row" onclick="toggleRow('${asset.name}', event)" role="button" tabindex="0" aria-expanded="${open}">
             <span class="drag-handle" aria-label="สลับลำดับ ${asset.name}">≡</span>
-            <div class="asset-badge">${asset.name.slice(0, 4)}</div>
+            <div class="asset-badge">${asset.name.slice(0, 4)}${logoImg(asset)}</div>
             <div class="cr-name">
                 <b>${asset.name}</b>
                 <small>◔ ${fmtPct(curPct)} <span class="cr-target">/ ${fmtPct(asset.target || 0)}</span>${act}</small>
@@ -1873,6 +1873,14 @@ function appendAssetCard(list, payload) {
         ${renderAssetGrid(index, asset, curPct, ideal, profitFmt, cost, profit, profitPct, tradeSignal, action)}
         </div>`;
     list.appendChild(row);
+}
+
+/* โลโก้หุ้นจาก Financial Modeling Prep — โหลดไม่ได้ก็ลบรูปทิ้ง เหลือกล่องชื่อย่อเดิม */
+function logoImg(asset) {
+    if (isCashAsset(asset)) return '';
+    const sym = String(asset.name || '').toUpperCase().replace(/[^A-Z0-9.\-]/g, '');
+    if (!sym) return '';
+    return `<img class="asset-logo" src="https://financialmodelingprep.com/image-stock/${encodeURIComponent(sym)}.png" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">`;
 }
 
 /* แถวกระชับ: แตะเพื่อเปิดรายละเอียด (จำว่าตัวไหนเปิดอยู่ระหว่างคำนวณใหม่) */

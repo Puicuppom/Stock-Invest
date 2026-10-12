@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import StockLogo from "./StockLogo";
 import { screenStock, screeningStyles, valuationRiskFlags, type ScreeningStyle } from "@/lib/screener";
 import { analyzeDip } from "@/lib/dip";
 import { analyzeMomentum, returnPercent, type MarketContext } from "@/lib/momentum";
@@ -80,7 +81,7 @@ export default function WatchlistReview({ items, loaded }: { items: WatchlistIte
         return (
           <article key={id} className="wr-row">
             <button type="button" className="wr-head" onClick={() => setOpen(open === id ? null : id)} aria-expanded={open === id}>
-              <span className="wr-sym"><b>{item.symbol}</b><small>{item.market === "TH" ? "BKK" : "US"}</small></span>
+              <span className="wr-sym"><b><StockLogo symbol={item.market === "TH" ? `${item.symbol}.BK` : item.symbol} size={20} />{item.symbol}</b><small>{item.market === "TH" ? "BKK" : "US"}</small></span>
               {data ? <>
                 <span className="wr-price">{data.lastClose.toFixed(2)} <em className={data.changePercent >= 0 ? "up" : "down"}>{data.changePercent >= 0 ? "+" : ""}{data.changePercent.toFixed(1)}%</em></span>
                 <span className="wr-styles">

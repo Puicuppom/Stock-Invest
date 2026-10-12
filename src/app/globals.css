@@ -2945,3 +2945,9 @@ button.dash-jump:active { transform: scale(0.95); }
 .chip-ext { font-size: 0.48rem; font-weight: 600; color: var(--accent); margin-left: 2px; }
 
 .dash-ext em { font-size: inherit; }
+
+/* stock logos */
+.stock-logo { display: inline-block; vertical-align: middle; border-radius: 50%; background: #fff; object-fit: contain; padding: 2px; margin-right: 6px; flex-shrink: 0; }
+.dash-symbol { display: flex; align-items: center; }
+.wr-sym b { display: inline-flex; align-items: center; }
+.wr-sym .stock-logo { margin-right: 4px; padding: 1px; }
