@@ -1,4 +1,3 @@
-import FundamentalMetrics from "./FundamentalMetrics";
 import StockLogo from "./StockLogo";
 import type { TradePlan } from "@/lib/trade-plan";
 import { assetKindLabel } from "@/lib/instrument";
@@ -30,6 +29,11 @@ interface StockDashboardProps {
 
 /** เลื่อนไปยังส่วนที่เกี่ยวข้องในการ์ดสรุปสัญญาณ แล้วกะพริบไฮไลต์ */
 function jumpTo(id: string) {
+  // สลับไปแท็บภาพรวมก่อน (รายละเอียดสัญญาณอยู่ที่นั่น) แล้วค่อยเลื่อนไปหา
+  window.dispatchEvent(new CustomEvent("investpui:tab", { detail: "overview" }));
+  window.setTimeout(() => jumpNow(id), 60);
+}
+function jumpNow(id: string) {
   const el = document.getElementById(id);
   if (!el) return;
   el.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -109,7 +113,7 @@ export default function StockDashboard({
 
   return (
     <section className="stock-dashboard">
-      <div className={`dash-top${!isGold && !isEtf ? " dash-top-with-metrics" : ""}`}>
+      <div className="dash-top">
         <div className="dash-quote">
           <p className="eyebrow">InvestPui.com</p>
           <h1 className="dash-symbol">{logoSymbol && <StockLogo symbol={logoSymbol} size={30} />}{symbol}</h1>
@@ -170,7 +174,6 @@ export default function StockDashboard({
         >
           <span className="refresh-icon" aria-hidden="true">↻</span>
         </button>
-        {!isGold && !isEtf && <FundamentalMetrics value={fairValue} market={market} price={currentPrice} />}
       </div>
 
       {isGold ? (

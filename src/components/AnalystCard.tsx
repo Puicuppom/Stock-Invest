@@ -19,7 +19,8 @@ export default function AnalystCard({ value, price, currency }: { value: FairVal
   const up = mean != null && price > 0 ? (mean / price - 1) * 100 : null;
   const key = v?.key ? KEY_TH[v.key] : total ? (buy >= hold && buy >= sell ? KEY_TH.buy : sell > hold ? KEY_TH.sell : KEY_TH.hold) : null;
   const lo = range ? Math.min(range.low, price) : null, hi = range ? Math.max(range.high, price) : null;
-  const pos = (x: number) => (lo != null && hi != null && hi > lo ? ((x - lo) / (hi - lo)) * 100 : 50);
+  // จำกัดให้อยู่ในแถบ (บางครั้งเป้าเฉลี่ยของ Yahoo หลุดช่วงต่ำสุด–สูงสุด)
+  const pos = (x: number) => (lo != null && hi != null && hi > lo ? Math.min(100, Math.max(0, ((x - lo) / (hi - lo)) * 100)) : 50);
   const f = (n: number) => n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const people = v?.opinions ?? total;
   return (

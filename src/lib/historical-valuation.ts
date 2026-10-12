@@ -5,6 +5,8 @@ export interface HistoricalPE {
   low: number; median: number; high: number;
   months: number; years: number; start: string; end: string;
   annual: AnnualEps[];
+  /** P/E รายเดือนย้อนหลัง (ใช้วาดกราฟช่วง P/E) */
+  series: { date: string; pe: number }[];
 }
 const DAY = 86400000;
 export function historicalPE(candles: Candle[], earnings: AnnualEps[], currency: string): HistoricalPE | null {
@@ -28,7 +30,7 @@ export function historicalPE(candles: Candle[], earnings: AnnualEps[], currency:
   if(samples.length<24 || years<3) return null;
   const values=samples.map(s=>s.pe).sort((a,b)=>a-b);
   const quantile=(p:number)=>{const i=(values.length-1)*p; const n=Math.floor(i);return values[n]+(values[Math.ceil(i)]-values[n])*(i-n);};
-  return {low:quantile(.25),median:quantile(.5),high:quantile(.75),months:samples.length,years,start:samples[0].date,end:samples[samples.length-1].date,annual:rows.filter(e=>samples.some(s=>s.year===e.date))};
+  return {low:quantile(.25),median:quantile(.5),high:quantile(.75),months:samples.length,years,start:samples[0].date,end:samples[samples.length-1].date,annual:rows.filter(e=>samples.some(s=>s.year===e.date)),series:samples.map(s=>({date:s.date,pe:Math.round(s.pe*100)/100}))};
 }
 
 export async function fetchAnnualEps(symbol:string):Promise<AnnualEps[]> {

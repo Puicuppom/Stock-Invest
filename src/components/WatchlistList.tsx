@@ -8,10 +8,22 @@ import type { WatchlistQuotes, WatchlistSignals, WatchlistSrTags } from "@/hooks
 import type { WatchlistItem } from "@/lib/types";
 
 const fmtPrice = (n: number) => n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+/** กราฟเส้นจิ๋ว 1 เดือน (เขียว = ขึ้น · แดง = ลง) */
+function Spark({ values }: { values?: number[] }) {
+  if (!values || values.length < 2) return <span className="wl-spark" aria-hidden="true" />;
+  const min = Math.min(...values), max = Math.max(...values), span = max - min || 1;
+  const pts = values.map((v, i) => `${(i / (values.length - 1)) * 56},${22 - ((v - min) / span) * 20}`).join(" ");
+  const up = values[values.length - 1] >= values[0];
+  return (
+    <svg className={`wl-spark ${up ? "up" : "down"}`} viewBox="0 0 56 24" aria-hidden="true">
+      <polyline points={pts} fill="none" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round" />
+    </svg>
+  );
+}
 const DIP_ICON: Record<string, string> = { good: "🏷️", trap: "⚠️", watch: "👀" };
 
 /** รายการหุ้นแบบ Dime: โลโก้ · ชื่อ · ราคา · % — แตะเพื่อเปิดหน้าวิเคราะห์ */
-export default function WatchlistList({ items, signals, quotes, onRefresh, refreshing, updatedAt, srTags, onOpen, onRemove, onReorder, syncStatus }: {
+export default function WatchlistList({ items, signals, quotes, onRefresh, refreshing, updatedAt, srTags, onOpen, onSearch, onRemove, onReorder, syncStatus }: {
   items: WatchlistItem[];
   signals: WatchlistSignals;
   quotes: WatchlistQuotes;
@@ -20,12 +32,26 @@ export default function WatchlistList({ items, signals, quotes, onRefresh, refre
   updatedAt: number | null;
   srTags: WatchlistSrTags;
   onOpen: (id: string) => void;
+  /** เปิดหุ้นที่พิมพ์ค้นหา (ไม่ต้องอยู่ใน Watchlist) */
+  onSearch: (symbol: string, market: "TH" | "US") => void;
   onRemove: (id: string) => void;
   onReorder: (fromId: string, toId: string) => void;
   /** ปุ่มเพิ่มอยู่มุมขวาล่างแล้ว */
   onAdd?: () => void;
   syncStatus?: string;
 }) {
+  // ค้นหา: พิมพ์เพื่อกรองรายการ · Enter เพื่อเปิดหุ้นตัวไหนก็ได้
+  const [query, setQuery] = useState("");
+  const [qMarket, setQMarket] = useState<"US" | "TH">("US");
+  useEffect(() => { try { if (localStorage.getItem("wlSearchMkt") === "TH") setQMarket("TH"); } catch { /* ignore */ } }, []);
+  const pickMarket = (m: "US" | "TH") => { setQMarket(m); try { localStorage.setItem("wlSearchMkt", m); } catch { /* ignore */ } };
+  const q = query.trim().toUpperCase();
+  const submitSearch = () => {
+    if (!q) return;
+    const th = q.endsWith(".BK") || qMarket === "TH";
+    onSearch(q.replace(/\.BK$/, ""), th ? "TH" : "US");
+    setQuery("");
+  };
   // เรียง: manual = ลำดับที่จัดเอง · up/down = % เปลี่ยนแปลงวันนี้
   const [sort, setSort] = useState<"manual" | "up" | "down">("manual");
   useEffect(() => { try { const v = localStorage.getItem("wlSort"); if (v === "up" || v === "down") setSort(v); } catch { /* ignore */ } }, []);
@@ -46,13 +72,14 @@ export default function WatchlistList({ items, signals, quotes, onRefresh, refre
     });
   }, []);
   const chg = (it: WatchlistItem) => quotes[watchlistId(it)]?.changePercent ?? signals[watchlistId(it)]?.changePercent;
-  const shown = sort === "manual" ? items : [...items].sort((a, b) => {
+  const sorted = sort === "manual" ? items : [...items].sort((a, b) => {
     const x = chg(a), y = chg(b);
     if (x == null && y == null) return 0;
     if (x == null) return 1;
     if (y == null) return -1;
     return sort === "up" ? y - x : x - y;
   });
+  const shown = q ? sorted.filter(it => it.symbol.toUpperCase().includes(q) || (signals[watchlistId(it)]?.name ?? "").toUpperCase().includes(q)) : sorted;
   return (
     <section className="wl">
       <div className="wl-head">
@@ -67,7 +94,15 @@ export default function WatchlistList({ items, signals, quotes, onRefresh, refre
         </div>
       </div>
       {(syncStatus || updatedAt) && <p className="wl-sync">{updatedAt ? `ราคา ณ ${new Date(updatedAt).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit", second: "2-digit" })} · อัปเดตเองทุก 30 วิ` : ""}{syncStatus && updatedAt ? " · " : ""}{syncStatus}</p>}
-      {items.length > 1 && <p className="wl-hint">{sort === "manual" ? "กดค้างแล้วลากเพื่อจัดเรียง · ปัดซ้ายเพื่อลบ" : "ปัดซ้ายเพื่อลบ · เลือก “จัดเอง” เพื่อลากจัดเรียง"}</p>}
+      <form className="wl-search" role="search" onSubmit={e => { e.preventDefault(); submitSearch(); }}>
+        <span aria-hidden="true">🔍</span>
+        <input type="search" inputMode="search" autoCapitalize="characters" autoComplete="off" spellCheck={false} placeholder="ค้นหาหุ้น เช่น NVDA, PTT" value={query} onChange={e => setQuery(e.target.value)} aria-label="ค้นหาหุ้น" />
+        <span className="wl-search-mkt" role="group" aria-label="ตลาด">
+          {(["US", "TH"] as const).map(m => <button key={m} type="button" aria-pressed={qMarket === m} onClick={() => pickMarket(m)}>{m === "US" ? "US" : "ไทย"}</button>)}
+        </span>
+      </form>
+      {q && <button type="button" className="wl-search-go" onClick={submitSearch}>เปิด <b>{q}</b> ({qMarket === "TH" || q.endsWith(".BK") ? "ไทย" : "US"}) →</button>}
+      {items.length > 1 && !q && <p className="wl-hint">{sort === "manual" ? "กดค้างแล้วลากเพื่อจัดเรียง · ปัดซ้ายเพื่อลบ" : "ปัดซ้ายเพื่อลบ · เลือก “จัดเอง” เพื่อลากจัดเรียง"}</p>}
       <ul className="wl-list" ref={listRef}>
         {shown.map(item => {
           const id = watchlistId(item);
@@ -87,7 +122,7 @@ export default function WatchlistList({ items, signals, quotes, onRefresh, refre
             <li key={id} data-id={id} className="wl-row">
               <span className="row-actions"><button type="button" className="wl-del" onClick={() => onRemove(id)}>ลบ</button></span>
               <div className="wl-swipe">
-              <button type="button" className="wl-main" onClick={() => onOpen(id)}>
+              <button type="button" className="wl-main has-spark" onClick={() => onOpen(id)}>
                 <span className="wl-logo">
                   <span className="wl-logo-text">{sym.slice(0, 4)}</span>
                   <StockLogo symbol={item.market === "TH" ? `${item.symbol}.BK` : item.symbol} size={40} className="wl-logo-img" />
@@ -103,12 +138,13 @@ export default function WatchlistList({ items, signals, quotes, onRefresh, refre
                     </span>
                   )}
                 </span>
+                <Spark values={sig?.spark} />
                 <span className="wl-price">
-                  <b>{hasPrice ? `${currency}${fmtPrice(price)}` : "…"}</b>
+                  <b>{hasPrice ? `${currency}${fmtPrice(price)}` : <i className="sk sk-price" />}</b>
                   {ext && <small className={`wl-ext ${ext.changePercent >= 0 ? "up" : "down"}`}><span>{ext.session === "pre" ? "ก่อนเปิด" : "หลังปิด"}</span><span>{fmtPrice(ext.price)} {ext.changePercent >= 0 ? "+" : ""}{ext.changePercent.toFixed(2)}%</span></small>}
                 </span>
                 <span className={`wl-chg ${hasPrice ? (up ? "up" : "down") : ""}`}>
-                  {hasPrice ? `${up ? "+" : ""}${change.toFixed(2)}%` : "—"}
+                  {hasPrice ? `${up ? "+" : ""}${change.toFixed(2)}%` : <i className="sk sk-chg" />}
                 </span>
               </button>
               </div>

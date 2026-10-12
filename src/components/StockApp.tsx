@@ -5,12 +5,14 @@ import AddStockFab from "@/components/AddStockFab";
 import AppNavigation from "@/components/AppNavigation";
 import StockDashboard from "@/components/StockDashboard";
 import CompanyCard from "./CompanyCard";
+import FundamentalMetrics from "./FundamentalMetrics";
+import DeepCards from "./DeepCards";
 import EtfCard from "./EtfCard";
 import SignalSummary from "@/components/SignalSummary";
 import StockChart from "@/components/StockChart";
 import WatchlistList from "@/components/WatchlistList";
 import { useSrTagSettings } from "@/hooks/useSrTagSettings";
-import { chipSignalOf, useSrWatchlistTags, type WatchlistSrTags } from "@/hooks/useSrWatchlistTags";
+import { chipSignalOf, getCachedStock, putCachedStock, useSrWatchlistTags, type WatchlistSrTags } from "@/hooks/useSrWatchlistTags";
 import { useWatchlist } from "@/hooks/useWatchlist";
 import { useSrMode } from "@/hooks/useSrMode";
 import { findSrHits } from "@/lib/sr-levels";
@@ -18,7 +20,7 @@ import { computeTradePlan } from "@/lib/trade-plan";
 import { analyzeTrend } from "@/lib/trend";
 import { displaySymbol, normalizeInput } from "@/lib/symbol";
 import { marketLabel, stockDataMatchesItem, watchlistId } from "@/lib/watchlist-id";
-import type { StockData } from "@/lib/types";
+import type { StockData, WatchlistItem } from "@/lib/types";
 
 export default function StockApp() {
   const {
@@ -53,7 +55,15 @@ export default function StockApp() {
   const [addOpen, setAddOpen] = useState(false);
   const [toast, setToast] = useState("");
   const [toastError, setToastError] = useState(false);
-  const [chartOpen, setChartOpen] = useState(false);
+  // แท็บหน้าวิเคราะห์: ภาพรวม (สัญญาณ) · กราฟ · พื้นฐาน
+  const [tab, setTab] = useState<"overview" | "chart" | "fund">("overview");
+  useEffect(() => { try { const t = localStorage.getItem("detailTab"); if (t === "chart" || t === "fund") setTab(t); } catch { /* ignore */ } }, []);
+  const pickTab = useCallback((t: "overview" | "chart" | "fund") => { setTab(t); try { localStorage.setItem("detailTab", t); } catch { /* ignore */ } }, []);
+  useEffect(() => {
+    const onTab = (e: Event) => pickTab((e as CustomEvent).detail);
+    window.addEventListener("investpui:tab", onTab);
+    return () => window.removeEventListener("investpui:tab", onTab);
+  }, [pickTab]);
   // หน้าแรก = รายการหุ้นแบบ Dime · แตะหุ้น = หน้าวิเคราะห์ (ปุ่มย้อนกลับของเบราว์เซอร์กลับมารายการได้)
   const [view, setView] = useState<"list" | "detail">("list");
   useEffect(() => {
@@ -62,12 +72,26 @@ export default function StockApp() {
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, []);
+  // ค้นหาหุ้นที่ยังไม่อยู่ใน Watchlist: เปิดดูได้ก่อน ค่อยกดเพิ่ม
+  const [previewItem, setPreviewItem] = useState<WatchlistItem | null>(null);
+  const activeItem = previewItem ?? selectedItem;
   const openStock = useCallback((id: string) => {
+    setPreviewItem(null);
     setSelected(id);
     setView("detail");
     window.history.pushState({ investpuiDetail: true }, "");
     window.scrollTo(0, 0);
   }, [setSelected]);
+  const openSearch = useCallback((symbol: string, market: "TH" | "US") => {
+    const normalized = normalizeInput(symbol).replace(/\.BK$/, "");
+    if (!normalized) return;
+    const id = watchlistId({ symbol: normalized, market });
+    if (items.some(item => watchlistId(item) === id)) { openStock(id); return; }
+    setPreviewItem({ symbol: normalized, market });
+    setView("detail");
+    window.history.pushState({ investpuiDetail: true }, "");
+    window.scrollTo(0, 0);
+  }, [items, openStock]);
   const backToList = useCallback(() => {
     if (window.history.state?.investpuiDetail) window.history.back();
     else setView("list");
@@ -76,7 +100,7 @@ export default function StockApp() {
   const [liveTagCache, setLiveTagCache] = useState<WatchlistSrTags>({});
 
   const selectedData =
-    selectedItem && data && stockDataMatchesItem(data, selectedItem) ? data : null;
+    activeItem && data && stockDataMatchesItem(data, activeItem) ? data : null;
 
   const currentHits = useMemo(() => {
     if (!selectedData) return [];
@@ -112,9 +136,9 @@ export default function StockApp() {
   }, [srMode, tagSettings.tolerancePercent]);
 
   useEffect(() => {
-    if (!selectedItem || !selectedData) return;
+    if (!activeItem || !selectedData) return;
 
-    const id = watchlistId(selectedItem);
+    const id = watchlistId(activeItem);
     const hits = findSrHits(
       selectedData.pivot,
       selectedData.zones,
@@ -142,7 +166,7 @@ export default function StockApp() {
       }
       return { ...prev, [id]: hits };
     });
-  }, [selectedItem, selectedData, srMode, tagSettings.tolerancePercent]);
+  }, [activeItem, selectedData, srMode, tagSettings.tolerancePercent]);
 
   const mergedWatchlistTags = useMemo(() => {
     const merged = { ...watchlistTags };
@@ -155,9 +179,9 @@ export default function StockApp() {
 
   // หุ้นที่เปิดดูอยู่ใช้ข้อมูลล่าสุดเสมอ
   const mergedSignals = useMemo(() => {
-    if (!selectedItem || !selectedData) return watchlistSignals;
-    return { ...watchlistSignals, [watchlistId(selectedItem)]: chipSignalOf(selectedData) };
-  }, [watchlistSignals, selectedItem, selectedData]);
+    if (!activeItem || !selectedData) return watchlistSignals;
+    return { ...watchlistSignals, [watchlistId(activeItem)]: chipSignalOf(selectedData) };
+  }, [watchlistSignals, activeItem, selectedData]);
 
   const handleAddStock = useCallback(
     (symbol: string, market: "TH" | "US") => {
@@ -193,7 +217,7 @@ export default function StockApp() {
 
   const fetchStock = useCallback(
     async (manual = false) => {
-      if (!selectedItem) return;
+      if (!activeItem) return;
 
       setLoading(true);
       setError("");
@@ -201,10 +225,10 @@ export default function StockApp() {
 
       try {
         const params = new URLSearchParams({
-          market: selectedItem.market,
+          market: activeItem.market,
         });
         const res = await fetch(
-          `/api/stock/${encodeURIComponent(selectedItem.symbol)}?${params}`
+          `/api/stock/${encodeURIComponent(activeItem.symbol)}?${params}`
         );
         const json = await res.json();
 
@@ -213,12 +237,13 @@ export default function StockApp() {
         }
 
         setData(json as StockData);
+        putCachedStock(watchlistId(activeItem), json as StockData);
         if (manual) {
           const time = new Date().toLocaleTimeString("th-TH", {
             hour: "2-digit",
             minute: "2-digit",
           });
-          setToast(`อัปเดต ${normalizeInput(selectedItem.symbol)} แล้ว · ${time}`);
+          setToast(`อัปเดต ${normalizeInput(activeItem.symbol)} แล้ว · ${time}`);
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : "โหลดข้อมูลไม่สำเร็จ";
@@ -234,14 +259,16 @@ export default function StockApp() {
         setLoading(false);
       }
     },
-    [selectedItem]
+    [activeItem]
   );
 
   useEffect(() => {
-    if (loaded && selectedItem) {
-      fetchStock();
-    }
-  }, [loaded, selectedItem, fetchStock]);
+    if (!loaded || !activeItem) return;
+    // แสดงข้อมูลที่ Watchlist โหลดไว้ทันที แล้วโหลดชุดเต็มตามมา
+    const cached = getCachedStock(watchlistId(activeItem));
+    if (cached) setData(cached);
+    fetchStock();
+  }, [loaded, activeItem, fetchStock]);
 
   return (
     <div className="app-shell">
@@ -256,6 +283,7 @@ export default function StockApp() {
           updatedAt={watchlistUpdatedAt}
           srTags={mergedWatchlistTags}
           onOpen={openStock}
+          onSearch={openSearch}
           onRemove={removeStock}
           onReorder={reorderStock}
           onAdd={() => setAddOpen(true)}
@@ -265,11 +293,18 @@ export default function StockApp() {
       {view === "detail" && (
         <div className="detail-bar">
           <button type="button" className="detail-back" onClick={backToList}>← Watchlist</button>
+          {previewItem && (
+            <button type="button" className="detail-add" onClick={() => { if (handleAddStock(previewItem.symbol, previewItem.market)) setPreviewItem(null); }}>+ เพิ่ม Watchlist</button>
+          )}
         </div>
       )}
       {view === "detail" && <>
       {loading && !selectedData && (
-        <div className="state-banner">กำลังโหลด...</div>
+        <div className="sk-detail" aria-busy="true" aria-label="กำลังโหลด">
+          <i className="sk" style={{ height: 120 }} />
+          <i className="sk" style={{ height: 180 }} />
+          <i className="sk" style={{ height: 140 }} />
+        </div>
       )}
       {error && !loading && !selectedData && (
         <div className="state-banner error">{error}</div>
@@ -297,7 +332,15 @@ export default function StockApp() {
         />
       )}
 
-      {selectedData && tradePlan && (
+      {selectedData && (
+        <div className="detail-tabs" role="tablist" aria-label="หัวข้อ">
+          {([["overview", "📊 ภาพรวม"], ["chart", "📈 กราฟ"], ["fund", "🏢 พื้นฐาน"]] as const).map(([k, label]) => (
+            <button key={k} type="button" role="tab" aria-selected={tab === k} className={tab === k ? "active" : ""} onClick={() => pickTab(k)}>{label}</button>
+          ))}
+        </div>
+      )}
+
+      {tab === "overview" && selectedData && tradePlan && (
         <SignalSummary
           data={selectedData}
           trend={trend}
@@ -310,42 +353,33 @@ export default function StockApp() {
           onToleranceChange={setTagTolerance}
         />
       )}
-      {selectedData && (selectedData.assetKind === "etf" || selectedData.assetKind === "gold-etf") && <EtfCard data={selectedData} />}
-      {selectedData?.company && <CompanyCard company={selectedData.company} />}
 
+      {tab === "chart" && selectedData && activeItem && (
+        <section className="chart-section">
+          <StockChart
+            symbol={activeItem.symbol}
+            market={activeItem.market}
+            pivot={selectedData.pivot}
+            zones={selectedData.zones}
+            mode={srMode}
+          />
+        </section>
+      )}
 
+      {tab === "fund" && selectedData && <>
+        {selectedData.assetKind === "stock" && <FundamentalMetrics value={selectedData.fairValue} market={selectedData.market} price={selectedData.lastClose} />}
+        {selectedData.assetKind === "stock" && (selectedData.deep === undefined
+          ? <i className="sk" style={{ display: "block", height: 160, borderRadius: 14 }} aria-label="กำลังโหลดข้อมูลเชิงลึก" />
+          : <DeepCards deep={selectedData.deep} trailingEps={selectedData.fairValue.trailingEps ?? null} />)}
+        {(selectedData.assetKind === "etf" || selectedData.assetKind === "gold-etf") && <EtfCard data={selectedData} />}
+        {selectedData.company && <CompanyCard company={selectedData.company} />}
+        {selectedData.assetKind === "gold-spot" && <p className="state-banner">ทองคำไม่มีข้อมูลพื้นฐานแบบบริษัท</p>}
+      </>}
 
       {toast && (
         <div className={`toast-banner${toastError ? " error" : ""}`} role="status">
           {toast}
         </div>
-      )}
-
-      {data && selectedData && selectedItem && (
-        <>
-          <section className="chart-collapse">
-            <button
-              type="button"
-              className="chart-collapse-btn"
-              onClick={() => setChartOpen((open) => !open)}
-              aria-expanded={chartOpen}
-            >
-              <span>กราฟ</span>
-              <span className="chart-collapse-icon">{chartOpen ? "▲" : "▼"}</span>
-            </button>
-            {chartOpen && (
-              <div className="chart-section">
-                <StockChart
-                  symbol={selectedItem.symbol}
-                  market={selectedItem.market}
-                  pivot={selectedData.pivot}
-                  zones={selectedData.zones}
-                  mode={srMode}
-                />
-              </div>
-            )}
-          </section>
-        </>
       )}
 
       </>}

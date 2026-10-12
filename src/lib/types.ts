@@ -153,6 +153,8 @@ export interface StockData {
   extended?: import("./yahoo-quote").ExtendedQuote | null;
   /** ข้อมูลเฉพาะ ETF: ค่าธรรมเนียม ขนาด หุ้นที่ถือ สัดส่วนกลุ่ม */
   etf?: import("./etf").EtfInfo | null;
+  /** ข้อมูลเชิงลึก (เฉพาะหน้าวิเคราะห์): ช่วง P/E · งบรายไตรมาส · ปันผล · P/S */
+  deep?: import("./deep").DeepInfo | null;
 }
 
 export interface WatchlistItem {

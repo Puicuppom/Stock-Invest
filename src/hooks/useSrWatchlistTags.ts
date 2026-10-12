@@ -27,6 +27,8 @@ export interface ChipSignal {
   dipLabel: string | null;
   /** ข้อความสั้นบนชิป (ETF ใช้คำต่างจากหุ้น) */
   dipShort?: string | null;
+  /** ราคาปิด ~1 เดือนล่าสุด สำหรับกราฟเส้นจิ๋ว */
+  spark?: number[];
   /** % นี้มาจากราคาก่อนเปิด/หลังปิด */
   extSession: "pre" | "post" | null;
 }
@@ -41,7 +43,7 @@ export function chipSignalOf(data: StockData): ChipSignal {
   const etfDip = isEtf ? analyzeEtfDip(data.candles) : null;
   const dip = isEtf ? (etfDip && (etfDip.kind === "good" || etfDip.kind === "watch") ? { kind: etfDip.kind as DipKind, verdict: etfDip.verdict, drawdownPercent: etfDip.drawdownPercent } : null) : analyzeDip(data);
   const dipLabel = dip && dip.drawdownPercent != null && dip.kind !== "na" && dip.kind !== "notdeep" ? `${dip.verdict} (${dip.drawdownPercent.toFixed(0)}% จากจุดสูงสุด)` : null;
-  return { trend: trend?.kind ?? null, trendLabel: trend?.label ?? null, changePercent: data.extended?.changePercent ?? data.changePercent, extSession: data.extended?.session ?? null, event, dipKind: dip?.kind ?? null, dipLabel, dipShort: isEtf && dip ? (dip.kind === "good" ? "ETF ลดราคา" : "ETF ย่อตัว") : null, price: data.extended?.price ?? data.lastClose, name: data.longName };
+  return { trend: trend?.kind ?? null, trendLabel: trend?.label ?? null, changePercent: data.extended?.changePercent ?? data.changePercent, extSession: data.extended?.session ?? null, event, dipKind: dip?.kind ?? null, dipLabel, dipShort: isEtf && dip ? (dip.kind === "good" ? "ETF ลดราคา" : "ETF ย่อตัว") : null, price: data.extended?.price ?? data.lastClose, name: data.longName, spark: data.candles.slice(-22).map(c => c.close) };
 }
 
 interface UseSrWatchlistTagsOptions {
@@ -51,13 +53,21 @@ interface UseSrWatchlistTagsOptions {
   srMode: SrMode;
 }
 
+/** ข้อมูลหุ้นล่าสุดที่โหลดไว้ (ใช้เปิดหน้าวิเคราะห์ได้ทันทีก่อนโหลดชุดเต็ม) */
+const stockCache = new Map<string, StockData>();
+export const getCachedStock = (id: string) => stockCache.get(id) ?? null;
+export const putCachedStock = (id: string, data: StockData) => { stockCache.set(id, data); };
+
 async function fetchStock(item: WatchlistItem): Promise<StockData | null> {
-  const params = new URLSearchParams({ market: item.market });
+  // lite = ราคาย้อนหลัง ~1.5 ปี (พอสำหรับสัญญาณ) โหลดเร็วกว่าชุดเต็ม 10 ปี
+  const params = new URLSearchParams({ market: item.market, mode: "lite" });
   const res = await fetch(
     `/api/stock/${encodeURIComponent(item.symbol)}?${params}`
   );
   if (!res.ok) return null;
-  return (await res.json()) as StockData;
+  const data = (await res.json()) as StockData;
+  stockCache.set(watchlistId(item), data);
+  return data;
 }
 
 export type WatchlistQuotes = Record<string, LiveQuote>;

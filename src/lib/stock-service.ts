@@ -9,6 +9,7 @@ import { fetchCalendarEvents, type StockEvents } from "./events";
 import { fetchCompanyInfo } from "./financials";
 import { fetchExtendedQuote } from "./yahoo-quote";
 import { fetchEtfInfo } from "./etf";
+import { fetchDividendHistory, fetchEarningsHistory, peHistory, priceToSales, summarizeDividends } from "./deep";
 import { clusterZones, findSwingPoints, topZones } from "./swing";
 import type { Candle, FairValueData, StockData } from "./types";
 
@@ -67,7 +68,7 @@ export function buildStockData(
 export async function getStockData(
   input: string,
   market: "TH" | "US" = "US",
-  options: { screening?: boolean } = {}
+  options: { screening?: boolean; deep?: boolean } = {}
 ): Promise<StockData> {
   const resolvedSymbol = resolveSymbol(input, market);
   if (!resolvedSymbol) {
@@ -76,7 +77,8 @@ export async function getStockData(
 
   const primary = PRIMARY_LISTINGS[resolvedSymbol];
   const eventMarket = detectMarket(resolvedSymbol);
-  const [daily, fundamentals, earnings, primaryDaily, listedEvents, listedCompany, extended] = await Promise.all([
+  const deep = options.deep && !options.screening;
+  const [daily, fundamentals, earnings, primaryDaily, listedEvents, listedCompany, extended, quarters, dividendRows] = await Promise.all([
     fetchDailyCandles(resolvedSymbol),
     fetchFundamentals(resolvedSymbol),
     fetchAnnualEps(primary?.symbol ?? resolvedSymbol),
@@ -84,6 +86,8 @@ export async function getStockData(
     options.screening ? Promise.resolve(null) : fetchCalendarEvents(resolvedSymbol, eventMarket),
     options.screening ? Promise.resolve(null) : fetchCompanyInfo(resolvedSymbol),
     options.screening || eventMarket !== "US" ? Promise.resolve(null) : fetchExtendedQuote(resolvedSymbol),
+    deep ? fetchEarningsHistory(primary?.symbol ?? resolvedSymbol) : Promise.resolve([]),
+    deep ? fetchDividendHistory(resolvedSymbol) : Promise.resolve([]),
   ]);
   let company = listedCompany;
   if (!options.screening && primary && !company?.revenue.length) {
@@ -119,18 +123,22 @@ export async function getStockData(
       : longNameRaw;
   const etf = assetKind === "etf" || assetKind === "gold-etf" ? await fetchEtfInfo(resolvedSymbol, longNameRaw) : null;
 
+  const base = buildStockData(input, resolvedSymbol, daily.candles, fundamentals, longName, assetKind);
+  // P/S ใช้ได้เมื่องบกับราคาเป็นสกุลเงินเดียวกัน (ADR ข้ามไป)
+  const sameCurrency = !fundamentals?.financialCurrency || !fundamentals.quoteCurrency || fundamentals.financialCurrency === fundamentals.quoteCurrency;
+  const deepInfo = deep && assetKind === "stock" ? {
+    pe: peHistory(fundamentals?.historicalPE, fundamentals?.trailingPE ?? null),
+    earnings: quarters,
+    dividends: summarizeDividends(dividendRows, fundamentals?.quoteCurrency ?? null),
+    ps: sameCurrency ? priceToSales(daily.candles, company, fundamentals?.sharesOutstanding ?? null, fundamentals?.revenuePerShare ?? null, base.lastClose, fundamentals?.revenueGrowth ?? null) : null,
+  } : null;
+
   return {
-    ...buildStockData(
-      input,
-      resolvedSymbol,
-      daily.candles,
-      fundamentals,
-      longName,
-      assetKind
-    ),
+    ...base,
     events,
     company,
     extended,
     etf,
+    deep: deepInfo,
   };
 }

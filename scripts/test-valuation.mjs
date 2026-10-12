@@ -138,3 +138,21 @@ assert(!dividendInRange({trailingAnnualDividendYield:0}));
 assert(deepEnough({regularMarketPrice:70,fiftyTwoWeekHigh:100},25));
 assert(!deepEnough({regularMarketPrice:95,fiftyTwoWeekHigh:100},25));
 console.log('Discovery prefilter checks passed');
+
+// ข้อมูลเชิงลึก: ปันผลรายปี · P/S ย้อนหลัง · ช่วง P/E
+const deep=load('src/lib/deep.ts',()=>({}));
+const divRows=[2019,2020,2021,2022,2023,2024].flatMap(y=>[1,2].map(q=>({date:`${y}-0${q*3}-15`,amount:0.5+(y-2019)*0.05})));
+divRows.push({date:'2025-03-15',amount:0.8});
+const dsum=deep.summarizeDividends(divRows,'USD',new Date(Date.UTC(2025,5,1)));
+assert.equal(dsum.growthStreak,5);
+assert(Math.abs(dsum.cagr5-(Math.pow(1.5/1,1/5)-1)*100)<1e-9);
+assert(dsum.years.at(-1).partial);
+const cut=deep.summarizeDividends([{date:'2022-01-01',amount:2},{date:'2023-01-01',amount:1}],'USD',new Date(Date.UTC(2025,0,1)));
+assert.equal(cut.growthStreak,0);
+assert.equal(deep.summarizeDividends([],'USD'),null);
+const ps=deep.priceToSales([{date:'2023-12-29',close:10},{date:'2024-12-31',close:20}],{revenue:[{year:'2023',value:100},{year:'2024',value:200}]},10,4,40,0.3);
+assert.equal(ps.current,10);assert.deepEqual(ps.history.map(h=>h.ps),[1,1]);assert.equal(ps.median,1);assert(Math.abs(ps.revenueGrowthPercent-30)<1e-9);
+assert.equal(deep.priceToSales([],null,null,null,10,null),null);
+assert.equal(deep.peHistory(null,10),null);
+assert.equal(deep.peHistory({series:[{date:'2024-01-01',pe:20}],low:15,median:20,high:25,years:5},-3).current,null);
+console.log('Deep data checks passed');
