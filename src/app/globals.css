@@ -3195,3 +3195,13 @@ select option:checked { background-color: color-mix(in srgb, var(--accent) 30%, 
 .etf-stack i { background: var(--accent); }
 .etf-more { align-self: flex-start; margin-top: 6px; border: 0; background: transparent; color: var(--accent); font: inherit; font-size: 12px; cursor: pointer; padding: 0; }
 .scr-filters .scr-seg { justify-self: start; }
+/* Watchlist ในหน้าคัดหุ้น: ไอคอนแนวทางแบบเดียวกับหน้าตลาด (แตะเพื่อกรอง) */
+.wr .wr-styles button { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px; border-radius: 14px; font-size: 12px; line-height: 1.2; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); cursor: pointer; font-family: inherit; }
+.wr .wr-styles button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--surface-2)); }
+.wr-count { display: inline-flex; gap: 4px; font-size: 10px; font-weight: 700; line-height: 1; margin-top: 1px; }
+.wr-count b { color: var(--success); }
+.wr-count i { font-style: normal; color: var(--warning); }
+.wr-legend b.up { color: var(--success); }
+.wr-legend i.near { font-style: normal; color: var(--warning); }
+.wr-clear { border: 0; background: transparent; color: var(--accent); font: inherit; font-size: inherit; padding: 0; cursor: pointer; }
+.screener .wr-legend .wr-clear { border: 0; background: transparent; min-height: 0; padding: 0; border-radius: 0; color: var(--accent); font-size: inherit; }

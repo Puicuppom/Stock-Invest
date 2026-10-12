@@ -9,6 +9,7 @@ import { analyzeTrend, LEAN_GLYPH, LEAN_SHORT, trendLean } from "@/lib/trend";
 import { watchlistId } from "@/lib/watchlist-id";
 import type { StockData, WatchlistItem } from "@/lib/types";
 
+const SHORT: Partial<Record<ScreeningStyle, string>> = { dip: "ลดราคา", momentum: "ไปต่อ", smallcap: "หุ้นจิ๋ว", dividend: "ปันผล", etf: "ETF" };
 const STYLES: { key: ScreeningStyle; icon: string }[] = [
   { key: "dip", icon: "🏷️" }, { key: "momentum", icon: "🚀" }, { key: "smallcap", icon: "💎" }, { key: "dividend", icon: "💰" }, { key: "etf", icon: "📦" },
 ];
@@ -26,6 +27,8 @@ export default function WatchlistReview({ items, loaded }: { items: WatchlistIte
   const [ctx, setCtx] = useState<Record<string, MarketContext>>({});
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
+  // แตะไอคอนแนวทางเพื่อกรองเฉพาะตัวที่ผ่าน/เกือบผ่านแนวทางนั้น
+  const [filter, setFilter] = useState<ScreeningStyle | null>(null);
   const ctrl = useRef<AbortController | null>(null);
 
   async function run() {
@@ -58,29 +61,45 @@ export default function WatchlistReview({ items, loaded }: { items: WatchlistIte
   useEffect(() => { if (loaded && items.length) run(); return () => ctrl.current?.abort(); // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loaded, items.length]);
 
+  const computed = rows.map(({ item, data, error }) => {
+    const id = watchlistId(item);
+    const c = ctx[item.market] ?? null;
+    const results = data ? STYLES.map(s => {
+      const checks = screenStock(data, s.key, c);
+      const failed = checks.filter(x => x.passed !== true);
+      return { ...s, checks, failed, pass: checks.length > 0 && failed.length === 0, near: failed.length === 1 && checks.length > 1 };
+    }) : [];
+    const dip = data ? analyzeDip(data) : null;
+    const mom = data ? analyzeMomentum(data, c) : null;
+    const trend = data ? analyzeTrend(data) : null;
+    const flags = data ? valuationRiskFlags(data.fairValue, "hard") : [];
+    const lean = trend ? trendLean(trend.kind, trend.label) : null;
+    const hits = results.filter(r => r.pass || r.near);
+    return { item, data, error, id, results, dip, mom, trend, flags, lean, hits };
+  });
+  const count = (k: ScreeningStyle, kind: "pass" | "near") => computed.filter(r => r.results.some(x => x.key === k && x[kind])).length;
+  const shown = filter ? computed.filter(r => r.hits.some(h => h.key === filter)) : computed;
+
   return (
     <section className="wr wl">
       <div className="screen-actions">
         <span>{busy ? `กำลังวิเคราะห์ ${rows.filter(r => r.data || r.error).length}/${items.length}` : `${items.length} ตัว`}</span>
         <button type="button" disabled={busy || !items.length} onClick={run}>↻ วิเคราะห์ใหม่</button>
       </div>
-      <p className="wr-legend">🏷️ ดีลดราคา · 🚀 แกร่งไปต่อ · 💎 จิ๋วเตรียมพุ่ง · 💰 ปันผลงาม · 📦 ETF ลดราคา · ● ขาด 1 ข้อ</p>
+      <div className="scr-styles wr-styles" role="group" aria-label="กรองตามแนวทาง">
+        {STYLES.map(st => {
+          const p = count(st.key, "pass"), n = count(st.key, "near");
+          return (
+            <button key={st.key} type="button" aria-pressed={filter === st.key} title={screeningStyles[st.key].label} onClick={() => setFilter(filter === st.key ? null : st.key)}>
+              <span className="scr-ico">{st.icon}</span><span>{SHORT[st.key]}</span>
+              {(p > 0 || n > 0) && <span className="wr-count">{p > 0 && <b>✓{p}</b>}{n > 0 && <i>●{n}</i>}</span>}
+            </button>
+          );
+        })}
+      </div>
+      <p className="wr-legend"><b className="up">✓</b> ผ่านครบ · <i className="near">●</i> เกือบผ่าน (ขาด 1 ข้อ){filter ? <> · <button type="button" className="wr-clear" onClick={() => setFilter(null)}>แสดงทั้งหมด ✕</button></> : " · แตะไอคอนเพื่อกรอง"}</p>
       <ul className="wl-list scr-list">
-      {rows.map(({ item, data, error }) => {
-        const id = watchlistId(item);
-        const c = ctx[item.market] ?? null;
-        const results = data ? STYLES.map(s => {
-          const checks = screenStock(data, s.key, c);
-          const failed = checks.filter(x => x.passed !== true);
-          return { ...s, checks, failed, pass: checks.length > 0 && failed.length === 0, near: failed.length === 1 && checks.length > 1 };
-        }) : [];
-        const dip = data ? analyzeDip(data) : null;
-        const mom = data ? analyzeMomentum(data, c) : null;
-        const trend = data ? analyzeTrend(data) : null;
-        const flags = data ? valuationRiskFlags(data.fairValue, "hard") : [];
-        const lean = trend ? trendLean(trend.kind, trend.label) : null;
-        const hits = results.filter(r => r.pass || r.near);
-        return (
+      {shown.map(({ item, data, error, id, results, dip, mom, flags, trend, lean, hits }) => (
           <ScreenRow key={id} symbol={item.symbol} market={item.market} name={data?.longName} price={data?.lastClose}
             changePercent={data?.changePercent} loading={!data && !error} error={error ? "โหลดไม่ได้" : null}
             open={open === id} onToggle={() => setOpen(open === id ? null : id)}
@@ -101,8 +120,7 @@ export default function WatchlistReview({ items, loaded }: { items: WatchlistIte
               </div>
             )}
           </ScreenRow>
-        );
-      })}
+      ))}
       </ul>
       {loaded && !items.length && <p>ยังไม่มีหุ้นใน Watchlist</p>}
     </section>
