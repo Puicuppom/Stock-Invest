@@ -757,19 +757,16 @@ function rebuildTabBar() {
 
 function updateTabUI() {
     rebuildTabBar();
-    const squadPct = getTargetByGroup(activeTab);
-    document.getElementById('squad-note').textContent =
-        `เป้าทัพนี้ ${fmtPct(squadPct)} · รวมทั้งพอร์ตต้องครบ 100.00%`;
+    const squadNote = document.getElementById('squad-note');
+    if (squadNote) squadNote.textContent = '';
     updateGroupTargetSum();
     const addInput = document.getElementById('new-asset-name');
     if (addInput) {
-        addInput.placeholder = isCashGroup(activeTab) ? 'ชื่อ เช่น USD, CASH' : 'ชื่อย่อ เช่น QQQI, MSFT';
+        addInput.placeholder = 'ชื่อย่อ เช่น MSFT · เงินสดพิมพ์ USD';
     }
     const fab = document.querySelector('.fab');
     if (fab) {
-        fab.innerHTML = isCashGroup(activeTab)
-            ? '<span>＋</span> เพิ่มเงินสด'
-            : '<span>＋</span> เพิ่มสินทรัพย์';
+        fab.innerHTML = '<span>＋</span> เพิ่มสินทรัพย์';
     }
 }
 
@@ -1052,8 +1049,9 @@ function getAssetGroup(asset) {
     return asset.group || inferGroup(asset.name, asset.kind);
 }
 
+/* แสดงทุกสินทรัพย์ในรายการเดียว (ไม่แยกแท็บกลุ่มแล้ว) */
 function isVisibleAsset(asset) {
-    return getAssetGroup(asset) === activeTab;
+    return true;
 }
 
 function updatePeakValues() {
@@ -1834,10 +1832,33 @@ function appendAssetCard(list, payload) {
     const { index, asset, curPct, ideal, action, cost, profit, profitPct, tradeSignal } = payload;
     const profitFmt = cost > 0 ? formatProfit(profit, profitPct) : { text: '—', cls: '' };
     const row = document.createElement('div');
-    row.className = 'asset-card';
+    const open = openRows.has(asset.name);
+    row.className = 'asset-card compact' + (open ? ' open' : '');
     row.dataset.index = index;
     row.dataset.name = asset.name;
+    const cash = isCashAsset(asset);
+    const other = isThbDisplay()
+        ? `≈ $${fmt(asset.value || 0, 2)}`
+        : (usdThbRate > 0 ? `≈ ฿${fmt((asset.value || 0) * usdThbRate, 0)}` : '');
+    const up = profit >= 0;
+    const profitHtml = cost > 0 && !cash
+        ? `<b class="${up ? 'gain' : 'loss'}">${up ? '↗' : '↘'} ${up ? '+' : '−'}${fmtPct(Math.abs(profitPct))}</b>
+           <small class="${up ? 'gain' : 'loss'}">(${up ? '+' : '−'}${fmtUsd(Math.abs(profit))})</small>`
+        : `<b class="muted">—</b><small class="muted">${cash ? 'เงินสด' : 'ยังไม่ใส่ทุน'}</small>`;
+    const act = action && action.cls !== 'hold'
+        ? `<span class="cr-act ${action.cls}">${action.cls === 'buy' ? (cash ? 'เติม' : 'ซื้อ') : (cash ? 'ลด' : 'ขาย')}</span>` : '';
     row.innerHTML = `
+        <div class="cr-row" onclick="toggleRow('${asset.name}', event)" role="button" tabindex="0" aria-expanded="${open}">
+            <span class="drag-handle" aria-label="สลับลำดับ ${asset.name}">≡</span>
+            <div class="asset-badge">${asset.name.slice(0, 4)}</div>
+            <div class="cr-name">
+                <b>${asset.name}</b>
+                <small>◔ ${fmtPct(curPct)} <span class="cr-target">/ ${fmtPct(asset.target || 0)}</span>${act}</small>
+            </div>
+            <div class="cr-value"><b>${fmtUsd(asset.value || 0)}</b><small>${other}</small></div>
+            <div class="cr-profit">${profitHtml}</div>
+        </div>
+        <div class="cr-detail">
         <div class="asset-header">
             <span class="drag-handle" aria-label="สลับลำดับ ${asset.name}">≡</span>
             <div class="asset-badge">${asset.name.slice(0, 4)}</div>
@@ -1849,22 +1870,81 @@ function appendAssetCard(list, payload) {
             <button class="btn-card-gear" type="button" aria-label="ตั้งค่า ${asset.name}" onclick="openAssetSheet(${index})">⚙</button>
             <button class="btn-delete" type="button" aria-label="ลบ ${asset.name}" onclick="deleteAsset(${index})">×</button>
         </div>
-        ${renderAssetGrid(index, asset, curPct, ideal, profitFmt, cost, profit, profitPct, tradeSignal, action)}`;
+        ${renderAssetGrid(index, asset, curPct, ideal, profitFmt, cost, profit, profitPct, tradeSignal, action)}
+        </div>`;
     list.appendChild(row);
+}
+
+/* แถวกระชับ: แตะเพื่อเปิดรายละเอียด (จำว่าตัวไหนเปิดอยู่ระหว่างคำนวณใหม่) */
+const openRows = new Set();
+function toggleRow(name, e) {
+    if (e && e.target.closest && e.target.closest('.drag-handle')) return;
+    if (openRows.has(name)) openRows.delete(name); else openRows.add(name);
+    const card = document.querySelector(`.asset-card[data-name="${CSS.escape(name)}"]`);
+    if (card) {
+        card.classList.toggle('open', openRows.has(name));
+        card.querySelector('.cr-row')?.setAttribute('aria-expanded', String(openRows.has(name)));
+    }
+}
+
+/* เรียงรายการ: manual = ลำดับที่ลากจัดเอง (ค่าเริ่มต้น) */
+const SORT_MODES = ['manual', 'value', 'profitPct', 'profit', 'cost'];
+let sortMode = (() => { try { const v = localStorage.getItem('rbSort'); return SORT_MODES.includes(v) ? v : 'manual'; } catch { return 'manual'; } })();
+let sortDesc = (() => { try { return localStorage.getItem('rbSortDir') !== 'asc'; } catch { return true; } })();
+
+function setSortMode(mode) {
+    if (!SORT_MODES.includes(mode)) return;
+    sortMode = mode;
+    try { localStorage.setItem('rbSort', mode); } catch { /* ignore */ }
+    renderAndCalculate();
+}
+
+function toggleSortDir() {
+    sortDesc = !sortDesc;
+    try { localStorage.setItem('rbSortDir', sortDesc ? 'desc' : 'asc'); } catch { /* ignore */ }
+    renderAndCalculate();
+}
+
+function sortItems(items) {
+    if (sortMode === 'manual') return items;
+    const key = item => {
+        if (sortMode === 'value') return item.asset.value || 0;
+        if (sortMode === 'cost') return item.cost || 0;
+        if (!(item.cost > 0)) return null; // ไม่มีต้นทุน/เงินสด ไปท้ายสุด
+        return sortMode === 'profit' ? item.profit : item.profitPct;
+    };
+    return [...items].sort((a, b) => {
+        const ka = key(a), kb = key(b);
+        if (ka == null && kb == null) return 0;
+        if (ka == null) return 1;
+        if (kb == null) return -1;
+        return sortDesc ? kb - ka : ka - kb;
+    });
+}
+
+function updateSortBar(count) {
+    const sel = document.getElementById('sort-select');
+    if (sel) sel.value = sortMode;
+    const dir = document.getElementById('sort-dir');
+    if (dir) { dir.textContent = sortDesc ? '↓' : '↑'; dir.hidden = sortMode === 'manual'; }
+    const c = document.getElementById('sort-count');
+    if (c) c.textContent = `${count} สินทรัพย์`;
 }
 
 function renderAndCalculate() {
     const list = document.getElementById('assets-list');
     list.innerHTML = '';
+    list.classList.toggle('sorted', sortMode !== 'manual');
 
     syncAssetValues();
     const { totalValue, totalTarget, assets } = computePortfolio();
     updateSummary(totalValue, totalTarget);
 
-    const visible = assets.filter(({ asset }) => isVisibleAsset(asset));
+    const visible = sortItems(assets.filter(({ asset }) => isVisibleAsset(asset)));
+    updateSortBar(visible.length);
 
     if (visible.length === 0) {
-        list.innerHTML = `<div class="empty-state">ยังไม่มีสินทรัพย์ใน${getGroupLabel(activeTab)}<br>กดปุ่มด้านล่างเพื่อเพิ่ม</div>`;
+        list.innerHTML = `<div class="empty-state">ยังไม่มีสินทรัพย์<br>กดปุ่มด้านล่างเพื่อเพิ่ม</div>`;
         return;
     }
 
@@ -1918,7 +1998,8 @@ function closeAddSheet(e) {
 
 function addAsset() {
     let name = document.getElementById('new-asset-name').value.trim().toUpperCase();
-    const group = activeTab;
+    // ไม่มีแท็บกลุ่มแล้ว: USD/CASH → กลุ่มเงินสด, อื่น ๆ → เดาจากชื่อ
+    const group = /^(USD|THB|CASH)$/.test(name) ? getCashGroupId() : inferGroup(name, inferKind(name, null));
     if (isCashGroup(group)) {
         if (!name) name = 'USD';
     } else if (!name) {

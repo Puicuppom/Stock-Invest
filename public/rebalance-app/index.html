@@ -57,10 +57,23 @@
         </div>
     </div>
 
-    <div class="mode-bar" id="mode-bar"></div>
+    <div class="mode-bar" id="mode-bar" hidden></div>
 
-    <div class="squad-note" id="squad-note"></div>
+    <div class="squad-note" id="squad-note" hidden></div>
 
+    <div class="sort-bar">
+        <span class="sort-count" id="sort-count"></span>
+        <label class="sort-select-wrap">เรียงตาม
+            <select id="sort-select" onchange="setSortMode(this.value)">
+                <option value="manual">ลำดับที่จัดเอง</option>
+                <option value="value">มูลค่าสินทรัพย์</option>
+                <option value="profitPct">กำไร (%)</option>
+                <option value="profit">กำไร (จำนวนเงิน)</option>
+                <option value="cost">ต้นทุนรวม</option>
+            </select>
+        </label>
+        <button type="button" class="sort-dir" id="sort-dir" onclick="toggleSortDir()" title="สลับมาก → น้อย / น้อย → มาก">↓</button>
+    </div>
     <div class="list-wrap" id="assets-list"></div>
 </div>
 
