@@ -25,6 +25,8 @@ export interface ChipSignal {
   price: number;
   name: string | null;
   dipLabel: string | null;
+  /** % ลงจากจุดสูงสุด */
+  dipDrawdown?: number | null;
   /** ข้อความสั้นบนชิป (ETF ใช้คำต่างจากหุ้น) */
   dipShort?: string | null;
   /** ราคาปิด ~1 เดือนล่าสุด สำหรับกราฟเส้นจิ๋ว */
@@ -37,13 +39,13 @@ export type WatchlistSignals = Record<string, ChipSignal>;
 export function chipSignalOf(data: StockData): ChipSignal {
   const trend = analyzeTrend(data);
   const event = eventBadges(data.events, data.market)
-    .filter(b => b.tone !== "dim" && b.days >= 0)
+    .filter(b => b.days >= 0)
     .sort((a, b) => a.days - b.days)[0] ?? null;
   const isEtf = data.assetKind === "etf" || data.assetKind === "gold-etf";
   const etfDip = isEtf ? analyzeEtfDip(data.candles) : null;
   const dip = isEtf ? (etfDip && (etfDip.kind === "good" || etfDip.kind === "watch") ? { kind: etfDip.kind as DipKind, verdict: etfDip.verdict, drawdownPercent: etfDip.drawdownPercent } : null) : analyzeDip(data);
   const dipLabel = dip && dip.drawdownPercent != null && dip.kind !== "na" && dip.kind !== "notdeep" ? `${dip.verdict} (${dip.drawdownPercent.toFixed(0)}% จากจุดสูงสุด)` : null;
-  return { trend: trend?.kind ?? null, trendLabel: trend?.label ?? null, changePercent: data.extended?.changePercent ?? data.changePercent, extSession: data.extended?.session ?? null, event, dipKind: dip?.kind ?? null, dipLabel, dipShort: isEtf && dip ? (dip.kind === "good" ? "ETF ลดราคา" : "ETF ย่อตัว") : null, price: data.extended?.price ?? data.lastClose, name: data.longName, spark: data.candles.slice(-22).map(c => c.close) };
+  return { trend: trend?.kind ?? null, trendLabel: trend?.label ?? null, changePercent: data.extended?.changePercent ?? data.changePercent, extSession: data.extended?.session ?? null, event, dipKind: dip?.kind ?? null, dipLabel, dipDrawdown: dip?.drawdownPercent ?? null, dipShort: isEtf && dip ? (dip.kind === "good" ? "ETF ลดราคา" : "ETF ย่อตัว") : null, price: data.extended?.price ?? data.lastClose, name: data.longName, spark: data.candles.slice(-22).map(c => c.close) };
 }
 
 interface UseSrWatchlistTagsOptions {

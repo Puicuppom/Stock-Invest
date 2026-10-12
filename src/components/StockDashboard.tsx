@@ -25,7 +25,11 @@ interface StockDashboardProps {
   events?: StockEvents | null;
   extended?: ExtendedQuote | null;
   logoSymbol?: string;
+  /** ป้ายลดราคา/กับดัก — ใช้ตรรกะเดียวกับหน้า Watchlist */
+  dip?: { kind: string; label: string | null; short: string | null; drawdown: number | null } | null;
 }
+
+const DIP_TAG: Record<string, { icon: string; text: string }> = { good: { icon: "🏷️", text: "ลดราคา" }, trap: { icon: "⚠️", text: "ระวังกับดัก" }, watch: { icon: "👀", text: "น่าจับตา" } };
 
 /** เลื่อนไปยังส่วนที่เกี่ยวข้องในการ์ดสรุปสัญญาณ แล้วกะพริบไฮไลต์ */
 function jumpTo(id: string) {
@@ -91,8 +95,10 @@ export default function StockDashboard({
   events,
   extended,
   logoSymbol,
+  dip,
 }: StockDashboardProps) {
   const evBadges = eventBadges(events, market);
+  const dipTag = dip && DIP_TAG[dip.kind];
   const changePositive = change >= 0;
   const { range52w, dividendYieldPercent, dividendRate } = fairValue;
 
@@ -133,9 +139,6 @@ export default function StockDashboard({
             </p>
           )}
           <div className="dash-badges">
-            <span className="market-badge">
-              {market === "TH" ? "BKK" : "US"}
-            </span>
             {kindLabel && (
               <span className="market-badge asset-badge">{kindLabel}</span>
             )}
@@ -154,6 +157,9 @@ export default function StockDashboard({
             )}
             {nearResistance && (
               <button type="button" className="header-sr-tag header-sr-tag-res dash-jump" onClick={() => jumpTo("ss-sr")} title="ดูแนวรับ/แนวต้าน">ต้าน</button>
+            )}
+            {dip && dipTag && (
+              <button type="button" className={`header-dip-tag dip-${dip.kind} dash-jump`} onClick={() => jumpTo(assetKind === "stock" ? "ss-dip" : "ss-trend")} title={dip.label ?? dipTag.text}>{dipTag.icon} {dip.short ?? dipTag.text}{dip.drawdown != null ? ` ${dip.drawdown.toFixed(0)}%` : ""}</button>
             )}
             {evBadges.map((b) => (
               <button key={b.kind} type="button" className={`ev-badge ev-${b.tone} dash-jump`} onClick={() => jumpTo("ss-plan")} title={b.title}>

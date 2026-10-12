@@ -329,6 +329,7 @@ export default function StockApp() {
           events={selectedData.events}
           extended={selectedData.extended}
           logoSymbol={selectedData.resolvedSymbol}
+          dip={(() => { const c = chipSignalOf(selectedData); return c.dipKind ? { kind: c.dipKind, label: c.dipLabel, short: c.dipShort ?? null, drawdown: c.dipDrawdown ?? null } : null; })()}
         />
       )}
 
