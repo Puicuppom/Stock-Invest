@@ -1,4 +1,6 @@
 import StockLogo from "./StockLogo";
+import RevIcon from "./RevIcon";
+import type { ReversalTag } from "@/lib/reversal";
 import type { TradePlan } from "@/lib/trade-plan";
 import { assetKindLabel } from "@/lib/instrument";
 import type { AssetKind, FairValueResult } from "@/lib/types";
@@ -26,6 +28,7 @@ interface StockDashboardProps {
   extended?: ExtendedQuote | null;
   logoSymbol?: string;
   /** ป้ายลดราคา/กับดัก — ใช้ตรรกะเดียวกับหน้า Watchlist */
+  rev?: ReversalTag | null;
   dip?: { kind: string; label: string | null; short: string | null; drawdown: number | null } | null;
 }
 
@@ -96,6 +99,7 @@ export default function StockDashboard({
   extended,
   logoSymbol,
   dip,
+  rev,
 }: StockDashboardProps) {
   const evBadges = eventBadges(events, market);
   const dipTag = dip && DIP_TAG[dip.kind];
@@ -151,6 +155,9 @@ export default function StockDashboard({
               >
                 {trendIcon(trend.kind, trend.label)} {trend.label}
               </button>
+            )}
+            {rev && (
+              <button type="button" className={`header-rev-tag rev-${rev.dir} dash-jump`} onClick={() => jumpTo("ss-rev")} title={rev.verdict}><RevIcon dir={rev.dir} size={13} /> {rev.dir === "up" ? "กลับตัวขึ้น" : "กลับตัวลง"}{rev.kind === "confirmed" ? " ✓" : ""}</button>
             )}
             {nearSupport && (
               <button type="button" className="header-sr-tag header-sr-tag-sup dash-jump" onClick={() => jumpTo("ss-sr")} title="ดูแนวรับ/แนวต้าน">รับ</button>

@@ -4,6 +4,7 @@ import { findSrHits, type SrHit } from "@/lib/sr-levels";
 import type { SrMode, StockData, WatchlistItem } from "@/lib/types";
 import { watchlistId } from "@/lib/watchlist-id";
 import { analyzeTrend, type TrendKind } from "@/lib/trend";
+import { reversalTag, type ReversalTag } from "@/lib/reversal";
 import { eventBadges, type EventBadge } from "@/lib/events";
 import { analyzeDip, type DipKind } from "@/lib/dip";
 import { analyzeEtfDip } from "@/lib/etf";
@@ -25,6 +26,8 @@ export interface ChipSignal {
   price: number;
   name: string | null;
   dipLabel: string | null;
+  /** สัญญาณกลับตัว ลงแล้วขึ้น / ขึ้นแล้วลง */
+  rev?: ReversalTag | null;
   /** % ลงจากจุดสูงสุด */
   dipDrawdown?: number | null;
   /** ข้อความสั้นบนชิป (ETF ใช้คำต่างจากหุ้น) */
@@ -45,7 +48,7 @@ export function chipSignalOf(data: StockData): ChipSignal {
   const etfDip = isEtf ? analyzeEtfDip(data.candles) : null;
   const dip = isEtf ? (etfDip && (etfDip.kind === "good" || etfDip.kind === "watch") ? { kind: etfDip.kind as DipKind, verdict: etfDip.verdict, drawdownPercent: etfDip.drawdownPercent } : null) : analyzeDip(data);
   const dipLabel = dip && dip.drawdownPercent != null && dip.kind !== "na" && dip.kind !== "notdeep" ? `${dip.verdict} (${dip.drawdownPercent.toFixed(0)}% จากจุดสูงสุด)` : null;
-  return { trend: trend?.kind ?? null, trendLabel: trend?.label ?? null, changePercent: data.extended?.changePercent ?? data.changePercent, extSession: data.extended?.session ?? null, event, dipKind: dip?.kind ?? null, dipLabel, dipDrawdown: dip?.drawdownPercent ?? null, dipShort: isEtf && dip ? (dip.kind === "good" ? "ETF ลดราคา" : "ETF ย่อตัว") : null, price: data.extended?.price ?? data.lastClose, name: data.longName, spark: data.candles.slice(-22).map(c => c.close) };
+  return { trend: trend?.kind ?? null, trendLabel: trend?.label ?? null, changePercent: data.extended?.changePercent ?? data.changePercent, extSession: data.extended?.session ?? null, event, dipKind: dip?.kind ?? null, dipLabel, dipDrawdown: dip?.drawdownPercent ?? null, rev: reversalTag(data), dipShort: isEtf && dip ? (dip.kind === "good" ? "ETF ลดราคา" : "ETF ย่อตัว") : null, price: data.extended?.price ?? data.lastClose, name: data.longName, spark: data.candles.slice(-22).map(c => c.close) };
 }
 
 interface UseSrWatchlistTagsOptions {

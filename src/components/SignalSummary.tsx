@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Gauge from "./Gauge";
 import SrLadder from "./SrLadder";
-import { analyzeReversal, rsiSeries, type ReversalSignal } from "@/lib/reversal";
+import { analyzeReversal, analyzeTopReversal, reversalTag, rsiSeries, type ReversalSignal } from "@/lib/reversal";
 import { completedCandles } from "@/lib/screener";
 import type { SrHit } from "@/lib/sr-levels";
 import { TREND_METHOD, trendIcon, type TrendResult } from "@/lib/trend";
@@ -32,7 +32,10 @@ export default function SignalSummary(props: Props) {
   const [openSignal, setOpenSignal] = useState<string | null>(null);
   const [openDip, setOpenDip] = useState<string | null>(null);
   const price = data.lastClose;
-  const reversal = analyzeReversal(data);
+  // กลับตัวขึ้น (ลงแล้วขึ้น) หรือกลับตัวลง (ขึ้นแล้วลง): หุ้นขาขึ้นหรือมีสัญญาณขึ้นแล้วลงชัด → ดูฝั่งกลับตัวลง
+  const revTag = reversalTag(data);
+  const revDown = revTag ? revTag.dir === "down" : trend?.kind === "up";
+  const reversal = revDown ? analyzeTopReversal(data) : analyzeReversal(data);
   const vol = analyzeVolume(data);
   const dip = analyzeDip(data);
   const dipSelected = dip?.checks.find(c => c.label === openDip) ?? null;
@@ -235,8 +238,8 @@ export default function SignalSummary(props: Props) {
       )}
 
       {reversal && (
-        <div className="ss-row ss-row-top">
-          <span className="ss-label">กลับตัว</span>
+        <div className={`ss-row ss-row-top${revDown ? " rev-bear" : ""}`} id="ss-rev">
+          <span className="ss-label">{revDown ? "กลับตัวลง" : "กลับตัวขึ้น"}</span>
           <div className="ss-body">
             <div className="ss-dots-line">
               <span className="ss-dots" aria-label={`คะแนน ${reversal.score} จาก 7`}>

@@ -12,6 +12,7 @@ import SignalSummary from "@/components/SignalSummary";
 import StockChart from "@/components/StockChart";
 import WatchlistList from "@/components/WatchlistList";
 import { useSrTagSettings } from "@/hooks/useSrTagSettings";
+import { reversalTag } from "@/lib/reversal";
 import { chipSignalOf, getCachedStock, putCachedStock, useSrWatchlistTags, type WatchlistSrTags } from "@/hooks/useSrWatchlistTags";
 import { useWatchlist } from "@/hooks/useWatchlist";
 import { useSrMode } from "@/hooks/useSrMode";
@@ -329,6 +330,7 @@ export default function StockApp() {
           events={selectedData.events}
           extended={selectedData.extended}
           logoSymbol={selectedData.resolvedSymbol}
+          rev={reversalTag(selectedData)}
           dip={(() => { const c = chipSignalOf(selectedData); return c.dipKind ? { kind: c.dipKind, label: c.dipLabel, short: c.dipShort ?? null, drawdown: c.dipDrawdown ?? null } : null; })()}
         />
       )}

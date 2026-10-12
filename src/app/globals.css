@@ -1657,3 +1657,28 @@ select option:checked { background-color: color-mix(in srgb, var(--accent) 30%, 
   font-size: 0.72rem; font-weight: 700; line-height: 1; white-space: nowrap;
 }
 .dash-badges > .market-badge { border-color: var(--border); }
+
+/* สัญญาณกลับตัว: ลงแล้วขึ้น (เขียว) / ขึ้นแล้วลง (แดง) */
+.rev-ico { display: block; flex: none; }
+.wl-line2 .wl-ico.rev-up { color: var(--success); border-color: color-mix(in srgb, var(--success) 45%, transparent); }
+.wl-line2 .wl-ico.rev-down { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, transparent); }
+.wl-line2 .wl-ico.rev-confirmed.rev-up { background: color-mix(in srgb, var(--success) 16%, transparent); }
+.wl-line2 .wl-ico.rev-confirmed.rev-down { background: color-mix(in srgb, var(--danger) 16%, transparent); }
+.dash-badges > .header-rev-tag {
+  display: inline-flex; align-items: center; gap: 4px; box-sizing: border-box;
+  height: 24px; padding: 0 8px; margin: 0; border-radius: 999px; border: 1px solid;
+  font-size: 0.72rem; font-weight: 700; line-height: 1; white-space: nowrap;
+}
+.header-rev-tag.rev-up { color: var(--success); background: color-mix(in srgb, var(--success) 14%, transparent); border-color: color-mix(in srgb, var(--success) 40%, transparent); }
+.header-rev-tag.rev-down { color: var(--danger); background: color-mix(in srgb, var(--danger) 14%, transparent); border-color: color-mix(in srgb, var(--danger) 40%, transparent); }
+
+/* แถวไอคอนยืดเข้าไปใต้กราฟจิ๋วได้ (กราฟจิ๋วยกขึ้นไปอยู่ระดับชื่อ) */
+.wl-main.has-spark .wl-spark { align-self: start; margin-top: 16px; }
+.wl-main.has-spark .wl-line2 { width: calc(100% + 56px + 12px); position: relative; z-index: 1; gap: 4px; }
+@media (max-width: 420px) { .wl-main.has-spark .wl-line2 { width: calc(100% + 44px + 8px); } }
+/* การ์ดกลับตัวลง: ข้อที่ผ่าน = สัญญาณร้าย จึงใช้สีแดง */
+.rev-bear .ss-label { color: var(--danger); }
+.rev-bear .ss-dot-yes { background: var(--danger); }
+.rev-bear .rev-chip.rev-yes { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, transparent); background: color-mix(in srgb, var(--danger) 12%, var(--surface-2)); }
+.rev-bear .rev-verdict-confirmed, .rev-bear .rev-verdict-clear { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, transparent); background: color-mix(in srgb, var(--danger) 12%, var(--surface-2)); }
+.rev-bear .rev-chip.rev-yes .rev-icon { color: var(--danger); }

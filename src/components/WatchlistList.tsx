@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { attachRowGestures } from "@/lib/row-gestures";
 import StockLogo from "./StockLogo";
+import RevIcon from "./RevIcon";
 import { displaySymbol, normalizeInput } from "@/lib/symbol";
 import { watchlistId } from "@/lib/watchlist-id";
 import { trendLean, LEAN_GLYPH, LEAN_SHORT } from "@/lib/trend";
@@ -135,6 +136,7 @@ export default function WatchlistList({ items, signals, quotes, onRefresh, refre
                     <span className="wl-line2">
                       {/* ไอคอนอย่างเดียว · ความหมายเต็มอยู่ใน title / หน้าวิเคราะห์ */}
                       {sig?.trend && (() => { const lean = trendLean(sig.trend, sig.trendLabel); return <em className={`wl-ico lean lean-${lean}`} title={sig.trendLabel ?? LEAN_SHORT[lean]} aria-label={LEAN_SHORT[lean]}>{LEAN_GLYPH[lean]}</em>; })()}
+                      {sig?.rev && <em className={`wl-ico rev-${sig.rev.dir}${sig.rev.kind === "confirmed" ? " rev-confirmed" : ""}`} title={sig.rev.verdict} aria-label={sig.rev.verdict}><RevIcon dir={sig.rev.dir} /></em>}
                       {nearSup && <em className="wl-ico sup" title="ใกล้แนวรับ" aria-label="ใกล้แนวรับ">🛡️</em>}
                       {nearRes && <em className="wl-ico res" title="ใกล้แนวต้าน" aria-label="ใกล้แนวต้าน">🧱</em>}
                       {sig?.dipKind && DIP_ICON[sig.dipKind] && <em className={`wl-ico dip-${sig.dipKind}`} title={sig.dipLabel ?? sig.dipShort ?? ""} aria-label={sig.dipShort ?? sig.dipLabel ?? ""}>{DIP_ICON[sig.dipKind]}</em>}
