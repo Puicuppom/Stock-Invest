@@ -224,11 +224,6 @@ export default function StockDashboard({
           </div>
 
           <div className="dash-metrics-cols">
-            <div className="dash-metric">
-              <p className="dash-metric-label">FCF Yield</p>
-              <p className="dash-metric-value">—</p>
-              <p className="dash-metric-sub">ไม่ใช้กับ ETF</p>
-            </div>
 
             <div className="dash-metric">
               <p className="dash-metric-label">อัตราปันผล</p>

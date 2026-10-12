@@ -14,7 +14,8 @@ export async function GET(
       market ?? "US",
       {screening:request.nextUrl.searchParams.get("mode")==="screen"}
     );
-    return NextResponse.json(request.nextUrl.searchParams.get("mode")==="screen" ? {...data,candles:data.candles.slice(-252)} : data);
+    // โหมดคัดหุ้นส่งราคาแค่ 1 ปีให้เบา · ETF ส่งครบเพื่อดูประวัติการลงลึก/ฟื้นตัว
+    return NextResponse.json(request.nextUrl.searchParams.get("mode")==="screen" && data.assetKind === "stock" ? {...data,candles:data.candles.slice(-252)} : data);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to fetch stock data";

@@ -5,6 +5,7 @@ import AddStockFab from "@/components/AddStockFab";
 import AppNavigation from "@/components/AppNavigation";
 import StockDashboard from "@/components/StockDashboard";
 import CompanyCard from "./CompanyCard";
+import EtfCard from "./EtfCard";
 import SignalSummary from "@/components/SignalSummary";
 import StockChart from "@/components/StockChart";
 import WatchlistList from "@/components/WatchlistList";
@@ -308,6 +309,7 @@ export default function StockApp() {
           onToleranceChange={setTagTolerance}
         />
       )}
+      {selectedData && (selectedData.assetKind === "etf" || selectedData.assetKind === "gold-etf") && <EtfCard data={selectedData} />}
       {selectedData?.company && <CompanyCard company={selectedData.company} />}
 
 

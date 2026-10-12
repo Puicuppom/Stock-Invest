@@ -13,8 +13,8 @@ import { DISCOVERY_SECTORS } from "@/lib/discovery";
 import type { StockData } from "@/lib/types";
 type Row = { symbol: string; data?: StockData; error?: string };
 const CONCURRENCY = 8;
-const STYLE_ICON: Record<string, string> = { dip: "🏷️", momentum: "🚀", smallcap: "💎", dividend: "💰" };
-const STYLE_SHORT: Record<string, string> = { dip: "ลดราคา", momentum: "ไปต่อ", smallcap: "หุ้นจิ๋ว", dividend: "ปันผล" };
+const STYLE_ICON: Record<string, string> = { dip: "🏷️", momentum: "🚀", smallcap: "💎", dividend: "💰", etf: "📦" };
+const STYLE_SHORT: Record<string, string> = { dip: "ลดราคา", momentum: "ไปต่อ", smallcap: "หุ้นจิ๋ว", dividend: "ปันผล", etf: "ETF" };
 type Snapshot = {
   style: ScreeningStyle; market: "US" | "TH"; source: "discover" | "watchlist";
   sector: string; cap: string; nextOffset: number | null; discoveryNote: string;
@@ -185,10 +185,10 @@ export default function StockScreener() {
       <span className="scr-seg" role="group" aria-label="ตลาด">
         {(["US","TH"] as const).map(m=><button key={m} type="button" aria-pressed={market===m} disabled={busy} onClick={()=>{if (m!==market) {setMarket(m);clearResults();}}}>{m==="US"?"US":"ไทย"}</button>)}
       </span>
-      <label className="scr-pick" title="กลุ่มธุรกิจ"><span aria-hidden="true">🏢</span>
+      {style !== "etf" && <label className="scr-pick" title="กลุ่มธุรกิจ"><span aria-hidden="true">🏢</span>
         <select aria-label="กลุ่มธุรกิจ" value={sector} disabled={busy} onChange={e=>{setSector(e.target.value);clearResults();}}>{DISCOVERY_SECTORS.map(([value,label])=><option key={value} value={value}>{value ? label : "ทุกกลุ่ม"}</option>)}</select>
-      </label>
-      {style !== "smallcap" && <label className="scr-pick" title="ขนาดบริษัท"><span aria-hidden="true">📏</span>
+      </label>}
+      {style !== "smallcap" && style !== "etf" && <label className="scr-pick" title="ขนาดบริษัท"><span aria-hidden="true">📏</span>
         <select aria-label="ขนาดบริษัท" value={cap} disabled={busy} onChange={e=>{setCap(e.target.value);clearResults();}}><option value="all">ทุกขนาด</option><option value="large">ใหญ่</option><option value="mid">กลาง</option><option value="small">เล็ก</option></select>
       </label>}
     </div>
@@ -222,6 +222,8 @@ export default function StockScreener() {
           {row.data && <em className="scr-chip score" title={`คะแนน · ${RANKING_DESCRIPTION[style]}`}>★ {row.score}</em>}
           {lean && <em className={`scr-chip ico lean lean-${lean}`} title={`${LEAN_SHORT[lean]} · ${row.trend!.label}`} aria-label={LEAN_SHORT[lean]}>{LEAN_GLYPH[lean]}</em>}
           {row.flags.length>0 && <em className="scr-chip warn" title={row.flags.join(" · ")}>⚠</em>}
+          {style==="etf" && row.data?.etf?.expenseRatio!=null && <em className="scr-chip" title="ค่าธรรมเนียมต่อปี">💸 {row.data.etf.expenseRatio.toFixed(2)}%</em>}
+          {style==="etf" && row.data && <em className="scr-chip fail" title="ห่างจุดสูงสุด 52 สัปดาห์">▼ {Math.abs((row.data.lastClose/Math.max(...row.data.candles.slice(-252).map(c=>c.high||c.close))-1)*100).toFixed(0)}%</em>}
         </>}>
         {row.flags.length>0 && <p className="screen-flags" role="note">⚠ {row.flags.join(" · ")}</p>}
         {row.data && <ScreeningEntryCard data={row.data} style={style} ctx={ctx} />}

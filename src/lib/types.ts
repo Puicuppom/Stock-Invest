@@ -152,6 +152,8 @@ export interface StockData {
   company?: import("./financials").CompanyInfo | null;
   /** ราคาก่อนเปิด/หลังปิด (หุ้นสหรัฐ) */
   extended?: import("./yahoo-quote").ExtendedQuote | null;
+  /** ข้อมูลเฉพาะ ETF: ค่าธรรมเนียม ขนาด หุ้นที่ถือ สัดส่วนกลุ่ม */
+  etf?: import("./etf").EtfInfo | null;
 }
 
 export interface WatchlistItem {

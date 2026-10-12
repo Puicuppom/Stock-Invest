@@ -43,8 +43,16 @@ export function deepEnough(q: DiscoveryQuote, minDropPercent: number) {
   if (p == null || h == null || !Number.isFinite(p) || !Number.isFinite(h) || h <= 0) return true;
   return (p / h - 1) * 100 <= -minDropPercent + 3;
 }
-export function eligibleQuote(q: DiscoveryQuote, market: "TH"|"US") {
-  if (!q.symbol || q.quoteType !== "EQUITY" || !/^[A-Z0-9.^=-]{1,40}$/.test(q.symbol)) return false;
-  if (market === "TH") return q.symbol.endsWith(".BK") && !/-(?:R|F|W\d*)\.BK$/.test(q.symbol) && q.currency === "THB" && !/(?:_DR\b|\bDR\b|WARRANT)/i.test(q.shortName || "");
+/** ETF ยอดนิยม — ใช้เมื่อค้นจาก Yahoo ไม่ได้ (รายชื่อสำหรับตั้งต้น ไม่ใช่คำแนะนำ) */
+export const ETF_UNIVERSE: Record<"US" | "TH", string[]> = {
+  US: ["VOO", "SPY", "IVV", "VTI", "QQQ", "QQQM", "SCHD", "VYM", "VIG", "DGRO", "SCHG", "VUG", "VTV", "RSP", "DIA", "IWM", "IJR", "MDY",
+    "VGT", "XLK", "SMH", "SOXX", "XLF", "XLV", "XLE", "XLI", "XLY", "XLP", "XLU", "XLRE", "XLB", "XLC", "VNQ", "IBB", "XBI", "ITA",
+    "VEA", "VWO", "IEFA", "IEMG", "EFA", "EEM", "VXUS", "ACWI", "VT", "EWJ", "INDA", "KWEB", "FXI", "EWZ",
+    "JEPI", "JEPQ", "COWZ", "AVUV", "MGK", "TLT", "IEF", "BND", "AGG", "LQD", "HYG", "GLD", "IAU"],
+  TH: ["TDEX", "1DIV", "BMSCG", "ENGY", "GLD"],
+};
+export function eligibleQuote(q: DiscoveryQuote, market: "TH"|"US", etf = false) {
+  if (!q.symbol || q.quoteType !== (etf ? "ETF" : "EQUITY") || !/^[A-Z0-9.^=-]{1,40}$/.test(q.symbol)) return false;
+  if (market === "TH") return q.symbol.endsWith(".BK") && !/-(?:R|F|W\d*)\.BK$/.test(q.symbol) && q.currency === "THB" && (etf || !/(?:_DR\b|\bDR\b|WARRANT)/i.test(q.shortName || ""));
   return q.currency === "USD" && !q.symbol.endsWith(".BK");
 }

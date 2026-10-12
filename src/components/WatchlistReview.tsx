@@ -10,7 +10,7 @@ import { watchlistId } from "@/lib/watchlist-id";
 import type { StockData, WatchlistItem } from "@/lib/types";
 
 const STYLES: { key: ScreeningStyle; icon: string }[] = [
-  { key: "dip", icon: "🏷️" }, { key: "momentum", icon: "🚀" }, { key: "smallcap", icon: "💎" }, { key: "dividend", icon: "💰" },
+  { key: "dip", icon: "🏷️" }, { key: "momentum", icon: "🚀" }, { key: "smallcap", icon: "💎" }, { key: "dividend", icon: "💰" }, { key: "etf", icon: "📦" },
 ];
 type Row = { item: WatchlistItem; data?: StockData; error?: boolean };
 
@@ -64,7 +64,7 @@ export default function WatchlistReview({ items, loaded }: { items: WatchlistIte
         <span>{busy ? `กำลังวิเคราะห์ ${rows.filter(r => r.data || r.error).length}/${items.length}` : `${items.length} ตัว`}</span>
         <button type="button" disabled={busy || !items.length} onClick={run}>↻ วิเคราะห์ใหม่</button>
       </div>
-      <p className="wr-legend">🏷️ ดีลดราคา · 🚀 แกร่งไปต่อ · 💎 จิ๋วเตรียมพุ่ง · 💰 ปันผลงาม · ● ขาด 1 ข้อ</p>
+      <p className="wr-legend">🏷️ ดีลดราคา · 🚀 แกร่งไปต่อ · 💎 จิ๋วเตรียมพุ่ง · 💰 ปันผลงาม · 📦 ETF ลดราคา · ● ขาด 1 ข้อ</p>
       <ul className="wl-list scr-list">
       {rows.map(({ item, data, error }) => {
         const id = watchlistId(item);

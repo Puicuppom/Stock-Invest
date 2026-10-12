@@ -1,6 +1,7 @@
 import type { StockData } from "./types";
 import { completedCandles, valuationRiskFlags, type ScreeningStyle } from "./screener";
 import { analyzeDip } from "./dip";
+import { analyzeEtfDip } from "./etf";
 import { analyzeMomentum, techSnapshot, type MarketContext } from "./momentum";
 const clamp = (value: number) => Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 0;
 const num = (value: number | null | undefined) => value != null && Number.isFinite(value) ? value : 0;
@@ -10,6 +11,7 @@ export const RANKING_DESCRIPTION: Record<ScreeningStyle, string> = {
   momentum: "พื้นฐาน 40 คะแนน (ROE อัตรากำไร รายได้ กำไรคาดการณ์ หนี้ ข้อละ 8) + แรงกว่าตลาด 6 เดือน 15 (เต็มที่ +30 จุด%) + ใกล้จุดสูงสุด 15 + ขาขึ้น 15 + ยังไม่วิ่งเกินตัว 15",
   smallcap: "รายได้โต 25 คะแนน (เต็มที่ 40%) + กำไรคาดการณ์โต 20 (เต็มที่ 40%) + แรงซื้อ Volume 25 (เต็มที่ 2.5 เท่า) + ใกล้จุดสูงสุด 3 เดือน 15 + ROE 15 (เต็มที่ 20%) · หัก 10 คะแนนต่อคำเตือนข้อมูล",
   dividend: "Yield ใกล้ 4% 30 คะแนน (ลดตามระยะห่าง เต็มช่วง ±4 จุดเปอร์เซ็นต์) + FCF Yield 25 (เต็มที่ 8%) + ความปลอดภัยปันผล 30 (จ่ายจากกำไร 20 เต็มเมื่อ ≤60% เป็นศูนย์ที่ 100% · เงินสดอิสระครอบคลุม 10 เต็มที่ 2 เท่า) + P/E 15 (เต็มเมื่อ ≤15 ลดจนเป็นศูนย์ที่ 30)",
+  etf: "ความลึกเทียบประวัติของกอง 50 คะแนน (ลงลึก + นาน ๆ ครั้งจะลงลึกขนาดนี้) + ค่าธรรมเนียมต่ำ 30 (เต็มเมื่อ ≤ 0.05% เป็นศูนย์ที่ 0.6%) + ขนาดกอง 20 (เต็มที่ 100 พันล้าน)",
   short: "ปริมาณซื้อขายเทียบ 20 วันก่อน 40 คะแนน (เต็มที่ 3 เท่า) + SMA20 เหนือ SMA50 30 (เต็มที่ 10%) + ราคาไม่ห่าง SMA20 30 (ลดจนเป็นศูนย์เมื่อห่าง 10%) · ใช้เฉพาะวันที่ตลาดปิดแล้ว",
 };
 export function interestScore(data: StockData, style: ScreeningStyle, ctx?: MarketContext | null): number {
@@ -21,6 +23,13 @@ export function interestScore(data: StockData, style: ScreeningStyle, ctx?: Mark
       +15*clamp(num(q?.roePercent)/25)+10*clamp(num(q?.operatingMarginPercent)/30)+5*clamp(num(q?.revenueGrowthPercent)/15)
       +15*clamp(f.modelCount/2);
     score-=10*valuationRiskFlags(f).length;
+  }
+  else if (style === "etf") {
+    const e=data.etf;
+    const fee=e?.expenseRatio;
+    score=0.5*(analyzeEtfDip(data.candles)?.score ?? 0)
+      +30*(fee != null && Number.isFinite(fee) ? clamp((0.6-fee)/0.55) : 0)
+      +20*(e?.totalAssets ? clamp(Math.log10(e.totalAssets/1e9)/2) : 0);
   }
   else if (style === "dip") {
     score=(analyzeDip(data)?.score ?? 0)-10*valuationRiskFlags(f).length;

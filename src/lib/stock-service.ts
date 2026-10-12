@@ -9,6 +9,7 @@ import { detectMarket, resolveSymbol } from "./symbol";
 import { fetchCalendarEvents, type StockEvents } from "./events";
 import { fetchCompanyInfo } from "./financials";
 import { fetchExtendedQuote } from "./yahoo-quote";
+import { fetchEtfInfo } from "./etf";
 import { clusterZones, findSwingPoints, topZones } from "./swing";
 import type { Candle, FairValueData, StockData } from "./types";
 
@@ -118,6 +119,7 @@ export async function getStockData(
     assetKind === "gold-spot"
       ? "ทองคำ spot · USD/oz"
       : longNameRaw;
+  const etf = assetKind === "etf" || assetKind === "gold-etf" ? await fetchEtfInfo(resolvedSymbol, longNameRaw) : null;
 
   return {
     ...buildStockData(
@@ -131,5 +133,6 @@ export async function getStockData(
     events,
     company,
     extended,
+    etf,
   };
 }

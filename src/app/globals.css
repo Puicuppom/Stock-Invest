@@ -3153,3 +3153,45 @@ button.dash-jump:active { transform: scale(0.95); }
 :root { color-scheme: dark; }
 select option, select optgroup { background-color: var(--surface); color: var(--text); }
 select option:checked { background-color: color-mix(in srgb, var(--accent) 30%, var(--surface)); color: var(--text); }
+.scr-styles { grid-template-columns: repeat(5, 1fr); gap: 5px; }
+.scr-filters:has(> :only-child) { grid-template-columns: auto; }
+/* การ์ด ETF */
+.etf-card { border: 1px solid var(--border); border-radius: 12px; background: var(--surface); padding: 10px 12px; display: flex; flex-direction: column; gap: 10px; }
+.etf-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.etf-head h2 { margin: 0; font-size: 16px; }
+.etf-cat { font-size: 11px; padding: 1px 8px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); color: var(--accent); }
+.etf-head small { color: var(--muted); font-size: var(--t-meta); margin-left: auto; }
+.etf-warn { margin: 0; padding: 6px 10px; border-radius: 10px; background: color-mix(in srgb, var(--danger) 14%, transparent); color: var(--danger); font-size: 13px; }
+.etf-dip { border-radius: 12px; padding: 10px; background: var(--surface-2); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; }
+.etf-dip-good { border-color: color-mix(in srgb, var(--success) 50%, transparent); background: color-mix(in srgb, var(--success) 9%, var(--surface-2)); }
+.etf-dip-watch { border-color: color-mix(in srgb, var(--warning) 45%, transparent); }
+.etf-dip-top { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.etf-dip-verdict { font-weight: 700; }
+.etf-dip-good .etf-dip-verdict { color: var(--success); }
+.etf-dip-watch .etf-dip-verdict { color: var(--warning); }
+.etf-dip-top b { font-size: 18px; color: var(--danger); font-variant-numeric: tabular-nums; }
+.etf-dip-top small { color: var(--muted); font-size: var(--t-meta); }
+.etf-dd-bar { position: relative; height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--text) 8%, transparent); }
+.etf-dd-bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; background: linear-gradient(90deg, var(--warning), var(--danger)); }
+.etf-dd-mark { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--text); opacity: .6; }
+.etf-dip-facts { margin: 0; padding-left: 16px; font-size: 12.5px; color: var(--muted); display: flex; flex-direction: column; gap: 2px; }
+.etf-dip-facts b { color: var(--text); }
+.etf-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.etf-grid div { display: flex; flex-direction: column; gap: 2px; padding: 8px; border-radius: 10px; background: var(--surface-2); min-width: 0; }
+.etf-grid span { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.etf-grid b { font-size: 14px; font-variant-numeric: tabular-nums; }
+.etf-grid b.up { color: var(--success); } .etf-grid b.down { color: var(--danger); }
+.etf-note { margin: -4px 0 0; font-size: 11px; color: var(--muted); }
+.etf-block h3 { margin: 0 0 6px; font-size: 14px; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.etf-block h3 small { font-weight: 400; color: var(--muted); font-size: var(--t-meta); }
+.etf-bars { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+.etf-bars li { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) 3.4em; align-items: center; gap: 8px; font-size: 12.5px; }
+.etf-bar-name { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.etf-bar-name small { color: var(--muted); }
+.etf-bar { height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--text) 7%, transparent); overflow: hidden; }
+.etf-bar i { display: block; height: 100%; border-radius: 4px; background: var(--accent); }
+.etf-bar-val { text-align: right; font-variant-numeric: tabular-nums; }
+.etf-stack { display: flex; height: 10px; border-radius: 5px; overflow: hidden; gap: 2px; margin-bottom: 8px; }
+.etf-stack i { background: var(--accent); }
+.etf-more { align-self: flex-start; margin-top: 6px; border: 0; background: transparent; color: var(--accent); font: inherit; font-size: 12px; cursor: pointer; padding: 0; }
+.scr-filters .scr-seg { justify-self: start; }

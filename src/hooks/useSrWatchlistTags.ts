@@ -6,6 +6,7 @@ import { watchlistId } from "@/lib/watchlist-id";
 import { analyzeTrend, type TrendKind } from "@/lib/trend";
 import { eventBadges, type EventBadge } from "@/lib/events";
 import { analyzeDip, type DipKind } from "@/lib/dip";
+import { analyzeEtfDip } from "@/lib/etf";
 
 const POLL_MS = 3 * 60 * 1000;
 
@@ -24,6 +25,8 @@ export interface ChipSignal {
   price: number;
   name: string | null;
   dipLabel: string | null;
+  /** ข้อความสั้นบนชิป (ETF ใช้คำต่างจากหุ้น) */
+  dipShort?: string | null;
   /** % นี้มาจากราคาก่อนเปิด/หลังปิด */
   extSession: "pre" | "post" | null;
 }
@@ -34,9 +37,11 @@ export function chipSignalOf(data: StockData): ChipSignal {
   const event = eventBadges(data.events, data.market)
     .filter(b => b.tone !== "dim" && b.days >= 0)
     .sort((a, b) => a.days - b.days)[0] ?? null;
-  const dip = analyzeDip(data);
+  const isEtf = data.assetKind === "etf" || data.assetKind === "gold-etf";
+  const etfDip = isEtf ? analyzeEtfDip(data.candles) : null;
+  const dip = isEtf ? (etfDip && (etfDip.kind === "good" || etfDip.kind === "watch") ? { kind: etfDip.kind as DipKind, verdict: etfDip.verdict, drawdownPercent: etfDip.drawdownPercent } : null) : analyzeDip(data);
   const dipLabel = dip && dip.drawdownPercent != null && dip.kind !== "na" && dip.kind !== "notdeep" ? `${dip.verdict} (${dip.drawdownPercent.toFixed(0)}% จากจุดสูงสุด)` : null;
-  return { trend: trend?.kind ?? null, trendLabel: trend?.label ?? null, changePercent: data.extended?.changePercent ?? data.changePercent, extSession: data.extended?.session ?? null, event, dipKind: dip?.kind ?? null, dipLabel, price: data.extended?.price ?? data.lastClose, name: data.longName };
+  return { trend: trend?.kind ?? null, trendLabel: trend?.label ?? null, changePercent: data.extended?.changePercent ?? data.changePercent, extSession: data.extended?.session ?? null, event, dipKind: dip?.kind ?? null, dipLabel, dipShort: isEtf && dip ? (dip.kind === "good" ? "ETF ลดราคา" : "ETF ย่อตัว") : null, price: data.extended?.price ?? data.lastClose, name: data.longName };
 }
 
 interface UseSrWatchlistTagsOptions {

@@ -2,9 +2,10 @@ import type { Candle, StockData } from "./types";
 import { drawdownFromHigh, DIP_DEEP_PERCENT } from "./dip";
 import { techSnapshot, type MarketContext } from "./momentum";
 import { analyzeTrend } from "./trend";
-export type ScreeningStyle = "long" | "dip" | "momentum" | "smallcap" | "dividend" | "short";
+import { analyzeEtfDip, ETF_DIP_PERCENT } from "./etf";
+export type ScreeningStyle = "long" | "dip" | "momentum" | "smallcap" | "dividend" | "short" | "etf";
 /** ปุ่มที่แสดงในหน้าคัดหุ้น (long/short ยังเก็บโค้ดไว้แต่ไม่แสดง) */
-export const VISIBLE_STYLES: ScreeningStyle[] = ["dip", "momentum", "smallcap", "dividend"];
+export const VISIBLE_STYLES: ScreeningStyle[] = ["dip", "momentum", "smallcap", "dividend", "etf"];
 /** เกณฑ์หุ้นจิ๋ว (Market Cap สกุลเงินตลาด) */
 export const SMALL_CAP_MAX = { US: 2e9, TH: 10e9 } as const;
 export const screeningStyles = {
@@ -13,6 +14,7 @@ export const screeningStyles = {
   momentum: { label: "หุ้นแกร่งไปต่อ", tagline: "พื้นฐานเยี่ยม ขาขึ้น ยังไม่ร้อนเกิน", description: "พื้นฐานดีมาก (ROE ≥ 15% อัตรากำไร ≥ 15% รายได้โต ≥ 10% กำไรคาดการณ์โต หนี้ต่ำ) อยู่ในขาขึ้น วิ่งแรงกว่าตลาด 6 เดือน ห่างจุดสูงสุดไม่เกิน 15% และยังไม่วิ่งเกินตัว (ห่างเส้น 50 วัน ≤ 15% · RSI ≤ 75 · PEG ≤ 2)" },
   smallcap: { label: "หุ้นจิ๋วเตรียมพุ่ง", tagline: "บริษัทเล็ก โตเร็ว เริ่มมีแรงซื้อ", description: "บริษัทเล็ก (US < 2 พันล้าน USD · ไทย < 1 หมื่นล้านบาท) มีกำไรแล้ว รายได้โต ≥ 15% กำไรคาดการณ์โต ≥ 10% หนี้ไม่เยอะ และเริ่มมีแรงซื้อ: ราคาเหนือเส้น 50 วัน ใกล้จุดสูงสุด 3 เดือน Volume 5 วันล่าสุด ≥ 1.3 เท่า มีสภาพคล่องพอซื้อขาย · หุ้นเล็กผันผวนสูง ควรใช้เงินส่วนน้อย" },
   dividend: { label: "ปันผลงาม", tagline: "ปันผลดี จ่ายไหว", description: "คัดจากปันผล เงินสด และความสามารถจ่ายปันผล (ไม่จ่ายเกินกำไร/เงินสดอิสระ) ยังไม่ยืนยันความต่อเนื่องของปันผลหลายปี" },
+  etf: { label: "ETF ลดราคา", tagline: "กองดี ค่าธรรมเนียมต่ำ กำลังลดราคา", description: `ETF ที่ไม่ใช้เลเวอเรจ/สวนตลาด ขนาดกอง ≥ 1 พันล้าน USD (ไทย ≥ 1 พันล้านบาท) ค่าธรรมเนียม ≤ 0.5% ต่อปี มีประวัติ ≥ 3 ปี ซื้อขายคล่อง และราคาลงจากจุดสูงสุด 52 สัปดาห์ ≥ ${ETF_DIP_PERCENT}% · เรียงตามความลึกเทียบประวัติของกองเอง ค่าธรรมเนียม และขนาด` },
   short: { label: "เทรดสั้น", tagline: "แนวโน้มและปริมาณซื้อขาย", description: "คัดจากแนวโน้ม ปริมาณซื้อขาย และสภาพคล่อง ใช้เฉพาะวันที่ตลาดปิดแล้ว ไม่นับวันที่ยังซื้อขายอยู่" },
 };
 export interface ScreeningCheck { label: string; value: string; passed: boolean | null; reason?: string }
@@ -72,6 +74,22 @@ export function screenStock(data: StockData, style: ScreeningStyle, ctx?: Market
     const text = ok ? `${fmt(value)}${suffix}` : "ไม่มีข้อมูล";
     return { label, value: text, passed: ok ? predicate(value) : null, reason: ok && reason ? reason(text) : undefined };
   };
+  if (style === "etf") {
+    if (data.assetKind !== "etf" && data.assetKind !== "gold-etf") return [{ label: "เป็น ETF", value: "ไม่ใช่ ETF", passed: false }];
+    const e = data.etf ?? null;
+    const dip = analyzeEtfDip(data.candles);
+    const recent = data.candles.slice(-20);
+    const traded = recent.length === 20 ? recent.reduce((s, c) => s + c.close * c.volume, 0) / 20 : null;
+    const th = data.market === "TH";
+    return [
+      { label: "ไม่ใช้เลเวอเรจ/สวนตลาด", value: e?.leveraged ? "กองเลเวอเรจ/สวนตลาด" : "กองปกติ", passed: !e?.leveraged, reason: e?.leveraged ? undefined : "ถือยาวได้ ไม่เสื่อมค่าจากการรีบาลานซ์รายวัน" },
+      check(`ขนาดกอง ≥ 1 พันล้าน ${unit}`, e?.totalAssets != null ? e.totalAssets / 1e9 : null, n => n >= 1, ` พันล้าน ${unit}`, v => `ขนาดกอง ${v}`),
+      check("ค่าธรรมเนียม ≤ 0.5%/ปี", e?.expenseRatio, n => n <= 0.5, "%", v => `ค่าธรรมเนียม ${v} ต่อปี`),
+      check("มีประวัติ ≥ 3 ปี", data.candles.length / 252, n => n >= 3, " ปี", v => `มีข้อมูลราคา ${v}`),
+      check(`สภาพคล่อง ≥ ${th ? "5 ล้านบาท" : "5 ล้าน USD"}/วัน`, traded != null ? traded / 1e6 : null, n => n >= 5, ` ล้าน ${unit}`, v => `มูลค่าซื้อขายเฉลี่ย ${v}/วัน`),
+      check(`ลงจากจุดสูงสุด ≥ ${ETF_DIP_PERCENT}%`, dip?.drawdownPercent, n => n <= -ETF_DIP_PERCENT, "%", v => `ห่างจุดสูงสุด 52 สัปดาห์ ${v}`),
+    ];
+  }
   if (data.assetKind !== "stock") return [{label: "รองรับหุ้นสามัญเท่านั้น", value: "ไม่ใช้กับ ETF/ทอง/ค่าเงิน", passed: null}];
 
   if (style === "long") {

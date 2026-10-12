@@ -12,6 +12,11 @@ const positive = (value: number | null | undefined): value is number =>
 
 /** Illustrative entry rules, not an execution price or an investment recommendation. */
 export function screeningEntry(data: StockData, style: ScreeningStyle): ScreeningEntry {
+  if (style === "etf" && (data.assetKind === "etf" || data.assetKind === "gold-etf")) {
+    const supports = data.zones.filter(z => z.type === "support" && positive(z.price) && z.price <= data.lastClose).map(z => z.price);
+    if (supports.length) return { price: Math.max(...supports), basis: "แนวรับ Swing ใกล้สุดใต้ราคา · ETF ดัชนีเหมาะทยอยซื้อหลายไม้ตอนลงลึก" };
+    return { price: null, basis: "ไม่มีแนวรับใต้ราคา · ทยอยซื้อเป็นงวดแทนการรอราคาเดียว" };
+  }
   if (data.assetKind !== "stock") return { price: null, basis: "ยังไม่คำนวณราคาเข้าซื้อสำหรับสินทรัพย์ประเภทนี้" };
   const f = data.fairValue;
   if (style === "long") {

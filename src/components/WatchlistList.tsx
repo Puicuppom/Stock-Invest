@@ -98,7 +98,7 @@ export default function WatchlistList({ items, signals, quotes, onRefresh, refre
                     <span className="wl-line2">
                       {nearSup && <em className="wl-tag sup">ใกล้รับ</em>}
                       {nearRes && <em className="wl-tag res">ใกล้ต้าน</em>}
-                      {sig?.dipKind && DIP_ICON[sig.dipKind] && <i title={sig.dipLabel ?? ""}>{DIP_ICON[sig.dipKind]} {sig.dipKind === "good" ? "ดีลดราคา" : sig.dipKind === "trap" ? "ระวังกับดัก" : "น่าจับตา"}</i>}
+                      {sig?.dipKind && DIP_ICON[sig.dipKind] && <i title={sig.dipLabel ?? ""}>{DIP_ICON[sig.dipKind]} {sig.dipShort ?? (sig.dipKind === "good" ? "ดีลดราคา" : sig.dipKind === "trap" ? "ระวังกับดัก" : "น่าจับตา")}</i>}
                       {sig?.event && <i title={sig.event.title}>{sig.event.kind === "earnings" ? "📅" : "💰"} {sig.event.text}</i>}
                     </span>
                   )}
