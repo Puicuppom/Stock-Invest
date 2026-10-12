@@ -129,7 +129,8 @@ export default function WatchlistList({ items, signals, quotes, onRefresh, refre
                 </span>
                 <span className="wl-name">
                   <span className="wl-line1"><b>{sym}</b><small>{sig?.name ?? (item.market === "TH" ? "SET" : "US")}</small></span>
-                  {(nearSup || nearRes || (sig?.dipKind && DIP_ICON[sig.dipKind]) || sig?.event) && (
+                  {/* แสดงบรรทัดที่ 2 เสมอ (ว่างได้) ให้ทุกแถวสูงเท่ากัน */}
+                  {(
                     <span className="wl-line2">
                       {nearSup && <em className="wl-tag sup">ใกล้รับ</em>}
                       {nearRes && <em className="wl-tag res">ใกล้ต้าน</em>}

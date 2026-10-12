@@ -1,27 +1,82 @@
 import { screeningEntry } from "@/lib/screening-entry";
 import type { StockData } from "@/lib/types";
-import { screenStock, type ScreeningStyle } from "@/lib/screener";
+import { screenStock, type ScreeningCheck, type ScreeningStyle } from "@/lib/screener";
 import type { MarketContext } from "@/lib/momentum";
 
-export default function ScreeningEntryCard({data, style, ctx}: {data: StockData; style: ScreeningStyle; ctx?: MarketContext | null}) {
+/** เกณฑ์ → ไอคอน + คำสั้น (ข้อความเต็มอยู่ใน tooltip) */
+const CHIP_RULES: [RegExp, string, string][] = [
+  [/ลงจากจุดสูงสุด|ห่างจุดสูงสุด|ใกล้จุดสูงสุด/, "📉", ""],
+  [/ROE/, "💪", "ROE"],
+  [/อัตรากำไร/, "💹", "มาร์จิ้น"],
+  [/รายได้/, "📈", "รายได้"],
+  [/กำไรคาด/, "🔮", "กำไรคาด"],
+  [/หนี้/, "🏦", "หนี้"],
+  [/PEG/, "⚖️", "PEG"],
+  [/P\/E/, "🏷️", "P/E ถูก"],
+  [/EPS|มีกำไรแล้ว/, "💵", "EPS"],
+  [/FCF|เงินสดอิสระ/, "💸", "FCF"],
+  [/Yield|ปันผล/, "💰", "ปันผล"],
+  [/Volume|แรงซื้อ/, "🔥", "Vol"],
+  [/แนวโน้ม/, "↗", "ขาขึ้น"],
+  [/แรงกว่า/, "🏁", "ชนะตลาด"],
+  [/เส้น 50 วัน|วิ่งเกินตัว/, "〰️", "ไม่ร้อนเกิน"],
+  [/สภาพคล่อง/, "💧", "สภาพคล่อง"],
+  [/ค่าธรรมเนียม/, "💸", "ค่าธรรมเนียม"],
+  [/ขนาดกอง|บริษัทเล็ก/, "🏢", ""],
+  [/ประวัติ/, "⏳", ""],
+  [/เลเวอเรจ/, "🛡️", "กองปกติ"],
+];
+const shortValue = (v: string) => v.replace(/-?\d+(?:\.\d+)?/g, m => { const n = Number(m); return Math.abs(n) >= 100 ? n.toFixed(0) : String(Math.round(n * 10) / 10); }).replace(/ ?USD| ?THB/g, "").replace("เงินสดมากกว่าหนี้", "เงินสด > หนี้");
+
+function chipOf(c: ScreeningCheck): { icon: string; text: string } | null {
+  if (/ข้อมูลกำไร\/หน่วยหุ้น|เป็น ETF|รองรับหุ้นสามัญ/.test(c.label)) return null;
+  const rule = CHIP_RULES.find(([re]) => re.test(c.label));
+  const value = c.value === "ไม่มีข้อมูล" ? "?" : shortValue(c.value);
+  if (!rule) return { icon: "•", text: c.label };
+  const [, icon, name] = rule;
+  // ค่าที่เป็นข้อความยาว (เช่น ช่วงห่างเส้น 50 วัน · RSI) ใช้แค่ชื่อสั้น
+  const wordy = /[ก-๙]/.test(value);
+  const text = wordy && (value.length > 14 || value === "ผ่าน" || !/\d/.test(value)) ? (value.includes(">") ? value : name)
+    : name && value.includes(name) ? value : [name, value].filter(Boolean).join(" ");
+  return { icon, text: text || value };
+}
+
+export default function ScreeningEntryCard({ data, style, ctx }: { data: StockData; style: ScreeningStyle; ctx?: MarketContext | null }) {
   const entry = screeningEntry(data, style);
-  const unit = data.market === "TH" ? "THB" : "USD";
-  const price = (value: number | null | undefined) => value != null && Number.isFinite(value) && value > 0 ? `${value.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})} ${unit}` : "ยังประเมินไม่ได้";
-  const fairValue = data.fairValue.analystTarget;
-  const upside = data.lastClose != null && Number.isFinite(data.lastClose) && data.lastClose > 0 && fairValue != null && Number.isFinite(fairValue) && fairValue > 0
-    ? (fairValue / data.lastClose - 1) * 100 : null;
-  const checks = screenStock(data, style, ctx);
-  // เหตุผลมาจากเกณฑ์ที่ผ่านโดยตรง จึงตรงกับเกณฑ์เสมอ
-  const reasons = checks.flatMap(check => check.passed === true && check.reason ? [check.reason] : []);
-  const passed = checks.length > 0 && checks.every(check => check.passed === true);
-  return <section className="screen-entry" aria-label="สรุปเหตุผลคัดหุ้น">
-    <div className="screen-entry-prices">
-      <div><span title={entry.basis}>ราคาซื้อไม่เกิน</span><strong>{price(entry.price)}</strong></div>
-      <div><span>เป้านักวิเคราะห์</span><strong>{price(fairValue)}</strong></div>
-    </div>
-    <p className="screen-entry-upside">ส่วนต่างถึงเป้านักวิเคราะห์ <b style={{color: upside == null ? "var(--muted)" : upside >= 0 ? "#34d399" : "#f87171"}}>{upside == null ? "—" : `${upside > 0 ? "+" : ""}${upside.toFixed(1)}%`}</b><small>จากราคาปิดล่าสุด</small></p>
-    <b>{passed ? "เหตุผลสรุป" : "สรุปผลคัดกรอง"}</b>
-    <p>{reasons.length ? reasons.slice(0, 5).map(reason => <span key={reason} style={{display: "block"}}>{reason}</span>) : "ยังไม่มีข้อมูลเพียงพอที่ผ่านเกณฑ์"}</p>
-    {!passed && reasons.length > 0 && <small>ยังไม่ผ่านครบทุกเกณฑ์</small>}
-  </section>;
+  const ok = (v: number | null | undefined): v is number => v != null && Number.isFinite(v) && v > 0;
+  const fmt = (v: number) => v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const now = data.lastClose;
+  const buy = ok(entry.price) ? entry.price : null;
+  const target = ok(data.fairValue.analystTarget) ? data.fairValue.analystTarget : null;
+  const upside = target && ok(now) ? (target / now - 1) * 100 : null;
+  const toBuy = buy && ok(now) ? (buy / now - 1) * 100 : null;
+  // แถบ ซื้อ → ตอนนี้ → เป้า
+  const pts = [buy, now, target].filter(ok);
+  const lo = Math.min(...pts), hi = Math.max(...pts);
+  const pos = (v: number) => (hi > lo ? ((v - lo) / (hi - lo)) * 100 : 50);
+  const checks = screenStock(data, style, ctx).map(c => ({ c, chip: chipOf(c) })).filter(x => x.chip);
+
+  return (
+    <section className="screen-entry se2" aria-label="สรุปจุดซื้อและเหตุผล">
+      <div className="se-prices">
+        <div className="se-buy" title={entry.basis}><span>🛒 ซื้อ ≤</span><b>{buy ? fmt(buy) : "—"}</b>{toBuy != null && <small>{toBuy.toFixed(1)}%</small>}</div>
+        <div className="se-now"><span>📍 ตอนนี้</span><b>{ok(now) ? fmt(now) : "—"}</b></div>
+        <div className="se-target"><span>🎯 เป้า</span><b>{target ? fmt(target) : "—"}</b>{upside != null && <small className={upside >= 0 ? "up" : "down"}>{upside >= 0 ? "+" : ""}{upside.toFixed(1)}%</small>}</div>
+      </div>
+      {pts.length >= 2 && (
+        <div className="se-track" aria-hidden="true">
+          {buy && <i className="se-dot buy" style={{ left: `${pos(buy)}%` }} />}
+          {target && <i className="se-dot target" style={{ left: `${pos(target)}%` }} />}
+          {ok(now) && <i className="se-dot now" style={{ left: `${pos(now)}%` }} />}
+        </div>
+      )}
+      <div className="se-chips">
+        {checks.map(({ c, chip }) => (
+          <span key={c.label} className={`se-chip ${c.passed === true ? "pass" : c.passed === false ? "fail" : "na"}`} title={`${c.label}: ${c.reason ?? c.value}`}>
+            <i>{chip!.icon}</i>{chip!.text}
+          </span>
+        ))}
+      </div>
+    </section>
+  );
 }

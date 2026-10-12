@@ -1585,3 +1585,32 @@ select option:checked { background-color: color-mix(in srgb, var(--accent) 30%, 
 .div-bars i { width: 100%; max-width: 26px; border-radius: 4px 4px 0 0; background: var(--success); opacity: .8; }
 .div-bars span.partial i { opacity: .3; }
 .div-bars small { font-size: 10px; color: var(--muted); }
+/* การ์ดจุดซื้อในหน้าคัดหุ้น: ตัวเลข 3 ช่อง + แถบ + ชิปเหตุผล */
+.screen-entry.se2 { display: flex; flex-direction: column; gap: 10px; padding: 12px; }
+.se-prices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.se-prices > div { display: flex; flex-direction: column; gap: 2px; padding: 8px; border-radius: 10px; background: color-mix(in srgb, var(--text) 4%, transparent); min-width: 0; }
+.se-prices span { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.se-prices b { font-size: 16px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.se-prices small { font-size: 11px; font-weight: 700; color: var(--muted); }
+.se-prices small.up { color: var(--success); } .se-prices small.down { color: var(--danger); }
+.se-buy b { color: var(--success); } .se-target b { color: var(--accent); }
+.se-track { position: relative; height: 6px; margin: 2px 8px; border-radius: 3px; background: linear-gradient(90deg, color-mix(in srgb, var(--success) 45%, transparent), color-mix(in srgb, var(--accent) 45%, transparent)); }
+.se-dot { position: absolute; top: 50%; width: 12px; height: 12px; border-radius: 50%; transform: translate(-50%, -50%); border: 2px solid var(--bg); }
+.se-dot.buy { background: var(--success); } .se-dot.target { background: var(--accent); } .se-dot.now { background: var(--warning); width: 14px; height: 14px; }
+.se-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.se-chip { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 9px; border-radius: 999px; font-size: 12px; font-weight: 600; border: 1px solid var(--border); color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.se-chip i { font-style: normal; font-size: 12px; }
+.se-chip.pass { color: var(--success); border-color: color-mix(in srgb, var(--success) 40%, transparent); background: color-mix(in srgb, var(--success) 9%, transparent); }
+.se-chip.fail { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, transparent); }
+.se-chip.na { border-style: dashed; }
+/* Watchlist: ทุกแถวสูงเท่ากัน */
+.wl-list .wl-main.has-spark { height: 78px; padding-top: 0; padding-bottom: 0; }
+.wl-main.has-spark .wl-line2 { flex-wrap: nowrap; overflow: hidden; height: 22px; min-height: 22px; -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent); mask-image: linear-gradient(90deg, #000 85%, transparent); }
+.wl-main.has-spark .wl-line2 > * { flex-shrink: 0; }
+.wl-main.has-spark .wl-price { min-height: 50px; justify-content: center; }
+/* คอลัมน์กว้างคงที่ ให้กราฟจิ๋วและราคาตรงแนวกันทุกแถว */
+.wl-main.has-spark { grid-template-columns: 40px minmax(0, 1fr) 56px 96px 76px; }
+.wl-main.has-spark .wl-price { align-items: flex-end; text-align: right; }
+.wl-main.has-spark .wl-price b { font-size: 15px; white-space: nowrap; }
+@media (max-width: 420px) { .wl-main.has-spark { grid-template-columns: 38px minmax(0, 1fr) 44px 84px 68px; gap: 8px; } .wl-main.has-spark .wl-price b { font-size: 14px; } }
+@media (max-width: 340px) { .wl-main.has-spark { grid-template-columns: 38px minmax(0, 1fr) 80px 64px; } }
