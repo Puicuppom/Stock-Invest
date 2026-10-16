@@ -1645,6 +1645,7 @@ function appendAssetCard(list, payload) {
         <div class="cr-swipe-wrap">
         <span class="row-actions">
             <button type="button" class="ra-gear" onclick="openAssetSheet(${index})" aria-label="ตั้งค่า ${asset.name}">⚙<small>ตั้งค่า</small></button>
+            ${portfolioIndex.list.length > 1 ? `<button type="button" class="ra-move" onclick="openMoveSheet(${index})" aria-label="ย้าย ${asset.name} ไปพอร์ตอื่น">⇄<small>ย้าย</small></button>` : ''}
             <button type="button" class="ra-del" onclick="deleteAsset(${index})" aria-label="ลบ ${asset.name}">✕<small>ลบ</small></button>
         </span>
         <div class="cr-row" onclick="toggleRow('${asset.name}', event)" role="button" tabindex="0" aria-expanded="${open}">
@@ -2147,7 +2148,7 @@ function persistOrderFromDom(list) {
     attachRowGestures(list, {
         row: '.asset-card',
         swipeEl: card => card.querySelector('.cr-row'),
-        actionsWidth: () => 148,
+        actionsWidth: card => card.querySelector('.row-actions')?.offsetWidth || 148,
         canDrag: () => sortMode === 'manual' && list.querySelectorAll('.asset-card').length > 1,
         onCross: (card, neighbor, dir) => {
             if (dir === 'down') list.insertBefore(neighbor, card);
@@ -2558,3 +2559,149 @@ async function bootstrap() {
 }
 
 bootstrap();
+
+
+/* ── ย้ายสินทรัพย์ไปพอร์ตอื่น ──
+ * อ่านข้อมูลพอร์ตปลายทาง (ในเครื่อง หรือจากคลาวด์ถ้าใหม่กว่า) → เพิ่ม/รวมหุ้น → บันทึกทั้งในเครื่องและคลาวด์ → ลบออกจากพอร์ตนี้ */
+let moveSheetIndex = null;
+
+function openMoveSheet(index) {
+    const asset = myPortfolio[index];
+    if (!asset) return;
+    moveSheetIndex = index;
+    document.getElementById('move-title').textContent = `ย้าย ${asset.name} ไปพอร์ต`;
+    const others = portfolioIndex.list.filter(p => p.id !== activePortfolioId);
+    document.getElementById('move-list').innerHTML = others.map(p => {
+        const assets = readPortfolioAssets(p.id);
+        const has = assets?.some(x => String(x.name).toUpperCase() === asset.name.toUpperCase());
+        const meta = assets ? `${assets.filter(x => x.kind !== 'cash').length} สินทรัพย์${has ? ` · มี ${escapePfHtml(asset.name)} อยู่แล้ว (รวมจำนวนหุ้น)` : ''}` : 'ยังไม่ได้เปิดในเครื่องนี้';
+        return `<button type="button" class="pf-pick move-pick" onclick="moveAssetTo('${p.id}')">
+            <span class="pf-check">⇄</span>
+            <span class="pf-info"><span class="pf-name">${escapePfHtml(p.name)}</span><span class="pf-meta">${meta}</span></span>
+        </button>`;
+    }).join('');
+    document.getElementById('move-overlay').classList.add('open');
+}
+
+function closeMoveSheet(e) {
+    if (e && e.target !== document.getElementById('move-overlay')) return;
+    document.getElementById('move-overlay').classList.remove('open');
+    moveSheetIndex = null;
+}
+
+function readPortfolioState(id) {
+    const get = k => localStorage.getItem(pfStorageKey(id, k));
+    const json = (k, d) => { try { const v = JSON.parse(get(k) || 'null'); return v ?? d; } catch { return d; } };
+    const portfolio = json('myPortfolio', null);
+    if (!Array.isArray(portfolio)) return null;
+    return {
+        version: 1,
+        portfolio,
+        profitTiers: json('profitTiers', profitTiers),
+        dipBuyPct: Number(get('dipBuyPct')) || dipBuyPct,
+        activeTab: get('activeTab') || '',
+        strategyTargets: get('strategyTargets') || '2',
+        portfolioGroups: json('portfolioGroups', DEFAULT_PORTFOLIO_GROUPS),
+        deletedAssets: json('deletedAssets', []),
+        updatedAt: Number(get('localUpdatedAt')) || 0
+    };
+}
+
+function writePortfolioState(id, s) {
+    const set = (k, v) => localStorage.setItem(pfStorageKey(id, k), v);
+    set('myPortfolio', JSON.stringify(s.portfolio));
+    set('portfolioGroups', JSON.stringify(s.portfolioGroups));
+    set('deletedAssets', JSON.stringify(s.deletedAssets));
+    set('profitTiers', JSON.stringify(s.profitTiers));
+    set('dipBuyPct', String(s.dipBuyPct));
+    if (s.activeTab) set('activeTab', s.activeTab);
+    set('strategyTargets', s.strategyTargets || '2');
+    set('localUpdatedAt', String(s.updatedAt));
+}
+
+async function moveAssetTo(targetId) {
+    const index = moveSheetIndex;
+    const asset = myPortfolio[index];
+    const target = portfolioIndex.list.find(p => p.id === targetId);
+    if (!asset || !target) return;
+    const sym = asset.name.toUpperCase();
+    const list = document.getElementById('move-list');
+    list.classList.add('busy');
+
+    // 1) ข้อมูลพอร์ตปลายทางล่าสุด
+    let state = readPortfolioState(targetId);
+    const targetSyncKey = pfSyncKey(targetId);
+    if (sb && targetSyncKey) {
+        const { data, error } = await sb.from('portfolios').select('data, updated_at').eq('sync_key', targetSyncKey).maybeSingle();
+        if (error) {
+            list.classList.remove('busy');
+            showToast('เชื่อมคลาวด์ไม่ได้ ย้ายไม่สำเร็จ ลองใหม่อีกครั้ง', 'error');
+            return;
+        }
+        const cloud = data?.data;
+        const cloudAt = Math.max(Number(cloud?.updatedAt) || 0, data ? new Date(data.updated_at).getTime() : 0);
+        if (Array.isArray(cloud?.portfolio) && (!state || cloudAt > state.updatedAt)) state = { ...state, ...cloud, version: 1 };
+    }
+    if (!state) {
+        const groups = DEFAULT_PORTFOLIO_GROUPS.map(normalizePortfolioGroup);
+        state = {
+            version: 1,
+            portfolio: [{ name: 'USD', kind: 'cash', group: groups.find(g => g.kind === 'cash')?.id || 'cash', shares: 0, avgCost: 1, target: 0, peakValue: 0, tiersDone: [false, false, false] }],
+            profitTiers, dipBuyPct, activeTab: groups[0].id, strategyTargets: '2', portfolioGroups: groups,
+            deletedAssets: defaultAssets.filter(a => a.kind !== 'cash').map(a => a.name.toUpperCase()), updatedAt: 0
+        };
+    }
+
+    // 2) กลุ่มปลายทาง: ใช้กลุ่มเดิมถ้ามี ไม่งั้นหากลุ่มประเภทเดียวกัน
+    const groups = (state.portfolioGroups || []).map(normalizePortfolioGroup);
+    const kind = asset.kind || inferKind(asset.name, asset.group);
+    const srcGroup = resolveAssetGroup(asset);
+    const group = groups.some(g => g.id === srcGroup) ? srcGroup
+        : (groups.find(g => g.kind === (kind === 'cash' ? 'cash' : kind)) || groups.find(g => g.kind !== 'cash') || groups[0])?.id || srcGroup;
+    const cash = isCashAsset(asset);
+
+    // 3) เพิ่ม หรือรวมกับตัวเดิม (ถัวต้นทุนตามจำนวนหุ้น)
+    const portfolio = state.portfolio.map(x => ({ ...x }));
+    const existing = portfolio.find(x => String(x.name).toUpperCase() === sym);
+    if (existing) {
+        const s1 = Number(existing.shares) || 0, s2 = Number(asset.shares) || 0;
+        const total = s1 + s2;
+        existing.avgCost = cash ? 1 : (total > 0 ? ((Number(existing.avgCost) || 0) * s1 + (Number(asset.avgCost) || 0) * s2) / total : (existing.avgCost || asset.avgCost || 0));
+        existing.shares = total;
+    } else {
+        portfolio.push({
+            name: asset.name, kind, group,
+            shares: asset.shares || 0, avgCost: cash ? 1 : (asset.avgCost || 0),
+            target: 0, peakValue: asset.peakValue || 0, tiersDone: asset.tiersDone || [false, false, false]
+        });
+    }
+    state = {
+        ...state,
+        portfolio,
+        portfolioGroups: groups,
+        deletedAssets: (state.deletedAssets || []).map(n => String(n).toUpperCase()).filter(n => n !== sym),
+        updatedAt: Date.now()
+    };
+
+    // 4) บันทึกปลายทาง: คลาวด์ก่อน (ถ้ามี) แล้วค่อยในเครื่อง
+    if (sb && targetSyncKey) {
+        const { error } = await sb.from('portfolios').upsert({ sync_key: targetSyncKey, data: state, updated_at: new Date().toISOString() }, { onConflict: 'sync_key' });
+        if (error) {
+            list.classList.remove('busy');
+            showToast('บันทึกพอร์ตปลายทางไม่สำเร็จ ยังไม่ได้ย้าย', 'error');
+            return;
+        }
+    }
+    writePortfolioState(targetId, state);
+
+    // 5) เอาออกจากพอร์ตนี้
+    list.classList.remove('busy');
+    closeMoveSheet();
+    if (assetSheetIndex === index) closeAssetSheet();
+    if (!cash) markAssetDeleted(asset.name);
+    myPortfolio.splice(index, 1);
+    persistPortfolio();
+    flushCloudSave();
+    renderAndCalculate();
+    showToast(existing ? `รวม ${asset.name} เข้ากับ ${target.name} แล้ว` : `ย้าย ${asset.name} ไป ${target.name} แล้ว · ตั้งสัดส่วนเป้าในพอร์ตนั้นอีกครั้ง`);
+}

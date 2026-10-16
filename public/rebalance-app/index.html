@@ -61,7 +61,7 @@
 
     <div class="squad-note" id="squad-note" hidden></div>
 
-    <p class="rb-legend">⚖ ปรับสัดส่วนให้ตรงเป้า · 📍 ราคาใกล้แนวรับ/แนวต้าน<br>กดค้างลากจัดเรียง · ปัดซ้ายเพื่อตั้งค่า/ลบ</p>
+    <p class="rb-legend">⚖ ปรับสัดส่วนให้ตรงเป้า · 📍 ราคาใกล้แนวรับ/แนวต้าน<br>กดค้างลากจัดเรียง · ปัดซ้ายเพื่อตั้งค่า/ย้าย/ลบ</p>
     <div class="sort-bar">
         <span class="sort-count" id="sort-count"></span>
         <label class="sort-select-wrap">เรียงตาม
@@ -177,6 +177,17 @@
             </label>
             <button class="btn-settings-done" type="button" onclick="createPortfolio()">＋ สร้างและเปิดพอร์ต</button>
         </div>
+    </div>
+</div>
+
+<div class="overlay" id="move-overlay" onclick="closeMoveSheet(event)">
+    <div class="sheet portfolio-sheet" onclick="event.stopPropagation()">
+        <div class="sheet-head">
+            <h3 id="move-title">ย้ายไปพอร์ต</h3>
+            <button class="btn-sheet-close" type="button" aria-label="ปิด" onclick="closeMoveSheet()">×</button>
+        </div>
+        <div class="pf-list" id="move-list"></div>
+        <p class="move-note">ย้ายจำนวนหุ้นและต้นทุนไปด้วย · ถ้าปลายทางมีตัวนี้อยู่แล้วจะรวมกันและถัวต้นทุนให้</p>
     </div>
 </div>
 
