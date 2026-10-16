@@ -1436,7 +1436,18 @@ function renderAssetSheetBody({ index, asset, cost, profit, profitPct, tradeSign
     if (isCashAsset(asset)) {
         const adviceText = action ? action.text : '—';
         return `
-        <div class="setting-hint" style="margin-bottom:12px">เงินสด · กรอกยอดเป็น USD</div>
+        <div class="trade-box">
+            <div class="trade-head">💵 คงเหลือ <b>${fmtUsd(asset.shares || 0)}</b></div>
+            <div class="asset-sheet-field">
+                <label>จำนวนเงิน ($)</label>
+                <input type="text" inputmode="decimal" id="cash-amt" placeholder="0.00" autocomplete="off">
+            </div>
+            <div class="trade-btns">
+                <button type="button" class="tb-buy" onclick="cashMove(${index}, 1)">＋ เติม</button>
+                <button type="button" class="tb-sell" onclick="cashMove(${index}, -1)">− ถอน</button>
+            </div>
+        </div>
+        <div class="sheet-sub">✎ แก้ไขเอง</div>
         ${renderGroupSelectHtml(index, asset)}
         <div class="asset-sheet-grid">
             <div class="asset-sheet-field">
@@ -1462,7 +1473,9 @@ function renderAssetSheetBody({ index, asset, cost, profit, profitPct, tradeSign
     const adviceText = action ? action.text : '—';
     return `
         ${role ? `<div class="setting-hint" style="margin-bottom:12px">${role}</div>` : ''}
+        ${renderTradeBox(index, asset)}
         ${renderGroupSelectHtml(index, asset)}
+        <div class="sheet-sub">✎ แก้ไขเอง</div>
         <div class="asset-sheet-grid">
             <div class="asset-sheet-field">
                 <label>จำนวนหุ้น</label>
@@ -2704,4 +2717,105 @@ async function moveAssetTo(targetId) {
     flushCloudSave();
     renderAndCalculate();
     showToast(existing ? `รวม ${asset.name} เข้ากับ ${target.name} แล้ว` : `ย้าย ${asset.name} ไป ${target.name} แล้ว · ตั้งสัดส่วนเป้าในพอร์ตนั้นอีกครั้ง`);
+}
+
+
+/* ── ซื้อ / ขาย (เงินเข้า-ออกเงินสด USD) · เติม / ถอนเงินสด ── */
+function cashAssetUsd(create) {
+    let c = myPortfolio.find(x => isCashAsset(x) && String(x.name).toUpperCase() === 'USD');
+    if (!c && create) {
+        c = { name: 'USD', kind: 'cash', group: getCashGroupId(), shares: 0, avgCost: 1, target: 0, peakValue: 0, tiersDone: [false, false, false] };
+        myPortfolio.push(c);
+        deletedAssets = deletedAssets.filter(n => n !== 'USD');
+        store.setItem('deletedAssets', JSON.stringify(deletedAssets));
+    }
+    return c || null;
+}
+
+function parseTradeNum(id) {
+    const v = parseFloat(String(document.getElementById(id)?.value || '').replace(/,/g, ''));
+    return Number.isFinite(v) && v > 0 ? v : null;
+}
+
+function renderTradeBox(index, asset) {
+    const price = getPrice(asset.name);
+    const cash = cashAssetUsd(false);
+    return `
+        <div class="trade-box">
+            <div class="trade-head">มี <b>${fmtShares(asset.shares)}</b> หุ้น · 💵 เงินสด <b id="trade-cash-left">${fmtUsd(cash?.shares || 0)}</b></div>
+            <div class="asset-sheet-grid trade-grid">
+                <div class="asset-sheet-field">
+                    <label>จำนวนหุ้น</label>
+                    <input type="text" inputmode="decimal" id="trade-qty" placeholder="0" autocomplete="off" oninput="updateTradeTotal()">
+                </div>
+                <div class="asset-sheet-field">
+                    <label>ราคา/หุ้น ($)</label>
+                    <input type="text" inputmode="decimal" id="trade-price" value="${price > 0 ? formatInputVal(price) : ''}" placeholder="0.00" autocomplete="off" oninput="updateTradeTotal()">
+                </div>
+            </div>
+            <div class="trade-total" id="trade-total">รวม —</div>
+            <label class="trade-opt"><input type="checkbox" id="trade-use-cash" checked><span>ตัด/เข้าเงินสด USD</span></label>
+            <div class="trade-btns">
+                <button type="button" class="tb-buy" onclick="tradeAsset(${index}, 'buy')">ซื้อ</button>
+                <button type="button" class="tb-sell" onclick="tradeAsset(${index}, 'sell')"${asset.shares > 0 ? '' : ' disabled'}>ขาย</button>
+            </div>
+        </div>`;
+}
+
+function updateTradeTotal() {
+    const q = parseTradeNum('trade-qty'), p = parseTradeNum('trade-price');
+    const el = document.getElementById('trade-total');
+    if (el) el.textContent = q && p ? `รวม ${fmtUsd(q * p)}` : 'รวม —';
+}
+
+function afterTrade(name, msg, kind) {
+    syncAssetValues();
+    persistPortfolio();
+    flushCloudSave();
+    renderAndCalculate();
+    if (assetSheetIndex != null) {
+        assetSheetIndex = myPortfolio.findIndex(a => a.name === name);
+        refreshAssetSheet();
+    }
+    showToast(msg, kind);
+}
+
+function tradeAsset(index, side) {
+    const asset = myPortfolio[index];
+    if (!asset || isCashAsset(asset)) return;
+    const q = parseTradeNum('trade-qty'), p = parseTradeNum('trade-price');
+    if (!q || !p) { showToast('ใส่จำนวนหุ้นและราคาก่อน', 'error'); return; }
+    const useCash = document.getElementById('trade-use-cash')?.checked;
+    const amount = q * p;
+    const shares = Number(asset.shares) || 0, avg = Number(asset.avgCost) || 0;
+    if (side === 'buy') {
+        const cash = useCash ? cashAssetUsd(true) : null;
+        if (cash && (cash.shares || 0) + 1e-9 < amount) {
+            showToast(`เงินสดไม่พอ (มี ${fmtUsd(cash.shares || 0)} · ต้องใช้ ${fmtUsd(amount)}) · เติมเงินก่อน หรือเอาติ๊กตัดเงินสดออก`, 'error');
+            return;
+        }
+        asset.avgCost = (shares * avg + amount) / (shares + q);
+        asset.shares = shares + q;
+        if (cash) cash.shares = Math.round(((cash.shares || 0) - amount) * 100) / 100;
+        afterTrade(asset.name, `ซื้อ ${asset.name} ${fmtShares(q)} หุ้น @ ${fmtUsd(p)}${cash ? ` · ตัดเงินสด ${fmtUsd(amount)}` : ''}`);
+    } else {
+        if (q > shares + 1e-9) { showToast(`มีแค่ ${fmtShares(shares)} หุ้น`, 'error'); return; }
+        const realized = avg > 0 ? (p - avg) * q : null;
+        const cash = useCash ? cashAssetUsd(true) : null;
+        asset.shares = Math.max(0, Math.round((shares - q) * 1e6) / 1e6);
+        if (asset.shares === 0) asset.peakValue = 0;
+        if (cash) cash.shares = Math.round(((cash.shares || 0) + amount) * 100) / 100;
+        const pl = realized == null ? '' : ` · ${realized >= 0 ? 'กำไร' : 'ขาดทุน'} ${fmtUsd(Math.abs(realized))}`;
+        afterTrade(asset.name, `ขาย ${asset.name} ${fmtShares(q)} หุ้น @ ${fmtUsd(p)}${pl}${cash ? ` · เข้าเงินสด ${fmtUsd(amount)}` : ''}`);
+    }
+}
+
+function cashMove(index, dir) {
+    const cash = myPortfolio[index];
+    if (!cash || !isCashAsset(cash)) return;
+    const amt = parseTradeNum('cash-amt');
+    if (!amt) { showToast('ใส่จำนวนเงินก่อน', 'error'); return; }
+    if (dir < 0 && amt > (cash.shares || 0) + 1e-9) { showToast(`ถอนได้ไม่เกิน ${fmtUsd(cash.shares || 0)}`, 'error'); return; }
+    cash.shares = Math.round(((cash.shares || 0) + dir * amt) * 100) / 100;
+    afterTrade(cash.name, `${dir > 0 ? 'เติม' : 'ถอน'}เงินสด ${fmtUsd(amt)} · คงเหลือ ${fmtUsd(cash.shares)}`);
 }

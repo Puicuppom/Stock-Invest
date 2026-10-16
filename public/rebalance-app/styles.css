@@ -1417,3 +1417,24 @@ select option, select optgroup { background-color: var(--ui-surface); color: var
 #move-list .move-pick { width: 100%; border: 1px solid var(--ui-border, var(--border)); border-radius: 14px; margin-bottom: 8px; }
 #move-list.busy { opacity: .5; pointer-events: none; }
 .move-note { margin: 6px 2px 0; font-size: 12px; color: var(--muted); }
+
+/* กล่องซื้อ/ขาย · เติม/ถอน ในแผ่นตั้งค่าสินทรัพย์ */
+.trade-box { border: 1px solid var(--ui-border, var(--border)); border-radius: 16px; padding: 12px; margin-bottom: 14px; background: color-mix(in srgb, var(--ui-text, #fff) 3%, transparent); }
+.trade-head { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+.trade-head b { color: var(--ui-text, var(--text)); }
+.trade-grid { margin: 0; }
+.trade-total { font-size: 13px; font-weight: 700; margin: 8px 2px 6px; }
+.trade-opt { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); margin: 0 2px 10px; }
+.trade-opt input { width: 18px; height: 18px; accent-color: var(--green); }
+.trade-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.trade-btns button { height: 46px; border: 0; border-radius: 12px; font: inherit; font-size: 15px; font-weight: 800; color: #fff; cursor: pointer; }
+.trade-btns .tb-buy { background: var(--green, #22c55e); }
+.trade-btns .tb-sell { background: var(--red, #ef4444); }
+.trade-btns button:disabled { opacity: .4; cursor: default; }
+.trade-btns button:active:not(:disabled) { transform: scale(.97); }
+
+.trade-box .trade-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.trade-box .trade-opt { display: flex !important; flex-direction: row !important; align-items: center; justify-content: flex-start; gap: 8px; }
+.trade-box .trade-opt input { width: 18px !important; height: 18px; min-height: 0; margin: 0; padding: 0; flex: none; }
+.trade-box .trade-opt span { flex: 1; }
+.sheet-sub { font-size: 12px; font-weight: 700; color: var(--muted); margin: 4px 2px 8px; }
