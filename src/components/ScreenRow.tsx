@@ -1,10 +1,13 @@
 "use client";
 import type { ReactNode } from "react";
 import StockLogo from "./StockLogo";
+import type { ExtendedQuote } from "@/lib/yahoo-quote";
 
 /** แถวหุ้นแบบเดียวกับหน้า Watchlist — แตะเพื่อเปิดรายละเอียด */
-export default function ScreenRow({ symbol, market, name, price, changePercent, line2, open, onToggle, children, loading, error }: {
+export default function ScreenRow({ symbol, market, name, price, changePercent, ext, line2, open, onToggle, children, loading, error }: {
   symbol: string; market: "TH" | "US"; name?: string | null; price?: number | null; changePercent?: number | null;
+  /** ราคาก่อนเปิด/หลังปิด */
+  ext?: ExtendedQuote | null;
   line2?: ReactNode; open: boolean; onToggle: () => void; children?: ReactNode; loading?: boolean; error?: string | null;
 }) {
   const up = (changePercent ?? 0) >= 0;
@@ -21,6 +24,7 @@ export default function ScreenRow({ symbol, market, name, price, changePercent, 
           {line2 && <span className="wl-line2">{line2}</span>}
         </span>
         <span className="wl-price"><b>{price != null ? `${cur}${price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : error ? "—" : loading ? "…" : "—"}</b>
+          {ext && <small className={`wl-ext ${ext.changePercent >= 0 ? "up" : "down"}`}><span>{ext.session === "pre" ? "ก่อนเปิด" : "หลังปิด"}</span><span>{ext.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {ext.changePercent >= 0 ? "+" : ""}{ext.changePercent.toFixed(2)}%</span></small>}
           {error && <small className="scr-err">{error}</small>}</span>
         <span className={`wl-chg ${changePercent != null ? (up ? "up" : "down") : ""}`}>
           {changePercent != null ? `${up ? "+" : ""}${changePercent.toFixed(2)}%` : "—"}

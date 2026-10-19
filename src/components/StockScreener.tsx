@@ -4,6 +4,7 @@ import AppNavigation from "./AppNavigation";
 import ScreeningEntryCard from "./ScreeningEntryCard";
 import WatchlistReview from "./WatchlistReview";
 import ScreenRow from "./ScreenRow";
+import { useLiveQuotes } from "@/hooks/useLiveQuotes";
 import { useWatchlist } from "@/hooks/useWatchlist";
 import { screeningStyles, screenStock, valuationRiskFlags, VISIBLE_STYLES, type ScreeningStyle } from "@/lib/screener";
 import { returnPercent, type MarketContext } from "@/lib/momentum";
@@ -166,6 +167,10 @@ export default function StockScreener() {
     const trend=row.data ? analyzeTrend(row.data) : null;
     return {...row,checks,count,passed,incomplete,failed,nearMiss,flags,trend,score:row.data ? interestScore(row.data,style,ctx) : 0};
   }).sort((a,b)=>Number(b.passed)-Number(a.passed)||b.score-a.score||a.symbol.localeCompare(b.symbol));
+  // ราคาสด + ก่อนเปิด/หลังปิด ของตัวที่ผ่าน/เกือบผ่าน (ดึงหลังค้นหาเสร็จ · ทุก 30 วิ)
+  const liveItems=busy ? [] : evaluated.filter(r=>r.passed||r.nearMiss).map(r=>({symbol:r.symbol,market:scannedMarket}));
+  const live=useLiveQuotes(liveItems, view==="market");
+  const lq=(sym:string)=>live[`${sym}::${scannedMarket}`];
   // แตะการ์ดสรุป → เลื่อนไปยังกลุ่มนั้น (กลุ่มที่พับไว้จะกางออก)
   const goTo=(id:string)=>{
     const el=document.getElementById(id);
@@ -228,7 +233,7 @@ export default function StockScreener() {
     {evaluated.some(row=>row.passed) && <div className="wl" id="scr-pass"><ul className="wl-list scr-list">{evaluated.filter(row=>row.passed).map((row,index)=>{
       const lean=row.trend?trendLean(row.trend.kind,row.trend.label):null;
       const inList=items.some(item=>item.symbol===row.symbol && item.market===scannedMarket);
-      return <ScreenRow key={row.symbol} symbol={row.symbol} market={scannedMarket} name={row.data?.longName} price={row.data?.lastClose} changePercent={row.data?.changePercent}
+      return <ScreenRow key={row.symbol} symbol={row.symbol} market={scannedMarket} name={row.data?.longName} price={lq(row.symbol)?.price ?? row.data?.lastClose} changePercent={lq(row.symbol)?.changePercent ?? row.data?.changePercent} ext={lq(row.symbol)?.ext}
         open={openRow===row.symbol} onToggle={()=>setOpenRow(openRow===row.symbol?null:row.symbol)} error={row.error?"โหลดไม่ได้":null}
         line2={<>
           <em className="scr-chip rank">#{index+1}</em>
@@ -250,7 +255,7 @@ export default function StockScreener() {
       <ul className="wl-list scr-list">
       {[...evaluated].filter(row=>row.nearMiss).sort((a,b)=>b.score-a.score||a.symbol.localeCompare(b.symbol)).map(row=>{
         const inList=items.some(item=>item.symbol===row.symbol && item.market===scannedMarket);
-        return <ScreenRow key={row.symbol} symbol={row.symbol} market={scannedMarket} name={row.data?.longName} price={row.data?.lastClose} changePercent={row.data?.changePercent}
+        return <ScreenRow key={row.symbol} symbol={row.symbol} market={scannedMarket} name={row.data?.longName} price={lq(row.symbol)?.price ?? row.data?.lastClose} changePercent={lq(row.symbol)?.changePercent ?? row.data?.changePercent} ext={lq(row.symbol)?.ext}
           open={openRow===`n:${row.symbol}`} onToggle={()=>setOpenRow(openRow===`n:${row.symbol}`?null:`n:${row.symbol}`)}
           line2={<>{row.data && <em className="scr-chip score" title="คะแนน">★ {row.score}</em>}{row.failed.map(c=><em key={c.label} className="scr-chip fail">✗ {c.label}</em>)}</>}>
           {row.failed.map(c=><p key={c.label} className="screen-near-fail">✗ {c.label} <span>({c.value})</span></p>)}

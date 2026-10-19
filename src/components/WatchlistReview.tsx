@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import ScreenRow from "./ScreenRow";
+import { useLiveQuotes } from "@/hooks/useLiveQuotes";
 import { screenStock, screeningStyles, valuationRiskFlags, type ScreeningStyle } from "@/lib/screener";
 import { analyzeDip } from "@/lib/dip";
 import { analyzeMomentum, returnPercent, type MarketContext } from "@/lib/momentum";
@@ -61,6 +62,9 @@ export default function WatchlistReview({ items, loaded }: { items: WatchlistIte
   useEffect(() => { if (loaded && items.length) run(); return () => ctrl.current?.abort(); // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loaded, items.length]);
 
+  // ราคาสด + ก่อนเปิด/หลังปิด
+  const live = useLiveQuotes(items, loaded);
+
   const computed = rows.map(({ item, data, error }) => {
     const id = watchlistId(item);
     const c = ctx[item.market] ?? null;
@@ -100,8 +104,8 @@ export default function WatchlistReview({ items, loaded }: { items: WatchlistIte
       <p className="wr-legend"><b className="up">✓</b> ผ่านครบ · <i className="near">●</i> เกือบผ่าน (ขาด 1 ข้อ){filter ? <> · <button type="button" className="wr-clear" onClick={() => setFilter(null)}>แสดงทั้งหมด ✕</button></> : " · แตะไอคอนเพื่อกรอง"}</p>
       <ul className="wl-list scr-list">
       {shown.map(({ item, data, error, id, results, dip, mom, flags, trend, lean, hits }) => (
-          <ScreenRow key={id} symbol={item.symbol} market={item.market} name={data?.longName} price={data?.lastClose}
-            changePercent={data?.changePercent} loading={!data && !error} error={error ? "โหลดไม่ได้" : null}
+          <ScreenRow key={id} symbol={item.symbol} market={item.market} name={data?.longName} price={live[id]?.price ?? data?.lastClose}
+            changePercent={live[id]?.changePercent ?? data?.changePercent} ext={live[id]?.ext} loading={!data && !error} error={error ? "โหลดไม่ได้" : null}
             open={open === id} onToggle={() => setOpen(open === id ? null : id)}
             line2={data && <>
               {lean && <em className={`scr-chip ico lean lean-${lean}`} title={`${LEAN_SHORT[lean]} · ${trend!.label}`} aria-label={LEAN_SHORT[lean]}>{LEAN_GLYPH[lean]}</em>}
