@@ -350,8 +350,10 @@ async function fetchPrices(fullRender = false) {
         }
     }));
 
-    syncAssetValues();
     priceFetching = false;
+    // ราคาจากเส้นทางวิเคราะห์อาจแคชไว้ ~15 นาที → ทับด้วยราคาสดทันที
+    await fetchLiveQuotes(false);
+    syncAssetValues();
     await fxPromise;
 
     if (fullRender || !document.querySelector('.asset-card')) {
@@ -361,6 +363,64 @@ async function fetchPrices(fullRender = false) {
     }
     return { total: symbols.length, failed: symbols.filter(sym => priceCache[sym]?.error).length };
 }
+
+/* ── ราคาสด: ดึงทุกตัวในคำขอเดียว (ไม่แคช) ทุก 30 วิ ขณะเปิดหน้าอยู่ ── */
+let liveFetching = false;
+let lastLiveAt = 0;
+async function fetchLiveQuotes(render = true) {
+    const symbols = [...new Set(myPortfolio.filter(a => !isCashAsset(a)).map(a => a.name).filter(Boolean))];
+    if (!symbols.length || liveFetching) return 0;
+    liveFetching = true;
+    let n = 0;
+    try {
+        const items = symbols.map(s => /\.BK$/i.test(s) ? `${encodeURIComponent(s)}:TH` : `${encodeURIComponent(s)}:US`).join(',');
+        const res = await fetch(`/api/quotes?items=${items}`, { cache: 'no-store' });
+        if (!res.ok) return 0;
+        const { quotes } = await res.json();
+        for (const s of symbols) {
+            const q = quotes?.[`${s}::${/\.BK$/i.test(s) ? 'TH' : 'US'}`];
+            if (!q || !(q.price > 0)) continue;
+            priceCache[s] = { ...(priceCache[s] || {}), price: q.price, ext: q.ext || null, at: Date.now(), error: false };
+            n++;
+        }
+        if (n) lastLiveAt = Date.now();
+    } catch {
+        /* ใช้ราคาเดิม */
+    } finally {
+        liveFetching = false;
+    }
+    if (n && render) {
+        syncAssetValues();
+        if (!document.querySelector('.asset-card')) renderAndCalculate(); else recalculate();
+        refreshAssetSheetPrices();
+    }
+    updatePriceStamp();
+    return n;
+}
+
+function updatePriceStamp() {
+    const btn = document.getElementById('btn-refresh');
+    if (btn && lastLiveAt) btn.title = `ราคา ณ ${new Date(lastLiveAt).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} · อัปเดตเองทุก 30 วิ`;
+}
+
+/* ราคาในแผ่นซื้อ/ขาย: ไม่ทับค่าที่ผู้ใช้พิมพ์เอง */
+function refreshAssetSheetPrices() {
+    const input = document.getElementById('trade-price');
+    if (!input || input.dataset.touched || assetSheetIndex == null) return;
+    const p = getPrice(myPortfolio[assetSheetIndex]?.name);
+    if (p > 0) input.value = formatInputVal(p);
+}
+
+setInterval(() => {
+    if (document.visibilityState === 'visible') fetchLiveQuotes();
+}, 30000);
+// แนวรับ/ต้านและมูลค่ายุติธรรม เปลี่ยนช้า → ดึงเต็มทุก 10 นาที
+setInterval(() => {
+    if (document.visibilityState === 'visible') fetchPrices();
+}, 600000);
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && Date.now() - lastLiveAt > 15000) fetchLiveQuotes();
+});
 
 let toastTimer = null;
 function showToast(msg, kind = '') {
@@ -2750,7 +2810,7 @@ function renderTradeBox(index, asset) {
                 </div>
                 <div class="asset-sheet-field">
                     <label>ราคา/หุ้น ($)</label>
-                    <input type="text" inputmode="decimal" id="trade-price" value="${price > 0 ? formatInputVal(price) : ''}" placeholder="0.00" autocomplete="off" oninput="updateTradeTotal()">
+                    <input type="text" inputmode="decimal" id="trade-price" value="${price > 0 ? formatInputVal(price) : ''}" placeholder="0.00" autocomplete="off" oninput="this.dataset.touched='1';updateTradeTotal()">
                 </div>
             </div>
             <div class="trade-total" id="trade-total">รวม —</div>
