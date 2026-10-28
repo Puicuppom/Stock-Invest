@@ -1733,3 +1733,15 @@ body.rb2.drag-active { overflow: hidden; }
 .rb2 .fab svg { display: block; }
 /* ปุ่ม + : iframe กว้างเท่าคอลัมน์และห่างล่าง 24px อยู่แล้ว → ชิดมุมขวาล่างของ iframe = ตำแหน่งเดียวกับหน้าอื่น */
 .rb2 .fab-wrap { left: auto; right: 0 !important; bottom: env(safe-area-inset-bottom, 0px); transform: none; width: auto; padding: 0; }
+
+/* ราคาก่อนเปิด/หลังปิด */
+.cr-ext { display: block; font-size: 11px; line-height: 1.3; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cr-ext span { color: var(--ui-muted); }
+.cr-ext.gain { color: var(--ui-success, #4ade80); } .cr-ext.loss { color: var(--ui-danger, #f87171); }
+.cell-price .cr-ext { margin-top: 2px; }
+@media (min-width: 640px) {
+  .rb2 .list-head { grid-template-columns: minmax(0, 1fr) 132px 148px 96px; }
+  .rb2 .cr-row { grid-template-columns: 40px minmax(0, 1fr) 132px 148px 96px; }
+  .rb2 .cr-value { min-width: 0; }
+  .rb2 .cr-ext { overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+}

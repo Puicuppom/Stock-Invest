@@ -1693,7 +1693,8 @@ function priceCellHtml(asset) {
         ? `ทุน ${fmtTrade(asset.avgCost)}`
         : 'ยังไม่ใส่ทุน';
     return `<span class="stat-line"><span class="stat-num asset-price hi">${priceText}</span></span>`
-        + `<span class="stat-line stat-sub muted asset-cost">${costHtml}</span>`;
+        + `<span class="stat-line stat-sub muted asset-cost">${costHtml}</span>`
+        + extLineHtml(asset);
 }
 
 function valueCellHtml(asset) {
@@ -1823,11 +1824,20 @@ function crAllocHtml(asset, curPct) {
         <span class="al-track"><i style="width:${Math.min(100, curPct / scale * 100)}%;background:${color}"></i><b style="left:${Math.min(100, tgt / scale * 100)}%"></b></span>`;
 }
 
+/* ราคาก่อนเปิด/หลังปิด (หุ้นสหรัฐ) จากราคาสด — แสดงเป็นบรรทัดเล็ก แบบเดียวกับหน้า Watchlist */
+function extLineHtml(asset) {
+    if (isCashAsset(asset)) return '';
+    const e = priceCache[asset.name]?.ext;
+    if (!e || !(e.price > 0) || !Number.isFinite(e.changePercent)) return '';
+    const up = e.changePercent >= 0;
+    return `<small class="cr-ext ${up ? 'gain' : 'loss'}" title="${e.session === 'pre' ? 'ราคาก่อนตลาดเปิด' : 'ราคาหลังตลาดปิด'}"><span>${e.session === 'pre' ? 'ก่อนเปิด' : 'หลังปิด'}</span> ${fmtTrade(e.price)} ${up ? '+' : ''}${fmt(e.changePercent, 2)}%</small>`;
+}
+
 function crValueHtml(asset) {
     const other = isThbDisplay()
         ? `≈ $${fmt(asset.value || 0, 2)}`
         : (usdThbRate > 0 ? `≈ ฿${fmt((asset.value || 0) * usdThbRate, 0)}` : '');
-    return `<b>${fmtUsd(asset.value || 0)}</b><small>${other}</small>`;
+    return `<b>${fmtUsd(asset.value || 0)}</b><small>${other}</small>${extLineHtml(asset)}`;
 }
 
 function crProfitHtml(asset, cost, profit, profitPct) {
