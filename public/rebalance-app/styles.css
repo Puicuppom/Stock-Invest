@@ -1531,9 +1531,19 @@ select option, select optgroup { background-color: var(--ui-surface); color: var
 .rb2 .rb-main { min-width: 0; }
 @media (min-width: 900px) {
   .rb2 .app { padding: 20px 24px 48px; }
-  .rb2 .rb-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
-  .rb2 .rb-side { order: 2; position: sticky; top: 16px; }
-  .rb2 .rb-main { order: 1; }
+  .rb2 .rb-layout { gap: 20px; }
+  /* คอม: สรุป + สัดส่วน วางคู่กันด้านบน · รายการเต็มความกว้างด้านล่าง */
+  .rb2 .rb-side { gap: 12px; }
+  /* สรุปแบบแนวนอน: มูลค่าซ้าย · ตัวเลขย่อยขวา */
+  .rb2 .hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "top top" "value stats" "pl stats"; column-gap: 32px; padding: 18px 20px; }
+  .rb2 .hero-top { grid-area: top; }
+  .rb2 .hero-value { grid-area: value; font-size: 34px; }
+  .rb2 .hero-sub { display: none; }
+  .rb2 .hero-pl { grid-area: pl; }
+  .rb2 .hero-stats { grid-area: stats; align-self: end; margin: 0; padding: 0; border-top: 0; grid-template-columns: repeat(3, auto); }
+  .rb2 .hero-stats > div { padding: 0 20px; }
+  .rb2 .hero-stats > div:first-child { padding-left: 20px; border-left: 1px solid var(--rb-line); }
+  .rb2 .plan-card { padding: 14px 20px 12px; }
   .rb2 .rb-title h1 { font-size: 24px; }
 }
 
@@ -1664,3 +1674,27 @@ select option, select optgroup { background-color: var(--ui-surface); color: var
 .rb2 .cr-detail .asset-fv-inline { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; text-align: left; font-size: 13px; }
 .rb2 .cr-detail .asset-fv-gain { display: inline; }
 .rb2 .btn-settings-done[onclick^="deleteAssetFromSheet"] { background: transparent !important; color: var(--rb-loss); border: 1px solid color-mix(in srgb, var(--rb-loss) 45%, transparent); }
+
+/* ทั้งหน้าเลื่อนได้ตามปกติ (เดิมล็อกหน้าแล้วให้เลื่อนเฉพาะรายการ) */
+html:has(body.rb2), body.rb2 { height: auto; min-height: 100%; overflow-x: hidden; overflow-y: auto; }
+.rb2 .app { height: auto; min-height: 100dvh; overflow: visible; display: block; }
+.rb2 #assets-list.list-wrap { overflow: hidden; padding: 0; }
+body.rb2.drag-active { overflow: hidden; }
+
+/* คอลัมน์สัดส่วน: ซ่อนบนมือถือ (ดูจากบรรทัดใต้ชื่อแทน) */
+.rb2 .cr-alloc { display: none; }
+@media (min-width: 900px) {
+  .rb2 .list-head { grid-template-columns: minmax(0, 1fr) 220px 150px 130px; gap: 16px; }
+  .rb2 .list-head span:nth-child(2) { text-align: left; }
+  .rb2 .cr-row { grid-template-columns: 40px minmax(0, 1fr) 220px 150px 130px; gap: 16px; }
+  .rb2 .cr-alloc { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .rb2 .cr-name small .cr-target, .rb2 .cr-name small { display: none; }
+  .rb2 .cr-name .cr-acts { display: flex; }
+  .al-nums { display: flex; align-items: baseline; gap: 8px; font-size: 12px; color: var(--ui-muted); white-space: nowrap; }
+  .al-nums b { font-size: 14px; font-weight: 600; color: var(--ui-text); }
+  .al-nums em { margin-left: auto; font-style: normal; font-weight: 600; }
+  .al-nums em.over { color: var(--rb-loss); } .al-nums em.under { color: var(--ui-warning); }
+  .al-track { position: relative; height: 4px; border-radius: 999px; background: color-mix(in srgb, var(--ui-text) 8%, transparent); }
+  .al-track i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; }
+  .al-track b { position: absolute; top: -3px; width: 2px; height: 10px; margin-left: -1px; border-radius: 1px; background: var(--ui-text); }
+}

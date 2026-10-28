@@ -1444,6 +1444,8 @@ function recalculate() {
 
         const crPct = card.querySelector('.cr-pct');
         if (crPct) crPct.innerHTML = crPctHtml(asset, curPct);
+        const crAlloc = card.querySelector('.cr-alloc');
+        if (crAlloc) crAlloc.innerHTML = crAllocHtml(asset, curPct);
         const crValue = card.querySelector('.cr-value');
         if (crValue) crValue.innerHTML = crValueHtml(asset);
         const crProfit = card.querySelector('.cr-profit');
@@ -1774,6 +1776,18 @@ function crPctHtml(asset, curPct) {
     return `${ico}${fmtPct(curPct)} <span class="cr-target">/ ${fmtPct(asset.target || 0)}</span>`;
 }
 
+/* คอลัมน์สัดส่วน (เห็นบนคอม): แถบตอนนี้ + ขีดเป้า */
+function crAllocHtml(asset, curPct) {
+    const b = assetBucket(asset);
+    const color = b ? PLAN_BUCKETS[b.bucket].color : 'var(--ui-accent)';
+    const tgt = asset.target || 0;
+    const scale = Math.max(curPct, tgt, 1) * 1.15;
+    const gap = curPct - tgt;
+    const tone = Math.abs(gap) < 1 ? 'ok' : gap > 0 ? 'over' : 'under';
+    return `<span class="al-nums"><b>${fmt(curPct, 1)}%</b><small>เป้า ${fmt(tgt, 1)}%</small><em class="${tone}">${tone === 'ok' ? '' : (gap > 0 ? '+' : '−') + fmt(Math.abs(gap), 1)}</em></span>
+        <span class="al-track"><i style="width:${Math.min(100, curPct / scale * 100)}%;background:${color}"></i><b style="left:${Math.min(100, tgt / scale * 100)}%"></b></span>`;
+}
+
 function crValueHtml(asset) {
     const other = isThbDisplay()
         ? `≈ $${fmt(asset.value || 0, 2)}`
@@ -1813,6 +1827,7 @@ function appendAssetCard(list, payload) {
                 <small class="cr-pct">${crPctHtml(asset, curPct)}</small>
                 ${act}
             </div>
+            <div class="cr-alloc">${crAllocHtml(asset, curPct)}</div>
             <div class="cr-value">${crValueHtml(asset)}</div>
             <div class="cr-profit">${profitHtml}</div>
         </div>
