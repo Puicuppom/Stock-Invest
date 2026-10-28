@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import StockLogo from "./StockLogo";
 import { BUCKET_META, PROFILE_NAME, classifyAsset, loadProfileMixes, type BucketKey, type Profile } from "@/lib/portfolio-plan";
 import { screenStock, type ScreeningCheck, type ScreeningStyle } from "@/lib/screener";
 import { interestScore } from "@/lib/screener-ranking";
@@ -79,7 +80,10 @@ export default function PlanSuggest({ rows, ctx }: { rows: { id: string; item: W
               {g.list.map(p => (
                 <li key={p.id}>
                   <Link href={`/?s=${encodeURIComponent(p.id)}`}>
-                    <span className="ps-logo">{p.item.symbol.slice(0, 4)}</span>
+                    <span className="wl-logo ps-logo">
+                      <span className="wl-logo-text">{p.item.symbol.slice(0, 4)}</span>
+                      <StockLogo symbol={p.item.market === "TH" ? `${p.item.symbol}.BK` : p.item.symbol} size={36} className="wl-logo-img" />
+                    </span>
                     <span className="ps-name"><b>{p.item.symbol}</b><small>{p.data.longName ?? ""}</small></span>
                     <span className={`ps-tag ${p.pass ? "pass" : "near"}`} title={p.pass ? "ผ่านเกณฑ์ครบ" : `ขาด: ${p.miss}`}>{p.pass ? "ผ่านครบ" : "เกือบผ่าน"}</span>
                   </Link>
