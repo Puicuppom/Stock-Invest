@@ -1121,7 +1121,7 @@ function formatFvHeader(symbol) {
     const price = getPrice(symbol);
     if (!target) return { fv: '—', opp: '', oppCls: 'muted' };
     const up = price > 0 ? ((target - price) / price) * 100 : null;
-    const fvText = fmtUsd(target);
+    const fvText = fmtTrade(target);
     if (up == null) return { fv: fvText, opp: '', oppCls: 'muted' };
     const sign = up > 0 ? '+' : '';
     return {
@@ -1171,9 +1171,9 @@ function getTradeSignal(asset) {
     if (isCashAsset(asset)) return { text: '—', sub: '', cls: 'hold' };
     const lv = computePriceLevels(asset);
     if (!lv || lv.loading || (!lv.buy && !lv.sell)) return { text: '—', sub: '', cls: 'hold' };
-    if (lv.buy?.near) return { text: 'ซื้อ', sub: `ใกล้แนวรับ ${fmtUsd(lv.buy.price)}`, cls: 'buy' };
-    if (lv.sell?.near) return { text: 'ขาย', sub: `ใกล้แนวต้าน ${fmtUsd(lv.sell.price)}`, cls: 'sell' };
-    return { text: 'รอ', sub: lv.buy ? `ยังไม่ถึงแนวรับ ${fmtUsd(lv.buy.price)}` : '', cls: 'hold' };
+    if (lv.buy?.near) return { text: 'ซื้อ', sub: `ใกล้แนวรับ ${fmtTrade(lv.buy.price)}`, cls: 'buy' };
+    if (lv.sell?.near) return { text: 'ขาย', sub: `ใกล้แนวต้าน ${fmtTrade(lv.sell.price)}`, cls: 'sell' };
+    return { text: 'รอ', sub: lv.buy ? `ยังไม่ถึงแนวรับ ${fmtTrade(lv.buy.price)}` : '', cls: 'hold' };
 }
 
 /* ชิปบนแถวย่อ: ⚖ = ปรับสัดส่วน · 📍 = แนวรับ/แนวต้าน */
@@ -1221,6 +1221,11 @@ function isThbDisplay() {
     return displayCurrency === 'THB' && usdThbRate > 0;
 }
 
+/* ราคาต่อหุ้น / จำนวนเงินที่ต้องซื้อขาย: เป็นดอลลาร์เสมอ เพราะซื้อขายเป็นดอลลาร์ (ปุ่ม ฿ เปลี่ยนแค่มูลค่ารวม/กำไร) */
+function fmtTrade(n) {
+    return '$' + fmt(n, 2);
+}
+
 function fmtUsd(n) {
     if (isThbDisplay()) return '฿' + fmt(n * usdThbRate, 2);
     return '$' + fmt(n, 2);
@@ -1261,13 +1266,13 @@ function formatShareAdvice(usd, asset) {
 
 function getAction(diff, asset) {
     if (isCashAsset(asset)) {
-        if (diff > 0.01) return { cls: 'buy', text: `เติม ${fmtUsd(diff)}` };
-        if (diff < -0.01) return { cls: 'sell', text: `ลด ${fmtUsd(Math.abs(diff))}` };
+        if (diff > 0.01) return { cls: 'buy', text: `เติม ${fmtTrade(diff)}` };
+        if (diff < -0.01) return { cls: 'sell', text: `ลด ${fmtTrade(Math.abs(diff))}` };
         return { cls: 'hold', text: 'พอดี' };
     }
     const sharePart = formatShareAdvice(Math.abs(diff), asset);
-    if (diff > 0.01) return { cls: 'buy', text: `ซื้อ ${fmtUsd(diff)}${sharePart}` };
-    if (diff < -0.01) return { cls: 'sell', text: `ขาย ${fmtUsd(Math.abs(diff))}${sharePart}` };
+    if (diff > 0.01) return { cls: 'buy', text: `ซื้อ ${fmtTrade(diff)}${sharePart}` };
+    if (diff < -0.01) return { cls: 'sell', text: `ขาย ${fmtTrade(Math.abs(diff))}${sharePart}` };
     return { cls: 'hold', text: 'สมดุล' };
 }
 
@@ -1497,7 +1502,7 @@ function renderAssetSheetBody({ index, asset, cost, profit, profitPct, tradeSign
         const adviceText = action ? action.text : '—';
         return `
         <div class="trade-box">
-            <div class="trade-head">💵 คงเหลือ <b>${fmtUsd(asset.shares || 0)}</b></div>
+            <div class="trade-head">💵 คงเหลือ <b>${fmtTrade(asset.shares || 0)}</b></div>
             <div class="asset-sheet-field">
                 <label>จำนวนเงิน ($)</label>
                 <input type="text" inputmode="decimal" id="cash-amt" placeholder="0.00" autocomplete="off">
@@ -1580,9 +1585,9 @@ function thbInline(usd, sign = '', cls = '') {
 
 function priceCellHtml(asset) {
     const price = getPrice(asset.name);
-    const priceText = price > 0 ? usdDual(price) : (priceCache[asset.name]?.error ? 'ไม่พบ' : '…');
+    const priceText = price > 0 ? fmtTrade(price) : (priceCache[asset.name]?.error ? 'ไม่พบ' : '…');
     const costHtml = asset.avgCost > 0
-        ? `ทุน ${fmtUsd(asset.avgCost)}`
+        ? `ทุน ${fmtTrade(asset.avgCost)}`
         : 'ยังไม่ใส่ทุน';
     return `<span class="stat-line"><span class="stat-num asset-price hi">${priceText}</span></span>`
         + `<span class="stat-line stat-sub muted asset-cost">${costHtml}</span>`;
@@ -1651,13 +1656,13 @@ function renderPriceLevelsInner(asset) {
     if (lv.buy) {
         const tags = (lv.buy.near ? ' <span class="lv-tag">✓ ใกล้แนวรับ</span>' : '')
             + (lv.buy.aboveFv ? ' <span class="lv-warn">⚠ สูงกว่าเป้านักวิเคราะห์</span>' : '');
-        buyHtml = `<span class="lv-item lv-buy"><span class="lv-label">ซื้อไม่เกิน</span> <span class="lv-price">${fmtUsd(lv.buy.price)}</span>${note(lv.buy)}${tags}</span>`;
+        buyHtml = `<span class="lv-item lv-buy"><span class="lv-label">ซื้อไม่เกิน</span> <span class="lv-price">${fmtTrade(lv.buy.price)}</span>${note(lv.buy)}${tags}</span>`;
     } else {
         buyHtml = `<span class="lv-item lv-buy"><span class="lv-label">ซื้อไม่เกิน</span> <span class="lv-note">ไม่มีแนวรับใต้ราคานี้</span></span>`;
     }
     if (lv.sell) {
         const tag = lv.sell.near ? ' <span class="lv-tag">✓ ใกล้แนวต้าน</span>' : '';
-        sellHtml = `<span class="lv-item lv-sell"><span class="lv-label">ขาย</span> <span class="lv-price">${fmtUsd(lv.sell.price)}</span>${note(lv.sell)}${tag}</span>`;
+        sellHtml = `<span class="lv-item lv-sell"><span class="lv-label">ขาย</span> <span class="lv-price">${fmtTrade(lv.sell.price)}</span>${note(lv.sell)}${tag}</span>`;
     } else {
         sellHtml = `<span class="lv-item lv-sell"><span class="lv-label">ขาย</span> <span class="lv-note">ไม่มีแนวต้านเหนือราคานี้</span></span>`;
     }
@@ -2802,7 +2807,7 @@ function renderTradeBox(index, asset) {
     const cash = cashAssetUsd(false);
     return `
         <div class="trade-box">
-            <div class="trade-head">มี <b>${fmtShares(asset.shares)}</b> หุ้น · 💵 เงินสด <b id="trade-cash-left">${fmtUsd(cash?.shares || 0)}</b></div>
+            <div class="trade-head">มี <b>${fmtShares(asset.shares)}</b> หุ้น · 💵 เงินสด <b id="trade-cash-left">${fmtTrade(cash?.shares || 0)}</b></div>
             <div class="asset-sheet-grid trade-grid">
                 <div class="asset-sheet-field">
                     <label>จำนวนหุ้น</label>
@@ -2825,7 +2830,7 @@ function renderTradeBox(index, asset) {
 function updateTradeTotal() {
     const q = parseTradeNum('trade-qty'), p = parseTradeNum('trade-price');
     const el = document.getElementById('trade-total');
-    if (el) el.textContent = q && p ? `รวม ${fmtUsd(q * p)}` : 'รวม —';
+    if (el) el.textContent = q && p ? `รวม ${fmtTrade(q * p)}` : 'รวม —';
 }
 
 function afterTrade(name, msg, kind) {
@@ -2851,13 +2856,13 @@ function tradeAsset(index, side) {
     if (side === 'buy') {
         const cash = useCash ? cashAssetUsd(true) : null;
         if (cash && (cash.shares || 0) + 1e-9 < amount) {
-            showToast(`เงินสดไม่พอ (มี ${fmtUsd(cash.shares || 0)} · ต้องใช้ ${fmtUsd(amount)}) · เติมเงินก่อน หรือเอาติ๊กตัดเงินสดออก`, 'error');
+            showToast(`เงินสดไม่พอ (มี ${fmtTrade(cash.shares || 0)} · ต้องใช้ ${fmtTrade(amount)}) · เติมเงินก่อน หรือเอาติ๊กตัดเงินสดออก`, 'error');
             return;
         }
         asset.avgCost = (shares * avg + amount) / (shares + q);
         asset.shares = shares + q;
         if (cash) cash.shares = Math.round(((cash.shares || 0) - amount) * 100) / 100;
-        afterTrade(asset.name, `ซื้อ ${asset.name} ${fmtShares(q)} หุ้น @ ${fmtUsd(p)}${cash ? ` · ตัดเงินสด ${fmtUsd(amount)}` : ''}`);
+        afterTrade(asset.name, `ซื้อ ${asset.name} ${fmtShares(q)} หุ้น @ ${fmtTrade(p)}${cash ? ` · ตัดเงินสด ${fmtTrade(amount)}` : ''}`);
     } else {
         if (q > shares + 1e-9) { showToast(`มีแค่ ${fmtShares(shares)} หุ้น`, 'error'); return; }
         const realized = avg > 0 ? (p - avg) * q : null;
@@ -2865,8 +2870,8 @@ function tradeAsset(index, side) {
         asset.shares = Math.max(0, Math.round((shares - q) * 1e6) / 1e6);
         if (asset.shares === 0) asset.peakValue = 0;
         if (cash) cash.shares = Math.round(((cash.shares || 0) + amount) * 100) / 100;
-        const pl = realized == null ? '' : ` · ${realized >= 0 ? 'กำไร' : 'ขาดทุน'} ${fmtUsd(Math.abs(realized))}`;
-        afterTrade(asset.name, `ขาย ${asset.name} ${fmtShares(q)} หุ้น @ ${fmtUsd(p)}${pl}${cash ? ` · เข้าเงินสด ${fmtUsd(amount)}` : ''}`);
+        const pl = realized == null ? '' : ` · ${realized >= 0 ? 'กำไร' : 'ขาดทุน'} ${fmtTrade(Math.abs(realized))}`;
+        afterTrade(asset.name, `ขาย ${asset.name} ${fmtShares(q)} หุ้น @ ${fmtTrade(p)}${pl}${cash ? ` · เข้าเงินสด ${fmtTrade(amount)}` : ''}`);
     }
 }
 
@@ -2875,7 +2880,7 @@ function cashMove(index, dir) {
     if (!cash || !isCashAsset(cash)) return;
     const amt = parseTradeNum('cash-amt');
     if (!amt) { showToast('ใส่จำนวนเงินก่อน', 'error'); return; }
-    if (dir < 0 && amt > (cash.shares || 0) + 1e-9) { showToast(`ถอนได้ไม่เกิน ${fmtUsd(cash.shares || 0)}`, 'error'); return; }
+    if (dir < 0 && amt > (cash.shares || 0) + 1e-9) { showToast(`ถอนได้ไม่เกิน ${fmtTrade(cash.shares || 0)}`, 'error'); return; }
     cash.shares = Math.round(((cash.shares || 0) + dir * amt) * 100) / 100;
-    afterTrade(cash.name, `${dir > 0 ? 'เติม' : 'ถอน'}เงินสด ${fmtUsd(amt)} · คงเหลือ ${fmtUsd(cash.shares)}`);
+    afterTrade(cash.name, `${dir > 0 ? 'เติม' : 'ถอน'}เงินสด ${fmtTrade(amt)} · คงเหลือ ${fmtTrade(cash.shares)}`);
 }
