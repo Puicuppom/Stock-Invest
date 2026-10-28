@@ -73,7 +73,7 @@ function getActivePortfolioName() {
 
 /* กลุ่มอัตโนมัติ + สไตล์พอร์ต (สำเนาของ src/lib/portfolio-plan.ts) */
 const PLAN_BUCKETS = {
-    core: { icon: '📦', name: 'ETF หลัก', color: '#38bdf8' },
+    core: { icon: '📦', name: 'ETF', color: '#38bdf8' },
     income: { icon: '💰', name: 'ปันผล', color: '#fbbf24' },
     quality: { icon: '🚀', name: 'หุ้นแกร่ง/เติบโต', color: '#22c55e' },
     dip: { icon: '🏷️', name: 'หุ้นลดราคา', color: '#f472b6' },

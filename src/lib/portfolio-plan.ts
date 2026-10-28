@@ -13,7 +13,8 @@ export const PROFILE_MIX: Record<Profile, Partial<Record<BucketKey, number>>> = 
   growth: { core: 30, quality: 35, dip: 20, small: 10, cash: 5 },
 };
 
-const INCOME_NAME = /income|dividend|yield|covered|premium|option|high div|ปันผล/i;
+/* ETF ปันผล = กองที่คัดหุ้นปันผล (SCHD, VYM) · กองดัชนีที่ขายออปชั่นเก็บรายได้ (QQQI, JEPQ) ยังนับเป็น ETF หลัก */
+const DIVIDEND_ETF_NAME = /dividend|high div|ปันผล/i;
 
 /** จัดกลุ่มสินทรัพย์จากข้อมูลจริง: ETF (หลัก/ปันผล/เลเวอเรจ) · หุ้น (ปันผล/จิ๋ว/ลดราคา/แกร่ง) */
 export function classifyAsset(data: StockData): { bucket: BucketKey; reason: string } {
@@ -21,9 +22,8 @@ export function classifyAsset(data: StockData): { bucket: BucketKey; reason: str
   if (data.assetKind === "gold-etf") return { bucket: "core", reason: "ETF ทอง · ช่วยกระจายความเสี่ยง" };
   if (data.assetKind === "etf") {
     if (data.etf?.leveraged || isLeveragedName(name)) return { bucket: "small", reason: "ETF เลเวอเรจ/สวนตลาด · เสี่ยงสูง" };
-    const y = data.etf?.yieldPercent ?? data.fairValue.dividendYieldPercent ?? null;
-    if ((y != null && y >= 3.5) || INCOME_NAME.test(name)) return { bucket: "income", reason: `ETF เน้นรายได้${y != null ? ` · ปันผล ${y.toFixed(1)}%` : ""}` };
-    return { bucket: "core", reason: "ETF กระจายความเสี่ยง" };
+    if (DIVIDEND_ETF_NAME.test(name)) return { bucket: "income", reason: "ETF หุ้นปันผล" };
+    return { bucket: "core", reason: "ETF" };
   }
   if (data.assetKind !== "stock") return { bucket: "core", reason: "สินทรัพย์อื่น" };
 
