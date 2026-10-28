@@ -806,6 +806,14 @@ async function initCloudSync() {
 }
 
 let usdThbRate = 0;
+/* อัตราแลกเปลี่ยนบนกล่องสรุป: 1 $ = xx.xx ฿ */
+function renderFxRate() {
+    const el = document.getElementById('fx-rate');
+    if (!el || !(usdThbRate > 0)) return;
+    el.hidden = false;
+    el.innerHTML = `1 $ = <b>${usdThbRate.toFixed(2)}</b> ฿`;
+    el.title = `อัตราแลกเปลี่ยน USD/THB · อัปเดต ${new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}`;
+}
 let displayCurrency = (() => {
     try { return localStorage.getItem('rbCurrency') === 'THB' ? 'THB' : 'USD'; } catch { return 'USD'; }
 })();
@@ -849,6 +857,7 @@ async function loadUsdThbRate() {
         const data = await res.json();
         if (res.ok && data.price > 0) {
             usdThbRate = data.price;
+            renderFxRate();
             if (document.querySelector('.asset-card')) {
                 recalculate();
             } else {
