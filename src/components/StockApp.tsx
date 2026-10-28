@@ -208,6 +208,21 @@ export default function StockApp() {
     [addStock, items]
   );
 
+  // ดาว: อยู่แล้ว → เอาออก · ยังไม่อยู่ → เพิ่ม (ถ้าเปิดหน้าหุ้นตัวนั้นอยู่ ให้อยู่หน้าเดิมต่อ)
+  const toggleWatch = useCallback((symbol: string, market: "TH" | "US") => {
+    const normalized = normalizeInput(symbol).replace(/\.BK$/, "");
+    if (!normalized) return;
+    const id = watchlistId({ symbol: normalized, market });
+    if (items.some(item => watchlistId(item) === id)) {
+      if (activeItem && watchlistId(activeItem) === id) setPreviewItem({ symbol: normalized, market });
+      removeStock(id);
+      setToastError(false);
+      setToast(`เอา ${normalized} ออกจาก Watchlist แล้ว`);
+    } else if (handleAddStock(normalized, market) && previewItem && watchlistId(previewItem) === id) {
+      setPreviewItem(null);
+    }
+  }, [items, activeItem, previewItem, removeStock, handleAddStock]);
+
   useEffect(() => {
     if (!toast) return;
     const timer = window.setTimeout(() => {
@@ -289,7 +304,7 @@ export default function StockApp() {
           onRemove={removeStock}
           onReorder={reorderStock}
           onAdd={() => setAddOpen(true)}
-          onAddStock={handleAddStock}
+          onToggleStock={toggleWatch}
           syncStatus={syncStatus}
         />
       )}
@@ -297,13 +312,13 @@ export default function StockApp() {
         <div className="detail-bar">
           <button type="button" className="detail-back" onClick={backToList}>← Watchlist</button>
           {activeItem && (() => {
-            // ดาวแสดงตลอด: โปร่ง = ยังไม่อยู่ใน Watchlist (กดเพื่อเพิ่ม) · เต็ม = อยู่แล้ว
+            // ดาวแสดงตลอด: โปร่ง = ยังไม่อยู่ใน Watchlist · เต็ม = อยู่แล้ว (กดเพื่อเอาออก)
             const saved = items.some(it => watchlistId(it) === watchlistId(activeItem));
             return (
-              <button type="button" className={`star-btn${saved ? " on" : ""}`} disabled={saved}
-                aria-label={saved ? `${activeItem.symbol} อยู่ใน Watchlist แล้ว` : `เพิ่ม ${activeItem.symbol} ใน Watchlist`}
-                title={saved ? "อยู่ใน Watchlist แล้ว" : "เพิ่มใน Watchlist"}
-                onClick={() => { if (handleAddStock(activeItem.symbol, activeItem.market)) setPreviewItem(null); }}>
+              <button type="button" className={`star-btn${saved ? " on" : ""}`} aria-pressed={saved}
+                aria-label={saved ? `เอา ${activeItem.symbol} ออกจาก Watchlist` : `เพิ่ม ${activeItem.symbol} ใน Watchlist`}
+                title={saved ? "อยู่ใน Watchlist · กดเพื่อเอาออก" : "เพิ่มใน Watchlist"}
+                onClick={() => toggleWatch(activeItem.symbol, activeItem.market)}>
                 <StarIcon filled={saved} />
               </button>
             );
@@ -401,7 +416,9 @@ export default function StockApp() {
       <AddStockFab
         open={addOpen}
         onOpenChange={setAddOpen}
-        onAdd={handleAddStock}
+        isSaved={(sym, m) => items.some(it => watchlistId(it) === watchlistId({ symbol: sym, market: m }))}
+        onToggle={toggleWatch}
+        onOpen={(sym, m) => { setAddOpen(false); openSearch(sym, m); }}
       />
 
       <footer className="app-footer">

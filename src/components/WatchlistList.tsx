@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { attachRowGestures } from "@/lib/row-gestures";
 import StockLogo from "./StockLogo";
-import { StarIcon } from "./Icons";
+import { StockFoundCard, useStockLookup } from "./StockLookup";
 import RevIcon from "./RevIcon";
 import { displaySymbol, normalizeInput } from "@/lib/symbol";
 import { watchlistId } from "@/lib/watchlist-id";
@@ -26,9 +26,7 @@ function Spark({ values }: { values?: number[] }) {
 const DIP_ICON: Record<string, string> = { good: "🏷️", trap: "⚠️", watch: "👀" };
 
 /** รายการหุ้นแบบ Dime: โลโก้ · ชื่อ · ราคา · % — แตะเพื่อเปิดหน้าวิเคราะห์ */
-type Found = { key: string; state: "loading" | "found" | "none"; symbol: string; market: "TH" | "US"; name?: string | null; price?: number; changePercent?: number };
-
-export default function WatchlistList({ items, signals, quotes, onRefresh, refreshing, updatedAt, srTags, onOpen, onSearch, onRemove, onReorder, onAddStock, syncStatus }: {
+export default function WatchlistList({ items, signals, quotes, onRefresh, refreshing, updatedAt, srTags, onOpen, onSearch, onRemove, onReorder, onToggleStock, syncStatus }: {
   items: WatchlistItem[];
   signals: WatchlistSignals;
   quotes: WatchlistQuotes;
@@ -43,8 +41,8 @@ export default function WatchlistList({ items, signals, quotes, onRefresh, refre
   onReorder: (fromId: string, toId: string) => void;
   /** ปุ่มเพิ่มอยู่มุมขวาล่างแล้ว */
   onAdd?: () => void;
-  /** ☆ ในผลค้นหา: เพิ่มเข้า Watchlist */
-  onAddStock?: (symbol: string, market: "TH" | "US") => boolean;
+  /** ดาวในผลค้นหา: เพิ่ม/เอาออกจาก Watchlist */
+  onToggleStock?: (symbol: string, market: "TH" | "US") => void;
   syncStatus?: string;
 }) {
   // ค้นหา: พิมพ์เพื่อกรองรายการ · Enter เพื่อเปิดหุ้นตัวไหนก็ได้
@@ -59,28 +57,8 @@ export default function WatchlistList({ items, signals, quotes, onRefresh, refre
     onSearch(q.replace(/\.BK$/, ""), th ? "TH" : "US");
     setQuery("");
   };
-  // ผลค้นหาสด: พิมพ์แล้วหยุด 0.35 วิ → เช็กว่ามีหุ้นตัวนี้ไหม พร้อมชื่อ/ราคา
-  const qSym = q.replace(/\.BK$/, "");
-  const qMkt: "TH" | "US" = q.endsWith(".BK") || qMarket === "TH" ? "TH" : "US";
-  const qKey = qSym ? `${qSym}::${qMkt}` : "";
-  const [found, setFound] = useState<Found | null>(null);
-  useEffect(() => {
-    if (!qKey || !/^[A-Z0-9.\-^=&]{1,15}$/.test(qSym)) { setFound(null); return; }
-    setFound({ key: qKey, state: "loading", symbol: qSym, market: qMkt });
-    const ctrl = new AbortController();
-    const t = window.setTimeout(async () => {
-      try {
-        const res = await fetch(`/api/quotes?items=${encodeURIComponent(qSym)}:${qMkt}`, { signal: ctrl.signal, cache: "no-store" });
-        const j = res.ok ? await res.json() : null;
-        const hit = j?.quotes?.[qKey];
-        setFound(hit && hit.price > 0
-          ? { key: qKey, state: "found", symbol: qSym, market: qMkt, name: hit.name, price: hit.price, changePercent: hit.changePercent }
-          : { key: qKey, state: "none", symbol: qSym, market: qMkt });
-      } catch { if (!ctrl.signal.aborted) setFound({ key: qKey, state: "none", symbol: qSym, market: qMkt }); }
-    }, 350);
-    return () => { ctrl.abort(); window.clearTimeout(t); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [qKey]);
+  // ผลค้นหาสด (ใช้ร่วมกับหน้าต่างเพิ่มหุ้น)
+  const found = useStockLookup(query, qMarket);
   const inList = (sym: string, m: "TH" | "US") => items.some(it => watchlistId(it) === watchlistId({ symbol: sym, market: m }));
 
   // เรียง: manual = ลำดับที่จัดเอง · up/down = % เปลี่ยนแปลงวันนี้
@@ -132,42 +110,11 @@ export default function WatchlistList({ items, signals, quotes, onRefresh, refre
           {(["US", "TH"] as const).map(m => <button key={m} type="button" aria-pressed={qMarket === m} onClick={() => pickMarket(m)}>{m === "US" ? "US" : "ไทย"}</button>)}
         </span>
       </form>
-      {q && found && found.key === qKey && (
+      {q && found && (
         <div className="wl-found" aria-live="polite">
-          {found.state === "loading" && <p className="wl-found-msg">กำลังค้นหา {found.symbol}…</p>}
-          {found.state === "none" && (
-            <p className="wl-found-msg">ไม่พบ <b>{found.symbol}</b> ในตลาด{found.market === "US" ? "สหรัฐ" : "ไทย"}
-              <button type="button" onClick={() => pickMarket(found.market === "US" ? "TH" : "US")}>ลองหาใน{found.market === "US" ? "ตลาดไทย" : "ตลาด US"}</button>
-            </p>
-          )}
-          {found.state === "found" && (() => {
-            const added = inList(found.symbol, found.market);
-            const up = (found.changePercent ?? 0) >= 0;
-            return (
-              <ul className="wl-list wl-found-list">
-                <li className="wl-row">
-                  <div className="wl-swipe">
-                    <button type="button" className="wl-main" onClick={() => { onSearch(found.symbol, found.market); setQuery(""); }} aria-label={`เปิด ${found.symbol}`}>
-                      <span className="wl-logo">
-                        <span className="wl-logo-text">{found.symbol.slice(0, 4)}</span>
-                        <StockLogo symbol={found.market === "TH" ? `${found.symbol}.BK` : found.symbol} size={40} className="wl-logo-img" />
-                      </span>
-                      <span className="wl-name">
-                        <span className="wl-line1"><b>{found.symbol}</b><small>{found.name ?? (found.market === "TH" ? "SET" : "US")}</small></span>
-                      </span>
-                      <span className="wl-price"><b>{found.market === "TH" ? "฿" : "$"}{found.price!.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b></span>
-                      <span className={`wl-chg ${up ? "up" : "down"}`}>{up ? "+" : ""}{(found.changePercent ?? 0).toFixed(2)}%</span>
-                    </button>
-                    {onAddStock && (
-                      <button type="button" className={`star-btn wl-star${added ? " on" : ""}`} disabled={added}
-                        aria-label={added ? `${found.symbol} อยู่ใน Watchlist แล้ว` : `เพิ่ม ${found.symbol} ใน Watchlist`} title={added ? "อยู่ใน Watchlist แล้ว" : "เพิ่มใน Watchlist"}
-                        onClick={() => onAddStock(found.symbol, found.market)}><StarIcon filled={added} /></button>
-                    )}
-                  </div>
-                </li>
-              </ul>
-            );
-          })()}
+          <StockFoundCard found={found} saved={inList(found.symbol, found.market)}
+            onOpen={(sym, m) => { onSearch(sym, m); setQuery(""); }}
+            onToggle={onToggleStock} onSwitchMarket={pickMarket} />
         </div>
       )}
       {items.length > 1 && !q && <p className="wl-hint">{sort === "manual" ? "กดค้างแล้วลากเพื่อจัดเรียง · ปัดซ้ายเพื่อลบ" : "ปัดซ้ายเพื่อลบ · เลือก “จัดเอง” เพื่อลากจัดเรียง"}</p>}

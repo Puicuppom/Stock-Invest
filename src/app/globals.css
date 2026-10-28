@@ -1844,3 +1844,24 @@ body.ui2 .wl-found-list .wl-main { padding-right: 6px; }
 /* ปุ่มเพิ่ม (+): ทรงเดียวกับปุ่มดาว แต่เป็นปุ่มหลักสีฟ้า */
 body.ui2 .fab { width: 56px; height: 56px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 18px; background: var(--ui-accent); color: #04121f; font-size: 0; box-shadow: 0 8px 24px color-mix(in srgb, var(--ui-accent) 35%, transparent); transition: transform .1s; }
 body.ui2 .fab:active { transform: scale(.94); }
+
+/* หน้าต่างเพิ่มหุ้น: ช่องค้นหา + การ์ดผล แบบเดียวกับหน้า Watchlist */
+body.ui2 .add2 { display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 20px; border: 1px solid var(--ui-border); background: var(--ui-surface); }
+body.ui2 .add2-head { display: flex; align-items: center; justify-content: space-between; }
+body.ui2 .add2-head h2 { margin: 0; font-size: 17px; font-weight: 700; }
+body.ui2 .add2-close { width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--ui-border); background: transparent; color: var(--ui-muted); font-size: 18px; cursor: pointer; }
+body.ui2 .add2-search { background: var(--ui-bg); }
+body.ui2 .add2-search input { flex: 1; min-width: 0; }
+body.ui2 .add2-hint { margin: 0; font-size: 12px; color: var(--ui-accent); }
+body.ui2 .add2-result { margin: 0; min-height: 70px; }
+body.ui2 .add2-empty { margin: 0; padding: 14px; border: 1px dashed var(--ui-border); border-radius: 12px; font-size: 13px; color: var(--ui-muted); text-align: center; }
+body.ui2 .add2 .wl-found-list { background: var(--ui-bg); }
+body.ui2 .add2 .wl-found-list .wl-swipe { background: transparent; }
+/* การ์ดผลค้นหาในที่แคบ: ชื่อหดตัด (…) แทนการทับราคา */
+body.ui2 .wl-found-list .wl-main { grid-template-columns: 40px minmax(0, 1fr) auto auto; gap: 10px; }
+body.ui2 .wl-found-list .wl-name { min-width: 0; overflow: hidden; }
+body.ui2 .wl-found-list .wl-line1 { display: flex; align-items: baseline; gap: 6px; min-width: 0; white-space: nowrap; }
+body.ui2 .wl-found-list .wl-line1 b { flex: none; }
+body.ui2 .wl-found-list .wl-line1 small { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+body.ui2 .wl-found-list .wl-chg { min-width: 60px; }
+@media (max-width: 420px) { body.ui2 .add2 .wl-found-list .wl-main { grid-template-columns: 34px minmax(0, 1fr) auto; } body.ui2 .add2 .wl-found-list .wl-chg { display: none; } }

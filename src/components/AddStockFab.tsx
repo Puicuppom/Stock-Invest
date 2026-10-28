@@ -5,172 +5,79 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useKeyboardAwareModal } from "@/hooks/useKeyboardAwareModal";
 import { normalizeInput } from "@/lib/symbol";
+import { StockFoundCard, useStockLookup } from "./StockLookup";
 
+type Mkt = "TH" | "US";
 interface AddStockFabProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAdd: (symbol: string, market: "TH" | "US") => boolean;
+  /** หุ้นตัวนี้อยู่ใน Watchlist แล้วหรือยัง */
+  isSaved: (symbol: string, market: Mkt) => boolean;
+  /** ดาว: เพิ่ม/เอาออก */
+  onToggle: (symbol: string, market: Mkt) => void;
+  /** แตะการ์ด: เปิดหน้าข้อมูลหุ้น */
+  onOpen: (symbol: string, market: Mkt) => void;
 }
 
-export default function AddStockFab({ open, onOpenChange, onAdd }: AddStockFabProps) {
+/** ปุ่ม + และหน้าต่างเพิ่มหุ้น: พิมพ์ → เลือก US/ไทย → ขึ้นการ์ดผลค้นหาเหมือนช่องค้นหา */
+export default function AddStockFab({ open, onOpenChange, isSaved, onToggle, onOpen }: AddStockFabProps) {
   const [symbol, setSymbol] = useState("");
-  const [error, setError] = useState("");
+  const [market, setMarket] = useState<Mkt>("US");
   const [portalReady, setPortalReady] = useState(false);
 
-  useEffect(() => {
-    setPortalReady(true);
-  }, []);
-
-  useEffect(() => {
-    if (!open) {
-      setSymbol("");
-      setError("");
-    }
-  }, [open]);
+  useEffect(() => { setPortalReady(true); }, []);
+  useEffect(() => { if (!open) setSymbol(""); }, [open]);
 
   const normalized = normalizeInput(symbol);
+  const found = useStockLookup(normalized, market);
   const { panelRef, offsetY } = useKeyboardAwareModal(open);
-
-  const handleAdd = (market: "TH" | "US") => {
-    if (!normalized) {
-      setError("กรุณากรอกชื่อหุ้น");
-      return;
-    }
-
-    const ok = onAdd(normalized, market);
-    if (ok) {
-      onOpenChange(false);
-    } else {
-      setError("เพิ่มหุ้นไม่สำเร็จ");
-    }
-  };
+  const hint =
+    normalized === "META" ? "Meta/Facebook อยู่ตลาด US" :
+    normalized === "BRKB" || normalized === "BRKA" ? "Berkshire ใช้ BRKB / BRKA ในตลาด US" :
+    normalized === "XAUUSD" || normalized === "GCF" ? "ทอง XAU/USD อยู่ตลาด US" :
+    normalized === "GLD" || normalized === "IAU" || normalized === "GLDM" ? "ETF ทองสหรัฐ อยู่ตลาด US" :
+    normalized === "GOLD01" || normalized === "GOLD03" ? "ETF ทองไทย อยู่ตลาดไทย" : "";
 
   return (
     <>
-      <button
-        type="button"
-        className="fab"
-        onClick={() => onOpenChange(true)}
-        aria-label="เพิ่มหุ้น"
-        title="เพิ่มหุ้น"
-      >
+      <button type="button" className="fab" onClick={() => onOpenChange(true)} aria-label="เพิ่มหุ้น" title="เพิ่มหุ้น">
         <PlusIcon size={26} />
       </button>
 
-      {portalReady &&
-        open &&
-        createPortal(
-          <div className="modal-backdrop modal-backdrop-compact" onClick={() => onOpenChange(false)}>
-            <div
-              ref={panelRef}
-              className="modal-panel add-stock-panel"
-              style={
-                offsetY > 0
-                  ? { transform: `translateY(-${offsetY}px)` }
-                  : undefined
-              }
-              onClick={(e) => e.stopPropagation()}
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="add-stock-title"
-            >
-              <h2 id="add-stock-title" className="add-stock-title">
-                เพิ่มหุ้น / ETF
-              </h2>
-
-              <div className="add-form">
-                <label className="field-label" htmlFor="symbol-input">
-                  สัญลักษณ์
-                </label>
-                <input
-                  id="symbol-input"
-                  className="text-input"
-                  placeholder="META, XAU/USD, GLD, PTT"
-                  value={symbol}
-                  onChange={(e) => {
-                    setSymbol(e.target.value);
-                    setError("");
-                  }}
-                  autoFocus
-                  autoComplete="off"
-                  autoCapitalize="characters"
-                />
-
-                <p className="field-label">เลือกตลาด</p>
-                <div className="market-quick-add">
-                  <button
-                    type="button"
-                    className="market-quick-btn market-quick-us"
-                    onClick={() => handleAdd("US")}
-                  >
-                    <span className="market-quick-title">US</span>
-                    <span className="market-quick-sub">NASDAQ / NYSE</span>
-                    {normalized && (
-                      <span className="market-quick-code">{normalized}</span>
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    className="market-quick-btn market-quick-bkk"
-                    onClick={() => handleAdd("TH")}
-                  >
-                    <span className="market-quick-title">BKK</span>
-                    <span className="market-quick-sub">SET</span>
-                    {normalized && (
-                      <span className="market-quick-code">
-                        {normalized.includes(".") ? normalized : `${normalized}.BK`}
-                      </span>
-                    )}
-                  </button>
-                </div>
-
-                {normalized === "META" && (
-                  <p className="market-hint">
-                    Meta/Facebook → กด <strong>US</strong> · Meta หุ้นไทย → กด{" "}
-                    <strong>BKK</strong>
-                  </p>
-                )}
-
-                {(normalized === "BRKB" || normalized === "BRKA") && (
-                  <p className="market-hint">
-                    Berkshire → กด <strong>US</strong> · ใช้ BRKB / BRKA
-                  </p>
-                )}
-
-                {(normalized === "XAUUSD" || normalized === "GCF") && (
-                  <p className="market-hint">
-                    ทอง XAU/USD → กด <strong>US</strong>
-                  </p>
-                )}
-
-                {(normalized === "GLD" ||
-                  normalized === "IAU" ||
-                  normalized === "GLDM") && (
-                  <p className="market-hint">
-                    ETF ทอง US → กด <strong>US</strong>
-                  </p>
-                )}
-
-                {(normalized === "GOLD01" || normalized === "GOLD03") && (
-                  <p className="market-hint">
-                    ETF ทองไทย → กด <strong>BKK</strong>
-                  </p>
-                )}
-
-                {error && <p className="error-text">{error}</p>}
-
-                <button
-                  type="button"
-                  className="btn-secondary btn-full add-stock-cancel"
-                  onClick={() => onOpenChange(false)}
-                >
-                  ยกเลิก
-                </button>
-              </div>
+      {portalReady && open && createPortal(
+        <div className="modal-backdrop modal-backdrop-compact" onClick={() => onOpenChange(false)}>
+          <div
+            ref={panelRef}
+            className="modal-panel add-stock-panel add2"
+            style={offsetY > 0 ? { transform: `translateY(-${offsetY}px)` } : undefined}
+            onClick={e => e.stopPropagation()}
+            role="dialog" aria-modal="true" aria-labelledby="add-stock-title"
+          >
+            <div className="add2-head">
+              <h2 id="add-stock-title">เพิ่มหุ้น / ETF</h2>
+              <button type="button" className="add2-close" onClick={() => onOpenChange(false)} aria-label="ปิด">×</button>
             </div>
-          </div>,
-          document.body
-        )}
+            <form className="wl-search add2-search" onSubmit={e => { e.preventDefault(); if (found?.state === "found" && !isSaved(found.symbol, found.market)) onToggle(found.symbol, found.market); }}>
+              <span aria-hidden="true">🔍</span>
+              <input
+                id="symbol-input" type="search" inputMode="search" placeholder="เช่น META, GLD, PTT"
+                value={symbol} onChange={e => setSymbol(e.target.value)}
+                autoFocus autoComplete="off" autoCapitalize="characters" spellCheck={false} aria-label="สัญลักษณ์หุ้น"
+              />
+              <span className="wl-search-mkt" role="group" aria-label="ตลาด">
+                {(["US", "TH"] as const).map(m => <button key={m} type="button" aria-pressed={market === m} onClick={() => setMarket(m)}>{m === "US" ? "US" : "ไทย"}</button>)}
+              </span>
+            </form>
+            {hint && <p className="add2-hint">{hint}</p>}
+            <div className="wl-found add2-result" aria-live="polite">
+              {found
+                ? <StockFoundCard found={found} saved={isSaved(found.symbol, found.market)} onOpen={onOpen} onToggle={onToggle} onSwitchMarket={setMarket} />
+                : <p className="add2-empty">พิมพ์ชื่อย่อหุ้น แล้วกด ☆ เพื่อเพิ่ม · แตะการ์ดเพื่อดูข้อมูล</p>}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </>
   );
 }
