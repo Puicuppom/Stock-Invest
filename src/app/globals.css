@@ -1865,3 +1865,7 @@ body.ui2 .wl-found-list .wl-line1 b { flex: none; }
 body.ui2 .wl-found-list .wl-line1 small { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 body.ui2 .wl-found-list .wl-chg { min-width: 60px; }
 @media (max-width: 420px) { body.ui2 .add2 .wl-found-list .wl-main { grid-template-columns: 34px minmax(0, 1fr) auto; } body.ui2 .add2 .wl-found-list .wl-chg { display: none; } }
+
+/* ปุ่ม + ตำแหน่งเดียวกันทุกหน้า: ชิดขอบขวาของคอลัมน์เนื้อหา (เท่ากับขอบเมนู) · สูงจากล่าง 24px */
+body.ui2 .fab { position: fixed; right: max(12px, calc((100vw - 720px) / 2 + 16px)); bottom: calc(24px + env(safe-area-inset-bottom, 0px)); }
+@media (min-width: 421px) { body.ui2 .fab { right: max(16px, calc((100vw - 720px) / 2 + 16px)); } }

@@ -1731,3 +1731,5 @@ body.rb2.drag-active { overflow: hidden; }
 /* ปุ่มเพิ่ม (+): สี่เหลี่ยมมน เหมือนหน้าอื่น */
 .rb2 .fab { width: 56px; height: 56px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 18px; background: var(--ui-accent); color: #04121f; box-shadow: 0 8px 24px color-mix(in srgb, var(--ui-accent) 35%, transparent); }
 .rb2 .fab svg { display: block; }
+/* ปุ่ม + : iframe กว้างเท่าคอลัมน์และห่างล่าง 24px อยู่แล้ว → ชิดมุมขวาล่างของ iframe = ตำแหน่งเดียวกับหน้าอื่น */
+.rb2 .fab-wrap { left: auto; right: 0 !important; bottom: env(safe-area-inset-bottom, 0px); transform: none; width: auto; padding: 0; }
