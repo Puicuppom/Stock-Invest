@@ -1498,3 +1498,169 @@ select option, select optgroup { background-color: var(--ui-surface); color: var
 .ps-sum.ok { color: var(--green, #4ade80); } .ps-sum.warn { color: var(--amber, #f59e0b); }
 .ps-reset { border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 12px; text-decoration: underline; cursor: pointer; }
 .ps-step input { margin: 0 !important; align-self: center; }
+
+/* ════════════════════════════════════════════════════════════
+   v2 · หน้าปรับพอร์ต — เรียบ มืออาชีพ · มือถือ + คอม
+   ════════════════════════════════════════════════════════════ */
+.rb2 {
+  --rb-line: color-mix(in srgb, var(--ui-text) 8%, transparent);
+  --rb-soft: color-mix(in srgb, var(--ui-text) 4%, transparent);
+  --rb-gain: var(--ui-success, #4ade80);
+  --rb-loss: var(--ui-danger, #f87171);
+  font-family: var(--ui-font);
+  font-feature-settings: "tnum" 1;
+  background: var(--ui-bg);
+}
+.rb2 .app { max-width: 1120px; margin: 0 auto; padding: 14px 16px 96px; }
+.rb2 button:focus-visible, .rb2 select:focus-visible, .rb2 input:focus-visible, .rb2 summary:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 2px; }
+
+/* หัวหน้า */
+.rb2 .rb-top { display: flex; align-items: center; gap: 8px; padding: 2px 0 14px; margin: 0; background: none; border: 0; position: static; }
+.rb2 .rb-title { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.rb2 .rb-title h1 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -.01em; line-height: 1.2; }
+.rb2 .pf-switch { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px 0 12px; border-radius: 999px; border: 1px solid var(--ui-border); background: transparent; color: var(--ui-text); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; max-width: 60vw; }
+.rb2 .pf-switch span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rb2 .pf-switch-caret { width: 6px; height: 6px; border-right: 1.5px solid var(--ui-muted); border-bottom: 1.5px solid var(--ui-muted); transform: rotate(45deg) translateY(-2px); flex: none; }
+.rb2 .icon-btn { width: 40px; height: 40px; flex: none; display: inline-grid; place-items: center; padding: 0; border-radius: 12px; border: 1px solid var(--ui-border); background: var(--ui-surface); color: var(--ui-text); font-size: 17px; cursor: pointer; }
+.rb2 .icon-btn:active { transform: scale(.95); }
+.rb2 .btn-install { height: 34px; padding: 0 12px; border-radius: 10px; font-size: 13px; }
+
+/* โครงหน้า: มือถือเรียงลง · คอมสองคอลัมน์ */
+.rb2 .rb-layout { display: flex; flex-direction: column; gap: 12px; }
+.rb2 .rb-side { display: flex; flex-direction: column; gap: 12px; }
+.rb2 .rb-main { min-width: 0; }
+@media (min-width: 900px) {
+  .rb2 .app { padding: 20px 24px 48px; }
+  .rb2 .rb-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
+  .rb2 .rb-side { order: 2; position: sticky; top: 16px; }
+  .rb2 .rb-main { order: 1; }
+  .rb2 .rb-title h1 { font-size: 24px; }
+}
+
+/* สรุปพอร์ต */
+.rb2 .hero { border: 1px solid var(--ui-border); border-radius: 16px; background: var(--ui-surface); padding: 16px 16px 14px; }
+.rb2 .hero-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.rb2 .hero-label { font-size: 13px; color: var(--ui-muted); }
+.rb2 .hero-value { margin-top: 4px; font-size: 32px; font-weight: 700; letter-spacing: -.02em; line-height: 1.15; color: var(--ui-text); }
+.rb2 .hero-sub:empty { display: none; }
+.rb2 .hero-sub { font-size: 13px; color: var(--ui-muted); }
+.rb2 .hero-pl { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin-top: 4px; padding: 0; border: 0; background: none; text-align: left; }
+.rb2 .hero-pl-pct { font-size: 15px; font-weight: 700; color: var(--ui-muted); }
+.rb2 .hero-pl-amt { font-size: 14px; font-weight: 500; color: var(--ui-muted); }
+.rb2 .hero-pl.gain .hero-pl-pct, .rb2 .hero-pl.gain .hero-pl-amt { color: var(--rb-gain); }
+.rb2 .hero-pl.loss .hero-pl-pct, .rb2 .hero-pl.loss .hero-pl-amt { color: var(--rb-loss); }
+.rb2 .hero-pl .pl-note { flex-basis: 100%; font-size: 12px; color: var(--ui-warning); }
+.rb2 .hero-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--rb-line); }
+.rb2 .hero-stats > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 0 8px; border-left: 1px solid var(--rb-line); background: none; border-radius: 0; text-align: left; }
+.rb2 .hero-stats > div:first-child { padding-left: 0; border-left: 0; }
+.rb2 .hero-stats span { font-size: 12px; color: var(--ui-muted); }
+.rb2 .hero-stats b { font-size: 14px; font-weight: 600; color: var(--ui-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rb2 #target-box.ok b { color: var(--rb-gain); }
+.rb2 #target-box.warn b { color: var(--ui-warning); }
+.rb2 .sync-status { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+.rb2 .sync-status em { font-style: normal; }
+.rb2 .sync-status .sync-dot { position: static; width: 7px; height: 7px; border-radius: 999px; background: var(--ui-muted); flex: none; }
+.rb2 .sync-status.synced .sync-dot { background: var(--rb-gain); }
+.rb2 .sync-status.syncing .sync-dot { background: var(--ui-accent); animation: rb-pulse 1s ease-in-out infinite; }
+.rb2 .sync-status.error .sync-dot { background: var(--rb-loss); }
+@keyframes rb-pulse { 50% { opacity: .3; } }
+@media (prefers-reduced-motion: reduce) { .rb2 .sync-status.syncing .sync-dot { animation: none; } }
+
+/* ตัวเลือกสกุลเงิน */
+.rb2 .cur-seg { display: inline-flex; padding: 2px; gap: 2px; border-radius: 8px; background: var(--rb-soft); flex: none; }
+.rb2 .cur-seg button { height: 26px; min-width: 44px; padding: 0 8px; border: 0; border-radius: 6px; background: transparent; color: var(--ui-muted); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.rb2 .cur-seg button.on { background: var(--ui-raised); color: var(--ui-text); box-shadow: 0 1px 2px rgba(0,0,0,.3); }
+
+/* การ์ดสัดส่วน (ปรับให้เข้ากับสรุป) */
+.rb2 .plan-card { margin: 0; border-color: var(--ui-border); border-radius: 16px; padding: 14px 16px 12px; }
+
+/* แถบเรียง + หัวตาราง */
+.rb2 .sort-bar { display: flex; align-items: center; gap: 8px; margin: 2px 0 8px; padding: 0; }
+.rb2 .sort-count { flex: 1; font-size: 13px; color: var(--ui-muted); }
+.rb2 .sort-select-wrap { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ui-muted); }
+.rb2 .sort-bar select { height: 34px; padding: 0 30px 0 12px; border-radius: 10px; font-size: 13px; background-color: var(--ui-surface); border-color: var(--ui-border); }
+.rb2 .sort-dir { width: 34px; height: 34px; border-radius: 10px; background: var(--ui-surface); }
+.rb2 .list-head { display: none; }
+
+/* แถวสินทรัพย์ */
+.rb2 #assets-list.list-wrap { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--ui-border); border-radius: 16px; background: var(--ui-surface); overflow: hidden; }
+.rb2 #assets-list:empty { display: none; }
+.rb2 .asset-card.compact { margin: 0; border: 0; border-radius: 0; border-top: 1px solid var(--rb-line); background: transparent; box-shadow: none; }
+.rb2 .asset-card.compact:first-child { border-top: 0; }
+.rb2 .cr-swipe-wrap .cr-row { background: var(--ui-surface); }
+.rb2 .cr-row { grid-template-columns: 40px minmax(0, 1fr) auto auto; gap: 12px; padding: 12px 14px; min-height: 68px; }
+.rb2 .cr-row .asset-badge { width: 40px; height: 40px; font-size: 10px; font-weight: 700; }
+.rb2 .cr-name { gap: 2px; }
+.rb2 .cr-name b { font-size: 15px; font-weight: 700; letter-spacing: 0; }
+.rb2 .cr-name small { font-size: 12px; color: var(--ui-muted); gap: 6px; }
+.rb2 .cr-bucket { width: 8px; height: 8px; margin: 0; }
+.rb2 .cr-target { opacity: 1; color: color-mix(in srgb, var(--ui-muted) 75%, transparent); }
+.rb2 .cr-acts { margin-top: 2px; }
+.rb2 .cr-value b, .rb2 .cr-profit b { font-size: 15px; font-weight: 600; }
+.rb2 .cr-value small, .rb2 .cr-profit small { font-size: 12px; }
+.rb2 .cr-profit { min-width: 84px; }
+.rb2 .asset-card.open .cr-row { background: color-mix(in srgb, var(--ui-text) 3%, var(--ui-surface)); }
+.rb2 .cr-detail { padding: 2px 14px 14px; border-top: 1px solid var(--rb-line); background: color-mix(in srgb, var(--ui-text) 2%, var(--ui-surface)); }
+.rb2 .row-actions { padding: 0 8px; gap: 6px; }
+.rb2 .row-actions button { width: 60px; border-radius: 12px; font-size: 16px; }
+@media (max-width: 420px) {
+  .rb2 .app { padding: 10px 12px 96px; }
+  .rb2 .cr-row { grid-template-columns: 36px minmax(0, 1fr) auto auto; gap: 10px; padding: 11px 12px; }
+  .rb2 .cr-row .asset-badge { width: 36px; height: 36px; }
+  .rb2 .cr-profit { min-width: 70px; }
+  .rb2 .cr-value b, .rb2 .cr-profit b { font-size: 14px; }
+  .rb2 .hero-value { font-size: 28px; }
+}
+@media (min-width: 900px) {
+  .rb2 .list-head { display: grid; grid-template-columns: minmax(0, 1fr) 150px 130px; gap: 12px; padding: 0 14px 8px 66px; font-size: 12px; color: var(--ui-muted); }
+  .rb2 .list-head span:not(:first-child) { text-align: right; }
+  .rb2 .cr-row { grid-template-columns: 40px minmax(0, 1fr) 150px 130px; }
+  .rb2 .cr-row:hover { background: color-mix(in srgb, var(--ui-text) 3%, var(--ui-surface)); }
+  .rb2 .fab-wrap { right: max(24px, calc((100vw - 1120px) / 2 + 24px)); }
+}
+
+/* รายละเอียดเมื่อกางแถว */
+.rb2 .asset-stats.compact { border-radius: 12px; border-color: var(--rb-line); background: var(--ui-surface); }
+.rb2 .stat-label { font-size: 12px; color: var(--ui-muted); }
+.rb2 .asset-fv-header, .rb2 .asset-fv { text-align: left; }
+
+/* แผ่น (sheet): มือถือเลื่อนขึ้นจากล่าง · คอมเป็นกล่องกลางจอ */
+.rb2 .overlay { background: rgba(2, 6, 23, .6); backdrop-filter: blur(2px); }
+.rb2 .sheet { border: 1px solid var(--ui-border); border-radius: 20px 20px 0 0; background: var(--ui-surface); padding: 16px 16px max(16px, env(safe-area-inset-bottom)); max-height: 88dvh; overflow-y: auto; }
+.rb2 .sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+.rb2 .sheet-head h3 { margin: 0; font-size: 17px; font-weight: 700; }
+.rb2 .btn-sheet-close { width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--ui-border); background: transparent; color: var(--ui-muted); font-size: 18px; cursor: pointer; }
+.rb2 .btn-settings-done { width: 100%; height: 46px; margin-top: 14px; border-radius: 12px; font-size: 15px; font-weight: 700; }
+@media (min-width: 640px) {
+  .rb2 .overlay.open { align-items: center; padding: 24px; }
+  .rb2 .sheet { max-width: 480px; border-radius: 20px; padding: 20px; }
+}
+
+/* ตั้งค่า: รายการเดียว เข้าใจง่าย */
+.rb2 .set-list { display: flex; flex-direction: column; border: 1px solid var(--rb-line); border-radius: 14px; overflow: hidden; }
+.rb2 .set-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 60px; padding: 10px 14px; border: 0; border-top: 1px solid var(--rb-line); background: transparent; color: var(--ui-text); font: inherit; text-align: left; }
+.rb2 .set-row:first-child { border-top: 0; }
+.rb2 button.set-row { cursor: pointer; }
+.rb2 button.set-row:active { background: var(--rb-soft); }
+.rb2 .set-label { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; font-size: 14px; font-weight: 600; }
+.rb2 .set-label small { font-size: 12px; font-weight: 400; color: var(--ui-muted); }
+.rb2 .set-value { font-size: 13px; color: var(--ui-muted); text-align: right; max-width: 45%; }
+.rb2 .set-chev { width: 7px; height: 7px; border-right: 1.5px solid var(--ui-muted); border-bottom: 1.5px solid var(--ui-muted); transform: rotate(-45deg); flex: none; }
+.rb2 .settings-body { display: flex; flex-direction: column; gap: 12px; }
+
+/* ปุ่มเพิ่ม */
+.rb2 .fab { width: 54px; height: 54px; font-size: 28px; box-shadow: 0 8px 24px rgba(56, 189, 248, .3); }
+.rb2 #assets-list.list-wrap { min-height: 0; flex: none; }
+.rb2 .cr-detail .asset-header { justify-content: flex-start; text-align: left; }
+.rb2 .cr-detail .asset-header > * { text-align: left; }
+.rb2 .trade-btns .tb-buy { background: #16a34a; }
+.rb2 .trade-btns .tb-sell { background: #dc2626; }
+.rb2 .trade-box { border-color: var(--rb-line); border-radius: 14px; background: var(--rb-soft); }
+.rb2 .sheet-sub { margin-top: 16px; }
+@media (min-width: 640px) {
+  .rb2 #asset-sheet-body .asset-sheet-grid:not(.trade-grid) { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
+}
+.rb2 .cr-detail .asset-fv-head { justify-content: flex-start; text-align: left; padding: 10px 0 8px; }
+.rb2 .cr-detail .asset-fv-inline { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; text-align: left; font-size: 13px; }
+.rb2 .cr-detail .asset-fv-gain { display: inline; }
+.rb2 .btn-settings-done[onclick^="deleteAssetFromSheet"] { background: transparent !important; color: var(--rb-loss); border: 1px solid color-mix(in srgb, var(--rb-loss) 45%, transparent); }

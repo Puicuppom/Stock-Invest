@@ -511,18 +511,30 @@ let cloudSaveTimer = null;
 let realtimeChannel = null;
 
 function setSyncStatus(state) {
-    const btn = document.getElementById('btn-sync');
-    if (!btn) return;
-    btn.classList.remove('synced', 'syncing', 'error', 'local');
-    if (state) btn.classList.add(state);
+    const el = document.getElementById('btn-sync');
+    const labels = {
+        local: 'ในเครื่อง',
+        synced: 'ซิงค์แล้ว',
+        syncing: 'กำลังซิงค์',
+        error: 'ไม่สำเร็จ',
+        '': 'อัตโนมัติ'
+    };
     const titles = {
-        local: 'บันทึกในเครื่อง — ยังไม่ได้ตั้งค่าซิงค์',
-        synced: 'ซิงค์แล้ว — ทุกอุปกรณ์',
-        syncing: 'กำลังซิงค์…',
-        error: 'ซิงค์ไม่สำเร็จ',
+        local: 'บันทึกในเครื่องนี้ ยังไม่ได้ตั้งค่าซิงค์',
+        synced: 'ซิงค์แล้วทุกอุปกรณ์',
+        syncing: 'กำลังซิงค์',
+        error: 'ซิงค์ไม่สำเร็จ จะลองใหม่เมื่อมีการแก้ไข',
         '': 'ซิงค์อัตโนมัติ'
     };
-    btn.title = titles[state] || titles[''];
+    if (el) {
+        el.classList.remove('synced', 'syncing', 'error', 'local');
+        if (state) el.classList.add(state);
+        el.title = titles[state] || titles[''];
+        const label = el.querySelector('em');
+        if (label) label.textContent = labels[state] || labels[''];
+    }
+    const set = document.getElementById('set-sync');
+    if (set) set.textContent = ({ local: 'บันทึกในเครื่องนี้', synced: 'ซิงค์แล้ว', syncing: 'กำลังซิงค์', error: 'ซิงค์ไม่สำเร็จ' })[state] || 'อัตโนมัติ';
 }
 
 function normalizePortfolioList(list, skipMigration = false) {
@@ -781,13 +793,16 @@ let displayCurrency = (() => {
 })();
 
 function updateCurrencyButton() {
-    const btn = document.getElementById('btn-currency');
-    if (!btn) return;
     const thb = displayCurrency === 'THB';
-    btn.textContent = thb ? '฿' : '$';
-    btn.classList.toggle('is-thb', thb);
-    btn.title = thb ? 'แสดงเป็นเงินบาท — กดเพื่อเปลี่ยนเป็นดอลลาร์' : 'แสดงเป็นดอลลาร์ — กดเพื่อเปลี่ยนเป็นเงินบาท';
-    btn.setAttribute('aria-label', btn.title);
+    document.querySelectorAll('.cur-seg button').forEach(b => {
+        const on = b.dataset.cur === (thb ? 'THB' : 'USD');
+        b.classList.toggle('on', on);
+        b.setAttribute('aria-pressed', String(on));
+    });
+}
+
+function setCurrency(cur) {
+    if ((displayCurrency === 'THB') !== (cur === 'THB')) toggleCurrency();
 }
 
 function toggleCurrency() {
@@ -1374,7 +1389,7 @@ function updateProfitSummary() {
     if (!box || !pctEl || !amountEl || !noteEl || !costEl || !costThbEl) return;
     const { cost, profit, pct, pending, noCost } = computeProfitSummary();
     const cls = cost > 0 ? (profit > 0 ? ' gain' : profit < 0 ? ' loss' : '') : '';
-    box.className = 'summary-item summary-pl' + cls;
+    box.className = 'hero-pl summary-pl' + cls;
     if (cost > 0) {
         const sign = profit > 0 ? '+' : profit < 0 ? '−' : '';
         pctEl.textContent = `${sign}${fmt(Math.abs(pct), 2)}%`;
@@ -1408,8 +1423,8 @@ function updateSummary(totalValue, totalTarget) {
 
     const targetBox = document.getElementById('target-box');
     const targetEl = document.getElementById('target-status');
-    targetBox.className = 'summary-item' + (totalTarget === 100 ? ' ok' : ' warn');
-    targetEl.textContent = fmtPct(totalTarget) + (totalTarget !== 100 ? ' ⚠' : ' ✓');
+    targetBox.className = totalTarget === 100 ? 'ok' : 'warn';
+    targetEl.textContent = fmt(totalTarget, Number.isInteger(Math.round(totalTarget * 100) / 100) ? 0 : 2) + '%' + (Math.abs(totalTarget - 100) > 0.005 ? ' ⚠' : ' ✓');
     // รายละเอียดแยกกลุ่มดูได้ที่แท็บด้านล่าง — เก็บไว้เป็น tooltip
     targetBox.title = 'เป้าหมายรวม · ' + portfolioGroups
         .map(g => `${getGroupLabel(g.id)} ${fmtPct(getTargetByGroup(g.id))}`)
@@ -2471,6 +2486,8 @@ function readPortfolioAssets(id) {
 function renderPortfolioSwitcher() {
     const label = document.getElementById('portfolio-current-name');
     if (label) label.textContent = getActivePortfolioName();
+    const setName = document.getElementById('set-portfolio-name');
+    if (setName) setName.textContent = getActivePortfolioName();
     document.title = `${getActivePortfolioName()} · ReBalance Stock`;
 }
 

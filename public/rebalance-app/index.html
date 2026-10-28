@@ -16,66 +16,74 @@
     <link rel="stylesheet" href="/design-system.css">
     <link rel="stylesheet" href="/rebalance-app/styles.css">
 </head>
-<body>
+<body class="rb2">
 
 <div class="app">
-    <header class="header">
-        <img class="header-icon" src="/icon.svg" alt="" width="36" height="36">
-        <div class="header-text">
+    <header class="header rb-top">
+        <div class="rb-title">
             <h1>ปรับพอร์ต</h1>
-            <button class="pf-switch" id="portfolio-switch" type="button" onclick="openPortfolioSheet()" title="สลับ / จัดการพอร์ต">
-                <span id="portfolio-current-name">พอร์ตหลัก</span><span class="pf-switch-caret">▾</span>
+            <button class="pf-switch" id="portfolio-switch" type="button" onclick="openPortfolioSheet()" title="สลับหรือจัดการพอร์ต">
+                <span id="portfolio-current-name">พอร์ตหลัก</span><span class="pf-switch-caret" aria-hidden="true"></span>
             </button>
         </div>
-        <button class="btn-sync synced" id="btn-sync" type="button" title="ซิงค์อัตโนมัติทุกอุปกรณ์">☁<span class="sync-dot"></span></button>
-        <button class="btn-currency" id="btn-currency" type="button" onclick="toggleCurrency()">$</button>
-        <button class="btn-settings" id="btn-settings" type="button" title="ตั้งค่า" onclick="openSettingsSheet()">⚙</button>
-        <button class="btn-refresh" id="btn-refresh" type="button" title="อัปเดตราคา">↻</button>
         <button class="btn-install" id="btn-install" type="button">ติดตั้ง</button>
+        <button class="btn-refresh icon-btn" id="btn-refresh" type="button" title="อัปเดตราคา" aria-label="อัปเดตราคา">↻</button>
+        <button class="btn-settings icon-btn" id="btn-settings" type="button" title="ตั้งค่า" aria-label="ตั้งค่า" onclick="openSettingsSheet()">⚙</button>
     </header>
 
-    <div class="summary summary-4">
-        <div class="summary-item">
-            <div class="summary-label">มูลค่ารวม</div>
-            <div class="summary-value" id="total-value">$0.00</div>
-            <div class="summary-sub" id="total-value-thb"></div>
-        </div>
-        <div class="summary-item" id="cost-box" title="ต้นทุนของหุ้นที่ใส่ราคาทุนแล้ว ไม่รวมเงินสด">
-            <div class="summary-label">ต้นทุน</div>
-            <div class="summary-value" id="cost-value">—</div>
-            <div class="summary-sub" id="cost-thb"></div>
-        </div>
-        <div class="summary-item summary-pl" id="pl-box">
-            <div class="summary-label">กำไร</div>
-            <div class="summary-value" id="pl-pct">—</div>
-            <div class="summary-sub" id="pl-amount"></div>
-            <div class="summary-sub pl-note" id="pl-note" hidden></div>
-        </div>
-        <div class="summary-item" id="target-box" title="">
-            <div class="summary-label">สัดส่วน</div>
-            <div class="summary-value" id="target-status">0%</div>
-        </div>
+    <div class="rb-layout">
+        <aside class="rb-side">
+            <section class="hero" aria-label="สรุปพอร์ต">
+                <div class="hero-top">
+                    <span class="hero-label">มูลค่าพอร์ต</span>
+                    <span class="cur-seg" role="group" aria-label="สกุลเงินที่แสดง">
+                        <button type="button" data-cur="USD" onclick="setCurrency('USD')">USD</button>
+                        <button type="button" data-cur="THB" onclick="setCurrency('THB')">THB</button>
+                    </span>
+                    <button class="btn-currency" id="btn-currency" type="button" hidden onclick="toggleCurrency()"></button>
+                </div>
+                <div class="hero-value" id="total-value">$0.00</div>
+                <div class="hero-sub" id="total-value-thb"></div>
+                <div class="hero-pl summary-pl" id="pl-box">
+                    <span class="hero-pl-pct" id="pl-pct">—</span>
+                    <span class="hero-pl-amt" id="pl-amount"></span>
+                    <span class="pl-note" id="pl-note" hidden></span>
+                </div>
+                <div class="hero-stats">
+                    <div id="cost-box" title="ต้นทุนของหุ้นที่ใส่ราคาทุนแล้ว ไม่รวมเงินสด">
+                        <span>ต้นทุน</span><b id="cost-value">—</b><small id="cost-thb" hidden></small>
+                    </div>
+                    <div id="target-box">
+                        <span>เป้ารวม</span><b id="target-status">0%</b>
+                    </div>
+                    <div>
+                        <span>ซิงค์</span><b class="sync-status synced" id="btn-sync"><i class="sync-dot"></i><em>ซิงค์แล้ว</em></b>
+                    </div>
+                </div>
+            </section>
+            <details class="plan-card" id="plan-card" hidden></details>
+        </aside>
+
+        <section class="rb-main" aria-label="สินทรัพย์">
+            <div class="mode-bar" id="mode-bar" hidden></div>
+            <div class="squad-note" id="squad-note" hidden></div>
+            <div class="sort-bar">
+                <span class="sort-count" id="sort-count"></span>
+                <label class="sort-select-wrap">เรียงตาม
+                    <select id="sort-select" onchange="setSortMode(this.value)">
+                        <option value="manual">ลำดับที่จัดเอง</option>
+                        <option value="value">มูลค่าสินทรัพย์</option>
+                        <option value="profitPct">กำไร (%)</option>
+                        <option value="profit">กำไร (จำนวนเงิน)</option>
+                        <option value="cost">ต้นทุนรวม</option>
+                    </select>
+                </label>
+                <button type="button" class="sort-dir" id="sort-dir" onclick="toggleSortDir()" title="สลับมาก → น้อย / น้อย → มาก">↓</button>
+            </div>
+            <div class="list-head" aria-hidden="true"><span>สินทรัพย์</span><span>มูลค่า</span><span>กำไร/ขาดทุน</span></div>
+            <div class="list-wrap" id="assets-list"></div>
+        </section>
     </div>
-
-    <details class="plan-card" id="plan-card" hidden></details>
-
-    <div class="mode-bar" id="mode-bar" hidden></div>
-
-    <div class="squad-note" id="squad-note" hidden></div>
-    <div class="sort-bar">
-        <span class="sort-count" id="sort-count"></span>
-        <label class="sort-select-wrap">เรียงตาม
-            <select id="sort-select" onchange="setSortMode(this.value)">
-                <option value="manual">ลำดับที่จัดเอง</option>
-                <option value="value">มูลค่าสินทรัพย์</option>
-                <option value="profitPct">กำไร (%)</option>
-                <option value="profit">กำไร (จำนวนเงิน)</option>
-                <option value="cost">ต้นทุนรวม</option>
-            </select>
-        </label>
-        <button type="button" class="sort-dir" id="sort-dir" onclick="toggleSortDir()" title="สลับมาก → น้อย / น้อย → มาก">↓</button>
-    </div>
-    <div class="list-wrap" id="assets-list"></div>
 </div>
 
 <div class="fab-wrap">
@@ -91,10 +99,25 @@
             <button class="btn-sheet-close" type="button" aria-label="ปิด" onclick="closeSettingsSheet()">×</button>
         </div>
         <div class="settings-body">
-            <div class="settings-section">
-                <div class="buy-item" style="margin-bottom:12px">
-                    <div class="setting-title" style="color:var(--accent)">☁ ซิงค์คลาวด์</div>
-                    <div class="setting-hint">บันทึกอัตโนมัติทุกอุปกรณ์ — ไม่ต้องล็อกอิน</div>
+            <div class="set-list">
+                <button type="button" class="set-row" onclick="closeSettingsSheet();openPortfolioSheet()">
+                    <span class="set-label">พอร์ต<small>สลับ เพิ่ม หรือเปลี่ยนชื่อพอร์ต</small></span>
+                    <span class="set-value" id="set-portfolio-name">พอร์ตหลัก</span><span class="set-chev" aria-hidden="true"></span>
+                </button>
+                <button type="button" class="set-row" onclick="closeSettingsSheet();openProfileSheet('growth')">
+                    <span class="set-label">สัดส่วนของแต่ละสไตล์<small>มั่นคง สมดุล เติบโต ประกอบด้วยอะไร</small></span>
+                    <span class="set-chev" aria-hidden="true"></span>
+                </button>
+                <div class="set-row">
+                    <span class="set-label">สกุลเงินที่แสดง<small>ราคาต่อหุ้นและยอดซื้อขายเป็นดอลลาร์เสมอ</small></span>
+                    <span class="cur-seg" role="group" aria-label="สกุลเงินที่แสดง">
+                        <button type="button" data-cur="USD" onclick="setCurrency('USD')">USD</button>
+                        <button type="button" data-cur="THB" onclick="setCurrency('THB')">THB</button>
+                    </span>
+                </div>
+                <div class="set-row">
+                    <span class="set-label">ซิงค์ข้ามอุปกรณ์<small>บันทึกอัตโนมัติ ไม่ต้องล็อกอิน</small></span>
+                    <span class="set-value" id="set-sync">—</span>
                 </div>
             </div>
             <div class="settings-section" id="group-allocation-section" hidden>
