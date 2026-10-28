@@ -1824,3 +1824,16 @@ body.ui2 .scr-row .wl-logo, body.ui2 .scr-row .wl-name, body.ui2 .scr-row .wl-ch
 body.ui2 .scr-row .wl-price { order: 3; justify-self: end; }
 body.ui2 .scr-row .wl-chg { order: 4; }
 @media (max-width: 420px) { body.ui2 .scr-row .wl-main { grid-template-columns: 36px minmax(0, 1fr) auto 64px; gap: 10px; } body.ui2 .scr-row .wl-price b { font-size: 14px; } }
+
+/* ผลค้นหาสด + ปุ่มดาว */
+body.ui2 .wl-found { margin-top: 8px; }
+body.ui2 .wl-found-msg { margin: 0; padding: 12px 14px; border: 1px dashed var(--ui-border); border-radius: 12px; font-size: 13px; color: var(--ui-muted); display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+body.ui2 .wl-found-msg b { color: var(--ui-text); }
+body.ui2 .wl-found-msg button { border: 0; background: none; color: var(--ui-accent); font: inherit; font-weight: 600; cursor: pointer; padding: 0; }
+body.ui2 .wl-found-list { border-color: color-mix(in srgb, var(--ui-accent) 45%, var(--ui-border)); }
+body.ui2 .wl-found-list .wl-swipe { align-items: center; }
+body.ui2 .wl-found-list .wl-main { padding-right: 6px; }
+.wl-star { flex: none; width: 44px; height: 44px; margin-right: 8px; display: inline-grid; place-items: center; border: 0; border-radius: 12px; background: transparent; color: var(--ui-muted); font-size: 24px; line-height: 1; cursor: pointer; }
+.wl-star:hover:not(:disabled) { color: #fbbf24; background: color-mix(in srgb, #fbbf24 12%, transparent); }
+.wl-star.on { color: #fbbf24; cursor: default; }
+.detail-add.wl-star { width: 40px; height: 40px; margin: 0; padding: 0; border: 1px solid var(--ui-border); border-radius: 12px; background: var(--ui-surface); color: #fbbf24; font-size: 22px; }

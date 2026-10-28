@@ -288,6 +288,7 @@ export default function StockApp() {
           onRemove={removeStock}
           onReorder={reorderStock}
           onAdd={() => setAddOpen(true)}
+          onAddStock={handleAddStock}
           syncStatus={syncStatus}
         />
       )}
@@ -295,7 +296,7 @@ export default function StockApp() {
         <div className="detail-bar">
           <button type="button" className="detail-back" onClick={backToList}>← Watchlist</button>
           {previewItem && (
-            <button type="button" className="detail-add" onClick={() => { if (handleAddStock(previewItem.symbol, previewItem.market)) setPreviewItem(null); }}>+ เพิ่ม Watchlist</button>
+            <button type="button" className="detail-add wl-star" aria-label={`เพิ่ม ${previewItem.symbol} ใน Watchlist`} title="เพิ่มใน Watchlist" onClick={() => { if (handleAddStock(previewItem.symbol, previewItem.market)) setPreviewItem(null); }}>☆</button>
           )}
         </div>
       )}
