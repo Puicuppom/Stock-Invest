@@ -1529,8 +1529,8 @@ select option, select optgroup { background-color: var(--ui-surface); color: var
 .rb2 .rb-layout { display: flex; flex-direction: column; gap: 12px; }
 .rb2 .rb-side { display: flex; flex-direction: column; gap: 12px; }
 .rb2 .rb-main { min-width: 0; }
-@media (min-width: 900px) {
-  .rb2 .app { padding: 20px 24px 48px; }
+@media (min-width: 640px) {
+  .rb2 .app { padding: 0 0 48px; }
   .rb2 .rb-layout { gap: 20px; }
   /* คอม: สรุป + สัดส่วน วางคู่กันด้านบน · รายการเต็มความกว้างด้านล่าง */
   .rb2 .rb-side { gap: 12px; }
@@ -1621,7 +1621,7 @@ select option, select optgroup { background-color: var(--ui-surface); color: var
   .rb2 .cr-value b, .rb2 .cr-profit b { font-size: 14px; }
   .rb2 .hero-value { font-size: 28px; }
 }
-@media (min-width: 900px) {
+@media (min-width: 640px) {
   .rb2 .list-head { display: grid; grid-template-columns: minmax(0, 1fr) 150px 130px; gap: 12px; padding: 0 14px 8px 66px; font-size: 12px; color: var(--ui-muted); }
   .rb2 .list-head span:not(:first-child) { text-align: right; }
   .rb2 .cr-row { grid-template-columns: 40px minmax(0, 1fr) 150px 130px; }
@@ -1683,10 +1683,10 @@ body.rb2.drag-active { overflow: hidden; }
 
 /* คอลัมน์สัดส่วน: ซ่อนบนมือถือ (ดูจากบรรทัดใต้ชื่อแทน) */
 .rb2 .cr-alloc { display: none; }
-@media (min-width: 900px) {
-  .rb2 .list-head { grid-template-columns: minmax(0, 1fr) 220px 150px 130px; gap: 16px; }
+@media (min-width: 640px) {
+  .rb2 .list-head { grid-template-columns: minmax(0, 1fr) 150px 112px 100px; gap: 14px; }
   .rb2 .list-head span:nth-child(2) { text-align: left; }
-  .rb2 .cr-row { grid-template-columns: 40px minmax(0, 1fr) 220px 150px 130px; gap: 16px; }
+  .rb2 .cr-row { grid-template-columns: 40px minmax(0, 1fr) 150px 112px 100px; gap: 14px; }
   .rb2 .cr-alloc { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
   .rb2 .cr-name small .cr-target, .rb2 .cr-name small { display: none; }
   .rb2 .cr-name .cr-acts { display: flex; }
@@ -1697,4 +1697,15 @@ body.rb2.drag-active { overflow: hidden; }
   .al-track { position: relative; height: 4px; border-radius: 999px; background: color-mix(in srgb, var(--ui-text) 8%, transparent); }
   .al-track i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; }
   .al-track b { position: absolute; top: -3px; width: 2px; height: 10px; margin-left: -1px; border-radius: 1px; background: var(--ui-text); }
+}
+
+/* ความกว้างเท่าหน้าอื่น: ขอบซ้าย-ขวาตรงกับเมนูด้านบน */
+.rb2 .app { max-width: none; padding-left: 0; padding-right: 0; }
+.rb2 .rb-top { padding-top: 4px; }
+.rb2 .hero-stats > div { padding: 0 14px; }
+.rb2 .hero-stats > div:first-child { padding-left: 0; }
+@media (min-width: 640px) {
+  .rb2 .hero-stats > div:first-child { padding-left: 16px; }
+  .rb2 .hero { column-gap: 20px; }
+  .rb2 .fab-wrap { right: max(16px, calc((100vw - 688px) / 2)); }
 }

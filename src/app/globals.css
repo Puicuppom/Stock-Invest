@@ -1760,9 +1760,3 @@ button.scr-card:disabled { opacity: .45; cursor: default; }
 .pl-money { margin: 6px 0 0 16px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
 .pl-sum button { border-radius: 8px; }
 .pl-amount input::placeholder { font-weight: 400; color: var(--muted); }
-
-/* หน้าปรับพอร์ตบนคอม: กว้างพอสำหรับ 2 คอลัมน์ (เมนูยังกว้างเท่าหน้าอื่น) */
-@media (min-width: 1000px) {
-  .rebalance-shell { max-width: 1180px; }
-  .rebalance-shell .app-navigation { width: 100%; max-width: 720px; align-self: center; }
-}
