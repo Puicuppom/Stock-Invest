@@ -1675,9 +1675,9 @@ select option, select optgroup { background-color: var(--ui-surface); color: var
 .rb2 .cr-detail .asset-fv-gain { display: inline; }
 .rb2 .btn-settings-done[onclick^="deleteAssetFromSheet"] { background: transparent !important; color: var(--rb-loss); border: 1px solid color-mix(in srgb, var(--rb-loss) 45%, transparent); }
 
-/* ทั้งหน้าเลื่อนได้ตามปกติ (เดิมล็อกหน้าแล้วให้เลื่อนเฉพาะรายการ) */
-html:has(body.rb2), body.rb2 { height: auto; min-height: 100%; overflow-x: hidden; overflow-y: auto; }
-.rb2 .app { height: auto; min-height: 100dvh; overflow: visible; display: block; }
+/* เลื่อนทั้งเนื้อหาใน .app (หน้า html/body ล็อกไว้เหมือนเดิม) — ใช้ได้ทุกเบราว์เซอร์ ไม่พึ่ง :has()
+   ล้อเมาส์ / touchpad / นิ้ว เลื่อนได้หมด */
+.rb2 .app { display: block; height: 100vh; height: 100dvh; overflow-x: hidden; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; touch-action: pan-y; }
 .rb2 #assets-list.list-wrap { overflow: hidden; padding: 0; }
 body.rb2.drag-active { overflow: hidden; }
 
@@ -1709,3 +1709,4 @@ body.rb2.drag-active { overflow: hidden; }
   .rb2 .hero { column-gap: 20px; }
   .rb2 .fab-wrap { right: max(16px, calc((100vw - 688px) / 2)); }
 }
+.rb2.drag-active .app { overflow: hidden; }
