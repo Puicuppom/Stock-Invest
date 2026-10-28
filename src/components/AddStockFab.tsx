@@ -1,4 +1,5 @@
 "use client";
+import { PlusIcon } from "./Icons";
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
@@ -51,8 +52,9 @@ export default function AddStockFab({ open, onOpenChange, onAdd }: AddStockFabPr
         className="fab"
         onClick={() => onOpenChange(true)}
         aria-label="เพิ่มหุ้น"
+        title="เพิ่มหุ้น"
       >
-        +
+        <PlusIcon size={26} />
       </button>
 
       {portalReady &&

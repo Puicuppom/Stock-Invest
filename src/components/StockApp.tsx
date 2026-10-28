@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { StarIcon } from "./Icons";
 import AddStockFab from "@/components/AddStockFab";
 import AppNavigation from "@/components/AppNavigation";
 import StockDashboard from "@/components/StockDashboard";
@@ -295,9 +296,18 @@ export default function StockApp() {
       {view === "detail" && (
         <div className="detail-bar">
           <button type="button" className="detail-back" onClick={backToList}>← Watchlist</button>
-          {previewItem && (
-            <button type="button" className="detail-add wl-star" aria-label={`เพิ่ม ${previewItem.symbol} ใน Watchlist`} title="เพิ่มใน Watchlist" onClick={() => { if (handleAddStock(previewItem.symbol, previewItem.market)) setPreviewItem(null); }}>☆</button>
-          )}
+          {activeItem && (() => {
+            // ดาวแสดงตลอด: โปร่ง = ยังไม่อยู่ใน Watchlist (กดเพื่อเพิ่ม) · เต็ม = อยู่แล้ว
+            const saved = items.some(it => watchlistId(it) === watchlistId(activeItem));
+            return (
+              <button type="button" className={`star-btn${saved ? " on" : ""}`} disabled={saved}
+                aria-label={saved ? `${activeItem.symbol} อยู่ใน Watchlist แล้ว` : `เพิ่ม ${activeItem.symbol} ใน Watchlist`}
+                title={saved ? "อยู่ใน Watchlist แล้ว" : "เพิ่มใน Watchlist"}
+                onClick={() => { if (handleAddStock(activeItem.symbol, activeItem.market)) setPreviewItem(null); }}>
+                <StarIcon filled={saved} />
+              </button>
+            );
+          })()}
         </div>
       )}
       {view === "detail" && <>

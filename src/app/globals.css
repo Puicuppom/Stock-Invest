@@ -1833,7 +1833,14 @@ body.ui2 .wl-found-msg button { border: 0; background: none; color: var(--ui-acc
 body.ui2 .wl-found-list { border-color: color-mix(in srgb, var(--ui-accent) 45%, var(--ui-border)); }
 body.ui2 .wl-found-list .wl-swipe { align-items: center; }
 body.ui2 .wl-found-list .wl-main { padding-right: 6px; }
-.wl-star { flex: none; width: 44px; height: 44px; margin-right: 8px; display: inline-grid; place-items: center; border: 0; border-radius: 12px; background: transparent; color: var(--ui-muted); font-size: 24px; line-height: 1; cursor: pointer; }
-.wl-star:hover:not(:disabled) { color: #fbbf24; background: color-mix(in srgb, #fbbf24 12%, transparent); }
-.wl-star.on { color: #fbbf24; cursor: default; }
-.detail-add.wl-star { width: 40px; height: 40px; margin: 0; padding: 0; border: 1px solid var(--ui-border); border-radius: 12px; background: var(--ui-surface); color: #fbbf24; font-size: 22px; }
+/* ปุ่มดาว: สี่เหลี่ยมมน · ดาวเส้นมน (โปร่ง = ยังไม่เพิ่ม · เต็มสีทอง = อยู่ใน Watchlist) */
+.star-btn { flex: none; width: 42px; height: 42px; display: inline-grid; place-items: center; padding: 0; border: 1px solid var(--ui-border); border-radius: 14px; background: var(--ui-surface); color: var(--ui-muted); cursor: pointer; transition: color .15s, background .15s, border-color .15s, transform .1s; }
+.star-btn:hover:not(:disabled) { color: #fbbf24; border-color: color-mix(in srgb, #fbbf24 45%, var(--ui-border)); }
+.star-btn:active:not(:disabled) { transform: scale(.92); }
+.star-btn.on { color: #fbbf24; border-color: color-mix(in srgb, #fbbf24 40%, var(--ui-border)); background: color-mix(in srgb, #fbbf24 12%, var(--ui-surface)); cursor: default; }
+.star-btn:disabled { opacity: 1; }
+.wl-found-list .star-btn { margin-right: 10px; }
+
+/* ปุ่มเพิ่ม (+): ทรงเดียวกับปุ่มดาว แต่เป็นปุ่มหลักสีฟ้า */
+body.ui2 .fab { width: 56px; height: 56px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 18px; background: var(--ui-accent); color: #04121f; font-size: 0; box-shadow: 0 8px 24px color-mix(in srgb, var(--ui-accent) 35%, transparent); transition: transform .1s; }
+body.ui2 .fab:active { transform: scale(.94); }

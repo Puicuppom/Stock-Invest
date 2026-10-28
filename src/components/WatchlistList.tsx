@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { attachRowGestures } from "@/lib/row-gestures";
 import StockLogo from "./StockLogo";
+import { StarIcon } from "./Icons";
 import RevIcon from "./RevIcon";
 import { displaySymbol, normalizeInput } from "@/lib/symbol";
 import { watchlistId } from "@/lib/watchlist-id";
@@ -158,9 +159,9 @@ export default function WatchlistList({ items, signals, quotes, onRefresh, refre
                       <span className={`wl-chg ${up ? "up" : "down"}`}>{up ? "+" : ""}{(found.changePercent ?? 0).toFixed(2)}%</span>
                     </button>
                     {onAddStock && (
-                      <button type="button" className={`wl-star${added ? " on" : ""}`} disabled={added}
+                      <button type="button" className={`star-btn wl-star${added ? " on" : ""}`} disabled={added}
                         aria-label={added ? `${found.symbol} อยู่ใน Watchlist แล้ว` : `เพิ่ม ${found.symbol} ใน Watchlist`} title={added ? "อยู่ใน Watchlist แล้ว" : "เพิ่มใน Watchlist"}
-                        onClick={() => onAddStock(found.symbol, found.market)}>{added ? "★" : "☆"}</button>
+                        onClick={() => onAddStock(found.symbol, found.market)}><StarIcon filled={added} /></button>
                     )}
                   </div>
                 </li>
