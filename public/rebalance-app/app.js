@@ -3132,6 +3132,14 @@ function renderPlanCard() {
     const best = [...ranked].sort((x, y) => y.match - x.match)[0];
     const mine = ranked.find(r => r.id === myPlan) || null;
     const head = mine || best;                       // หัวการ์ด: แผนของฉัน (ถ้าตั้งไว้) ไม่งั้นแบบที่ใกล้สุด
+    // ส่งสรุปพอร์ตให้หน้าคัดหุ้น (Watchlist → น่าเติมเข้าพอร์ต)
+    try {
+        localStorage.setItem('rbPlanSnapshot:v1', JSON.stringify({
+            plan: head.id, chosen: !!mine, portfolio: getActivePortfolioName(), cur, byValue,
+            holdings: myPortfolio.filter(a => !isCashAsset(a)).map(a => String(a.name).toUpperCase()),
+            updatedAt: Date.now(),
+        }));
+    } catch { /* ignore */ }
     const view = ranked.find(r => r.id === planView) || head;
     const keys = Object.keys(PLAN_BUCKETS).filter(k => (cur[k] || 0) > 0.05 || (view.p.mix[k] || 0) > 0)
         .sort((x, y) => (cur[y] || 0) - (cur[x] || 0) || (view.p.mix[y] || 0) - (view.p.mix[x] || 0));

@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import ScreenRow from "./ScreenRow";
+import PlanSuggest from "./PlanSuggest";
 import { getCachedStock } from "@/hooks/useSrWatchlistTags";
 import { useLiveQuotes } from "@/hooks/useLiveQuotes";
 import { screenStock, screeningStyles, valuationRiskFlags, type ScreeningStyle } from "@/lib/screener";
@@ -94,6 +95,7 @@ export default function WatchlistReview({ items, loaded }: { items: WatchlistIte
         <span>{busy ? `กำลังวิเคราะห์ ${rows.filter(r => r.data || r.error).length}/${items.length}` : `${items.length} ตัว`}</span>
         <button type="button" disabled={busy || !items.length} onClick={run}>↻ วิเคราะห์ใหม่</button>
       </div>
+      {rows.length > 0 && <PlanSuggest rows={computed} ctx={ctx} />}
       <div className="scr-styles wr-styles" role="group" aria-label="กรองตามแนวทาง">
         {STYLES.map(st => {
           const p = count(st.key, "pass"), n = count(st.key, "near");
