@@ -4,6 +4,7 @@ import AppNavigation from "./AppNavigation";
 import ScreeningEntryCard from "./ScreeningEntryCard";
 import WatchlistReview from "./WatchlistReview";
 import ScreenRow from "./ScreenRow";
+import PortfolioPlanner from "./PortfolioPlanner";
 import { useLiveQuotes } from "@/hooks/useLiveQuotes";
 import { useWatchlist } from "@/hooks/useWatchlist";
 import { screeningStyles, screenStock, valuationRiskFlags, VISIBLE_STYLES, type ScreeningStyle } from "@/lib/screener";
@@ -25,7 +26,8 @@ type Snapshot = {
 // Retain the current search across client-side navigation without refetching.
 let savedSearch: Snapshot | null = null;
 export default function StockScreener() {
-  const [view,setView] = useState<"watchlist" | "market">("watchlist");
+  const [view,setView] = useState<"watchlist" | "plan" | "market">("watchlist");
+  const autoScan = useRef(false);
   const [openRow,setOpenRow] = useState<string | null>(null);
   const [style,setStyle] = useState<ScreeningStyle>("dip");
   const [ctx,setCtx] = useState<MarketContext | null>(null);
@@ -71,6 +73,11 @@ export default function StockScreener() {
       }
     };
   },[restored,style,market,sector,cap,nextOffset,discoveryNote,total,rows,message,scannedMarket,busy,ctx]);
+  // มาจากปุ่ม "คัดเพิ่ม" ของผู้ช่วยจัดพอร์ต → ค้นหาทันทีด้วยกลุ่มที่เลือก
+  useEffect(()=>{
+    if (view==="market" && autoScan.current && restored) { autoScan.current=false; scan(); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[view,style,market,restored]);
   async function loadRow(symbol: string, signal: AbortSignal): Promise<Row> {
     try {
       const response=await fetch("/api/stock/"+encodeURIComponent(symbol)+"?market="+market+"&mode=screen",{signal:AbortSignal.any([signal,AbortSignal.timeout(30000)])});
@@ -185,9 +192,14 @@ export default function StockScreener() {
     <header><h1>คัดหุ้น</h1></header>
     <div className="screen-styles screen-view" role="group" aria-label="มุมมอง">
       <button aria-pressed={view==="watchlist"} onClick={()=>setView("watchlist")}>⭐ Watchlist</button>
-      <button aria-pressed={view==="market"} onClick={()=>setView("market")}>🌐 ตลาด</button>
+      <button aria-pressed={view!=="watchlist"} onClick={()=>setView("plan")}>🧭 จัดพอร์ต</button>
     </div>
-    {view==="watchlist" ? <WatchlistReview items={items} loaded={loaded} /> : <>
+    {view==="watchlist" ? <WatchlistReview items={items} loaded={loaded} />
+    : view==="plan" ? <PortfolioPlanner items={items} loaded={loaded}
+        onAdd={(symbol,m)=>{const ok=addStock(symbol,m); if(ok) setMessage(`เพิ่ม ${symbol} ใน Watchlist แล้ว`); return ok;}}
+        onScreen={(st,m)=>{controller.current?.abort();setStyle(st);setMarket(m);setSector("");setCap("all");clearResults();autoScan.current=true;setView("market");window.scrollTo({top:0});}} />
+    : <>
+    <button type="button" className="pl-back" onClick={()=>setView("plan")}>← กลับไปจัดพอร์ต</button>
     <div className="scr-styles" role="group" aria-label="แนวทางคัดหุ้น">
       {VISIBLE_STYLES.map(key=><button key={key} type="button" aria-pressed={style===key} disabled={busy} title={screeningStyles[key].tagline} onClick={()=>{if (key !== style) {setStyle(key);clearResults();}}}>
         <span className="scr-ico">{STYLE_ICON[key]}</span><span>{STYLE_SHORT[key]}</span>
