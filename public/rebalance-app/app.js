@@ -80,11 +80,30 @@ const PLAN_BUCKETS = {
     small: { icon: '💎', name: 'หุ้นขนาดเล็ก', color: '#a78bfa' },
     cash: { icon: '💵', name: 'เงินสด', color: '#94a3b8' }
 };
-const PLAN_PROFILES = {
-    safe: { icon: '🛡️', name: 'มั่นคง', mix: { core: 55, income: 25, quality: 10, cash: 10 } },
-    balanced: { icon: '⚖️', name: 'สมดุล', mix: { core: 40, income: 15, quality: 25, dip: 10, cash: 10 } },
-    growth: { icon: '🚀', name: 'เติบโต', mix: { core: 30, quality: 35, dip: 20, small: 10, cash: 5 } }
+const PLAN_PROFILE_DEFAULTS = {
+    safe: { name: 'มั่นคง', mix: { core: 55, income: 25, quality: 10, cash: 10 } },
+    balanced: { name: 'สมดุล', mix: { core: 40, income: 15, quality: 25, dip: 10, cash: 10 } },
+    growth: { name: 'เติบโต', mix: { core: 30, quality: 35, dip: 20, small: 10, cash: 5 } }
 };
+/* สัดส่วนสไตล์ที่ผู้ใช้ตั้งเอง — เก็บใน localStorage กลาง (ใช้ร่วมกับหน้า คัดหุ้น › จัดพอร์ต) และซิงค์ไปกับพอร์ต */
+const PLAN_STORE_KEY = 'planProfiles:v1';
+function loadPlanProfiles() {
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem(PLAN_STORE_KEY) || 'null'); } catch { /* ignore */ }
+    const out = {};
+    for (const [id, d] of Object.entries(PLAN_PROFILE_DEFAULTS)) {
+        const m = saved?.profiles?.[id];
+        out[id] = { name: d.name, mix: m && typeof m === 'object' ? { ...m } : { ...d.mix } };
+    }
+    return { profiles: out, updatedAt: Number(saved?.updatedAt) || 0 };
+}
+let planStore = loadPlanProfiles();
+let PLAN_PROFILES = planStore.profiles;
+function savePlanProfiles(touch = true) {
+    if (touch) planStore.updatedAt = Date.now();
+    planStore.profiles = PLAN_PROFILES;
+    try { localStorage.setItem(PLAN_STORE_KEY, JSON.stringify({ profiles: Object.fromEntries(Object.entries(PLAN_PROFILES).map(([k, v]) => [k, v.mix])), updatedAt: planStore.updatedAt })); } catch { /* ignore */ }
+}
 
 const DEFAULT_PORTFOLIO_GROUPS = [
     { id: 'income', name: 'ปันผล', hint: 'Income · ปันผล Reinvest ซ่อมพอร์ต', kind: 'etf', profitTaking: false },
@@ -616,6 +635,11 @@ function applyCloudData(cloud) {
         store.setItem('activeTab', activeTab);
         updateTabUI();
     }
+    if (cloud.planProfiles?.profiles && Number(cloud.planProfiles.updatedAt) > planStore.updatedAt) {
+        for (const [id, mix] of Object.entries(cloud.planProfiles.profiles)) if (PLAN_PROFILES[id] && mix) PLAN_PROFILES[id].mix = { ...mix };
+        planStore.updatedAt = Number(cloud.planProfiles.updatedAt);
+        savePlanProfiles(false);
+    }
     if (cloud.strategyTargets) {
         store.setItem('strategyTargets', cloud.strategyTargets);
     }
@@ -641,6 +665,7 @@ function getCloudPayload() {
         strategyTargets: store.getItem('strategyTargets') || '2',
         portfolioGroups,
         deletedAssets,
+        planProfiles: { profiles: Object.fromEntries(Object.entries(PLAN_PROFILES).map(([k, v]) => [k, v.mix])), updatedAt: planStore.updatedAt },
         updatedAt: Date.now()
     };
 }
@@ -1731,7 +1756,7 @@ function renderAssetGrid(index, asset, curPct, ideal, profitFmt, cost, profit, p
 function crPctHtml(asset, curPct) {
     const b = assetBucket(asset);
     const ico = b ? `<i class="cr-bucket" style="background:${PLAN_BUCKETS[b.bucket].color}" title="${PLAN_BUCKETS[b.bucket].name}${b.reason ? ' · ' + b.reason : ''}"></i>` : '';
-    return `${ico || '◔ '}${fmtPct(curPct)} <span class="cr-target">/ ${fmtPct(asset.target || 0)}</span>`;
+    return `${ico}${fmtPct(curPct)} <span class="cr-target">/ ${fmtPct(asset.target || 0)}</span>`;
 }
 
 function crValueHtml(asset) {
@@ -2990,7 +3015,74 @@ function renderPlanCard() {
                     <div class="pc-track"><i style="width:${c / 100 * 100}%;background:${PLAN_BUCKETS[k].color}"></i><b style="left:${t}%" title="${best.p.name} ${t}%"></b></div>
                 </div>`;
             }).join('')}
+            <button type="button" class="pc-edit" onclick="openProfileSheet('${best.id}')">ปรับสัดส่วนของแต่ละสไตล์</button>
             <p class="pc-note">${unknown ? `กำลังจัดกลุ่มอีก ${unknown} รายการ · ` : ''}คิดจาก${byValue ? 'มูลค่าปัจจุบัน' : 'สัดส่วนเป้าหมาย'} · ขีดตั้ง = สัดส่วนของสไตล์${best.p.name} · สัดส่วนสไตล์เป็นตัวอย่างทั่วไป ไม่ใช่คำแนะนำการลงทุน</p>
         </div>`;
     el.open = wasOpen;
+}
+
+
+/* ── แผ่นแก้สัดส่วนสไตล์ ── */
+let profileSheetId = 'growth';
+function openProfileSheet(id) {
+    profileSheetId = PLAN_PROFILES[id] ? id : 'growth';
+    renderProfileSheet();
+    document.getElementById('profile-overlay').classList.add('open');
+}
+function closeProfileSheet(e) {
+    if (e && e.target !== document.getElementById('profile-overlay')) return;
+    document.getElementById('profile-overlay').classList.remove('open');
+}
+function profileSum(id) {
+    return Object.values(PLAN_PROFILES[id].mix).reduce((s, v) => s + (Number(v) || 0), 0);
+}
+function stepProfile(bucket, d) {
+    const mix = PLAN_PROFILES[profileSheetId].mix;
+    mix[bucket] = Math.max(0, Math.min(100, (Number(mix[bucket]) || 0) + d));
+    if (!mix[bucket]) delete mix[bucket];
+    savePlanProfiles();
+    scheduleCloudSave();
+    renderProfileSheet();
+    renderPlanCard();
+}
+function setProfileValue(bucket, val) {
+    const n = Math.max(0, Math.min(100, Math.round(Number(val) || 0)));
+    const mix = PLAN_PROFILES[profileSheetId].mix;
+    if (n) mix[bucket] = n; else delete mix[bucket];
+    savePlanProfiles();
+    scheduleCloudSave();
+    renderProfileSum();
+    renderPlanCard();
+}
+function resetProfile() {
+    PLAN_PROFILES[profileSheetId].mix = { ...PLAN_PROFILE_DEFAULTS[profileSheetId].mix };
+    savePlanProfiles();
+    scheduleCloudSave();
+    renderProfileSheet();
+    renderPlanCard();
+}
+function renderProfileSum() {
+    const sum = profileSum(profileSheetId);
+    const el = document.getElementById('ps-sum');
+    if (!el) return;
+    el.className = 'ps-sum ' + (sum === 100 ? 'ok' : 'warn');
+    el.innerHTML = sum === 100 ? 'รวม 100%' : `รวม ${sum}% · ${sum > 100 ? 'เกิน' : 'ขาด'} ${Math.abs(100 - sum)}%`;
+    const mix = PLAN_PROFILES[profileSheetId].mix;
+    const bar = document.getElementById('ps-bar');
+    if (bar) bar.innerHTML = Object.keys(PLAN_BUCKETS).filter(k => mix[k] > 0).map(k => `<i style="flex:${mix[k]};background:${PLAN_BUCKETS[k].color}"></i>`).join('');
+}
+function renderProfileSheet() {
+    const mix = PLAN_PROFILES[profileSheetId].mix;
+    document.getElementById('ps-tabs').innerHTML = Object.entries(PLAN_PROFILES).map(([id, p]) =>
+        `<button type="button" class="${id === profileSheetId ? 'on' : ''}" onclick="profileSheetId='${id}';renderProfileSheet()">${p.name}</button>`).join('');
+    document.getElementById('ps-rows').innerHTML = Object.keys(PLAN_BUCKETS).map(k => `
+        <div class="ps-row${mix[k] ? '' : ' zero'}">
+            <span class="ps-name"><i style="background:${PLAN_BUCKETS[k].color}"></i>${PLAN_BUCKETS[k].name}</span>
+            <span class="ps-step">
+                <button type="button" aria-label="ลด ${PLAN_BUCKETS[k].name}" onclick="stepProfile('${k}', -5)">−</button>
+                <input type="text" inputmode="numeric" value="${mix[k] || 0}" aria-label="${PLAN_BUCKETS[k].name} (%)" onchange="setProfileValue('${k}', this.value)">
+                <button type="button" aria-label="เพิ่ม ${PLAN_BUCKETS[k].name}" onclick="stepProfile('${k}', 5)">＋</button>
+            </span>
+        </div>`).join('');
+    renderProfileSum();
 }

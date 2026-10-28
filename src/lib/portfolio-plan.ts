@@ -12,6 +12,33 @@ export const PROFILE_MIX: Record<Profile, Partial<Record<BucketKey, number>>> = 
   growth: { core: 30, quality: 35, dip: 20, small: 10, cash: 5 },
 };
 
+/** ชื่อ/สีของกลุ่ม — ชุดเดียวกับหน้าปรับพอร์ต */
+export const BUCKET_META: Record<BucketKey, { name: string; color: string }> = {
+  core: { name: "ETF", color: "#38bdf8" },
+  income: { name: "หุ้นปันผล", color: "#f59e0b" },
+  quality: { name: "หุ้นเติบโต", color: "#22c55e" },
+  dip: { name: "หุ้นลดราคา", color: "#ec4899" },
+  small: { name: "หุ้นขนาดเล็ก", color: "#a78bfa" },
+  cash: { name: "เงินสด", color: "#94a3b8" },
+};
+export const PROFILE_NAME: Record<Profile, string> = { safe: "มั่นคง", balanced: "สมดุล", growth: "เติบโต" };
+
+/* สัดส่วนที่ผู้ใช้ตั้งเอง: localStorage กลางที่หน้าปรับพอร์ตใช้ร่วม (และซิงค์ไปกับพอร์ต) */
+export const PLAN_STORE_KEY = "planProfiles:v1";
+export type ProfileMixes = Record<Profile, Partial<Record<BucketKey, number>>>;
+export function loadProfileMixes(): ProfileMixes {
+  let saved: { profiles?: Partial<ProfileMixes> } | null = null;
+  try { saved = JSON.parse(localStorage.getItem(PLAN_STORE_KEY) || "null"); } catch { /* ignore */ }
+  return {
+    safe: { ...(saved?.profiles?.safe ?? PROFILE_MIX.safe) },
+    balanced: { ...(saved?.profiles?.balanced ?? PROFILE_MIX.balanced) },
+    growth: { ...(saved?.profiles?.growth ?? PROFILE_MIX.growth) },
+  };
+}
+export function saveProfileMixes(mixes: ProfileMixes) {
+  try { localStorage.setItem(PLAN_STORE_KEY, JSON.stringify({ profiles: mixes, updatedAt: Date.now() })); } catch { /* ignore */ }
+}
+
 /** จัดกลุ่มสินทรัพย์จากข้อมูลจริง: ETF · หุ้น (ปันผล/จิ๋ว/ลดราคา/แกร่ง) */
 export function classifyAsset(data: StockData): { bucket: BucketKey; reason: string } {
   // ETF ทุกชนิด (ดัชนี ปันผล ออปชั่น ทอง) อยู่หมวด ETF

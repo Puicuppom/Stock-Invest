@@ -1742,3 +1742,21 @@ button.scr-card:disabled { opacity: .45; cursor: default; }
 .pl-disclaim { margin: 4px 2px 0; font-size: 0.68rem; color: var(--muted); line-height: 1.4; }
 .pl-back { align-self: flex-start; margin: 6px 0 2px; border: 0; background: transparent; color: var(--accent); font: inherit; font-size: 0.82rem; font-weight: 700; cursor: pointer; padding: 4px 0; }
 .pl-pct button { min-height: 0; padding: 0; width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; }
+
+/* ผู้ช่วยจัดพอร์ต — ภาษาเดียวกับการ์ดสัดส่วนในหน้าปรับพอร์ต */
+.pl-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 3px; border-radius: 10px; background: color-mix(in srgb, var(--text) 5%, transparent); }
+.pl-tabs button { height: 36px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+.pl-tabs button.on { background: var(--surface); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.25); }
+.pl-hint { margin: -2px 2px 0; font-size: 0.72rem; color: var(--muted); }
+.pl-bar { height: 8px; }
+.pl-bucket { border-radius: 16px; padding: 12px 14px; }
+.pl-bucket.off { opacity: 1; }
+.pl-bucket.off .pl-title b, .pl-bucket.off .pl-pct b { color: var(--muted); }
+.pl-dot { width: 8px; height: 8px; border-radius: 2px; align-self: flex-start; margin-top: 6px; }
+.pl-title b { font-size: 0.88rem; font-weight: 700; }
+.pl-pct { gap: 6px; }
+.pl-pct b { min-width: 36px; font-size: 0.88rem; font-weight: 700; }
+.pl-pct button { width: 30px; height: 30px; border-radius: 8px; background: transparent; font-size: 0.95rem; }
+.pl-money { margin: 6px 0 0 16px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+.pl-sum button { border-radius: 8px; }
+.pl-amount input::placeholder { font-weight: 400; color: var(--muted); }

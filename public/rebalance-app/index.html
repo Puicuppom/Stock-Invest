@@ -180,6 +180,24 @@
     </div>
 </div>
 
+<div class="overlay" id="profile-overlay" onclick="closeProfileSheet(event)">
+    <div class="sheet profile-sheet" onclick="event.stopPropagation()">
+        <div class="sheet-head">
+            <h3>สัดส่วนของแต่ละสไตล์</h3>
+            <button class="btn-sheet-close" type="button" aria-label="ปิด" onclick="closeProfileSheet()">×</button>
+        </div>
+        <div class="ps-tabs" id="ps-tabs" role="tablist"></div>
+        <div class="pc-bar ps-bar" id="ps-bar"></div>
+        <div class="ps-rows" id="ps-rows"></div>
+        <div class="ps-foot">
+            <span class="ps-sum" id="ps-sum"></span>
+            <button type="button" class="ps-reset" onclick="resetProfile()">คืนค่าเริ่มต้น</button>
+        </div>
+        <p class="pc-note">ใส่ 0 เพื่อไม่ใช้กลุ่มนั้น · ใช้ร่วมกับหน้า คัดหุ้น › จัดพอร์ต</p>
+        <button class="btn-settings-done" type="button" onclick="closeProfileSheet()">เสร็จสิ้น</button>
+    </div>
+</div>
+
 <div class="overlay" id="move-overlay" onclick="closeMoveSheet(event)">
     <div class="sheet portfolio-sheet" onclick="event.stopPropagation()">
         <div class="sheet-head">

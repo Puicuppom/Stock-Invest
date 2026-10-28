@@ -1478,3 +1478,23 @@ select option, select optgroup { background-color: var(--ui-surface); color: var
 .pc-track b { position: absolute; top: -3px; width: 2px; height: 10px; margin-left: -1px; border-radius: 1px; background: var(--ui-text, #e5e7eb); }
 .pc-note { margin: 10px 0 0; font-size: 11px; line-height: 1.5; color: var(--muted); }
 .cr-bucket { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 3px; }
+
+/* ปุ่ม/แผ่นแก้สัดส่วนสไตล์ — ภาษาเดียวกับการ์ดสัดส่วน */
+.pc-edit { width: 100%; margin-top: 12px; height: 38px; border-radius: 10px; border: 1px solid var(--ui-border, var(--border)); background: transparent; color: var(--ui-text, var(--text)); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.pc-edit:active { transform: scale(.98); }
+.ps-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 3px; border-radius: 10px; background: color-mix(in srgb, var(--ui-text, #fff) 5%, transparent); margin-bottom: 12px; }
+.ps-tabs button { height: 34px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.ps-tabs button.on { background: var(--ui-surface, var(--surface)); color: var(--ui-text, var(--text)); box-shadow: 0 1px 2px rgba(0,0,0,.25); }
+.ps-bar { margin-bottom: 8px; }
+.ps-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 0; border-top: 1px solid color-mix(in srgb, var(--ui-text, #fff) 6%, transparent); }
+.ps-row.zero .ps-name { color: var(--muted); }
+.ps-name { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
+.ps-name i { width: 8px; height: 8px; border-radius: 2px; }
+.ps-step { display: inline-flex; align-items: center; gap: 6px; }
+.ps-step button { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--ui-border, var(--border)); background: transparent; color: var(--ui-text, var(--text)); font: inherit; font-size: 16px; cursor: pointer; padding: 0; }
+.ps-step input { width: 52px !important; height: 32px; min-height: 0 !important; padding: 0 6px !important; text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; border-radius: 8px; }
+.ps-foot { display: flex; align-items: center; justify-content: space-between; padding-top: 10px; border-top: 1px solid color-mix(in srgb, var(--ui-text, #fff) 6%, transparent); }
+.ps-sum { font-size: 13px; font-weight: 700; }
+.ps-sum.ok { color: var(--green, #4ade80); } .ps-sum.warn { color: var(--amber, #f59e0b); }
+.ps-reset { border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 12px; text-decoration: underline; cursor: pointer; }
+.ps-step input { margin: 0 !important; align-self: center; }

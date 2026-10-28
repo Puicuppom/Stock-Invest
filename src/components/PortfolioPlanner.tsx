@@ -8,27 +8,23 @@ import { interestScore } from "@/lib/screener-ranking";
 import { returnPercent, type MarketContext } from "@/lib/momentum";
 import { analyzeTrend, LEAN_GLYPH, LEAN_SHORT, trendLean } from "@/lib/trend";
 import type { StockData, WatchlistItem } from "@/lib/types";
-import { PROFILE_MIX, type BucketKey, type Profile } from "@/lib/portfolio-plan";
+import { BUCKET_META, loadProfileMixes, PROFILE_MIX, PROFILE_NAME, saveProfileMixes, type BucketKey, type Profile, type ProfileMixes } from "@/lib/portfolio-plan";
 
 /* ── ผู้ช่วยจัดพอร์ต: เลือกสไตล์ → สัดส่วนตัวอย่าง → คัดหุ้นให้แต่ละกลุ่มอัตโนมัติ ── */
 
 type Market = "US" | "TH";
 
-export const BUCKETS: Record<BucketKey, { icon: string; name: string; hint: string; style: ScreeningStyle | null }> = {
-  core: { icon: "📦", name: "ETF หลัก", hint: "กองดัชนีกระจายความเสี่ยง ค่าธรรมเนียมต่ำ · แกนของพอร์ต", style: "etf" },
-  income: { icon: "💰", name: "ปันผล", hint: "กระแสเงินสด ผันผวนน้อย", style: "dividend" },
-  quality: { icon: "🚀", name: "หุ้นแกร่ง", hint: "พื้นฐานเยี่ยม อยู่ในขาขึ้น", style: "momentum" },
-  dip: { icon: "🏷️", name: "หุ้นดีลดราคา", hint: "พื้นฐานดี ราคาลงลึก · ถือรอฟื้น", style: "dip" },
-  small: { icon: "💎", name: "หุ้นจิ๋ว", hint: "โตเร็ว ผันผวนสูง · ใช้เงินส่วนน้อย", style: "smallcap" },
-  cash: { icon: "💵", name: "เงินสด", hint: "สำรองไว้ซื้อตอนลดราคา", style: null },
+export const BUCKETS: Record<BucketKey, { name: string; hint: string; style: ScreeningStyle | null }> = {
+  core: { name: BUCKET_META.core.name, hint: "กองดัชนีกระจายความเสี่ยง ค่าธรรมเนียมต่ำ", style: "etf" },
+  income: { name: BUCKET_META.income.name, hint: "กระแสเงินสด ผันผวนน้อย", style: "dividend" },
+  quality: { name: BUCKET_META.quality.name, hint: "พื้นฐานเยี่ยม อยู่ในขาขึ้น", style: "momentum" },
+  dip: { name: BUCKET_META.dip.name, hint: "พื้นฐานดี ราคาลงลึก ถือรอฟื้น", style: "dip" },
+  small: { name: BUCKET_META.small.name, hint: "โตเร็ว ผันผวนสูง ใช้เงินส่วนน้อย", style: "smallcap" },
+  cash: { name: BUCKET_META.cash.name, hint: "สำรองไว้ซื้อตอนลดราคา", style: null },
 };
 const ORDER: BucketKey[] = ["core", "income", "quality", "dip", "small", "cash"];
-
-const PROFILES: Record<Profile, { icon: string; name: string; hint: string; mix: Partial<Record<BucketKey, number>> }> = {
-  safe: { icon: "🛡️", name: "มั่นคง", hint: "เน้นไม่ขาดทุนหนัก รับปันผล", mix: PROFILE_MIX.safe },
-  balanced: { icon: "⚖️", name: "สมดุล", hint: "โตไปพร้อมความเสี่ยงพอดี", mix: PROFILE_MIX.balanced },
-  growth: { icon: "🚀", name: "เติบโต", hint: "ถือยาว รับผันผวนได้มาก", mix: PROFILE_MIX.growth },
-};
+const PROFILE_HINT: Record<Profile, string> = { safe: "เน้นไม่ขาดทุนหนัก รับปันผล", balanced: "โตไปพร้อมความเสี่ยงพอดี", growth: "ถือยาว รับความผันผวนได้มาก" };
+const PROFILE_KEYS: Profile[] = ["safe", "balanced", "growth"];
 
 /* ETF แกนหลักที่คัดไว้ (US) — ไทยใช้ผลค้นหา ETF จากตลาด */
 const CORE_US = ["VOO", "VTI", "QQQM", "VXUS", "VT", "SCHD"];
@@ -50,10 +46,10 @@ function checksFor(bucket: BucketKey, data: StockData, ctx: MarketContext | null
   return bucket === "core" ? checks.filter(c => !/ลงจาก|จุดสูงสุด/.test(c.label)) : checks;
 }
 
-function loadSaved(): { profile: Profile; mix: Record<BucketKey, number>; market: Market; amount: string } | null {
+function loadSaved(): { profile: Profile; market: Market; amount: string } | null {
   try { return JSON.parse(localStorage.getItem(STORE_KEY) || "null"); } catch { return null; }
 }
-const fullMix = (p: Profile) => Object.fromEntries(ORDER.map(k => [k, PROFILES[p].mix[k] ?? 0])) as Record<BucketKey, number>;
+const fullMix = (m: Partial<Record<BucketKey, number>>) => Object.fromEntries(ORDER.map(k => [k, m[k] ?? 0])) as Record<BucketKey, number>;
 
 export default function PortfolioPlanner({ items, loaded, onAdd, onScreen }: {
   items: WatchlistItem[]; loaded: boolean;
@@ -62,7 +58,9 @@ export default function PortfolioPlanner({ items, loaded, onAdd, onScreen }: {
   onScreen: (style: ScreeningStyle, market: Market) => void;
 }) {
   const [profile, setProfile] = useState<Profile>("balanced");
-  const [mix, setMix] = useState<Record<BucketKey, number>>(fullMix("balanced"));
+  // สัดส่วนของทุกสไตล์ (แก้ได้ · ใช้ร่วมกับหน้าปรับพอร์ต)
+  const [mixes, setMixes] = useState<ProfileMixes>(PROFILE_MIX as ProfileMixes);
+  const mix = fullMix(mixes[profile]);
   const [market, setMarket] = useState<Market>("US");
   const [amount, setAmount] = useState("");
   const [results, setResults] = useState<Record<string, BucketResult>>({ ...memo });
@@ -72,14 +70,15 @@ export default function PortfolioPlanner({ items, loaded, onAdd, onScreen }: {
 
   useEffect(() => {
     const s = loadSaved();
-    if (s) { setProfile(s.profile); setMix({ ...fullMix(s.profile), ...s.mix }); setMarket(s.market); setAmount(s.amount ?? ""); }
+    if (s) { setProfile(PROFILE_KEYS.includes(s.profile) ? s.profile : "balanced"); setMarket(s.market); setAmount(s.amount ?? ""); }
+    setMixes(loadProfileMixes());
     setReady(true);
     return () => ctrl.current?.abort();
   }, []);
   useEffect(() => {
     if (!ready) return;
-    try { localStorage.setItem(STORE_KEY, JSON.stringify({ profile, mix, market, amount })); } catch { /* ignore */ }
-  }, [ready, profile, mix, market, amount]);
+    try { localStorage.setItem(STORE_KEY, JSON.stringify({ profile, market, amount })); } catch { /* ignore */ }
+  }, [ready, profile, market, amount]);
 
   const sum = ORDER.reduce((s, k) => s + mix[k], 0);
   const active = ORDER.filter(k => mix[k] > 0 && BUCKETS[k].style);
@@ -166,8 +165,13 @@ export default function PortfolioPlanner({ items, loaded, onAdd, onScreen }: {
     }
   }
 
-  const step = (k: BucketKey, d: number) => setMix(prev => ({ ...prev, [k]: Math.max(0, Math.min(100, prev[k] + d)) }));
-  const pickProfile = (p: Profile) => { setProfile(p); setMix(fullMix(p)); };
+  const updateMix = (next: Partial<Record<BucketKey, number>>) => {
+    const clean = Object.fromEntries(Object.entries(next).filter(([, v]) => (v ?? 0) > 0)) as Partial<Record<BucketKey, number>>;
+    const all = { ...mixes, [profile]: clean };
+    setMixes(all);
+    saveProfileMixes(all);
+  };
+  const step = (k: BucketKey, d: number) => updateMix({ ...mix, [k]: Math.max(0, Math.min(100, mix[k] + d)) });
   const money = Number(amount.replace(/,/g, "")) || 0;
   const cur = market === "TH" ? "฿" : "$";
   const fmt = (n: number) => `${cur}${n.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
@@ -181,16 +185,15 @@ export default function PortfolioPlanner({ items, loaded, onAdd, onScreen }: {
 
   return (
     <section className="planner">
-      <div className="pl-profiles" role="group" aria-label="สไตล์พอร์ต">
-        {(Object.keys(PROFILES) as Profile[]).map(p => (
-          <button key={p} type="button" aria-pressed={profile === p} onClick={() => pickProfile(p)}>
-            <i aria-hidden="true">{PROFILES[p].icon}</i><b>{PROFILES[p].name}</b><small>{PROFILES[p].hint}</small>
-          </button>
+      <div className="pl-tabs" role="tablist" aria-label="สไตล์พอร์ต">
+        {PROFILE_KEYS.map(p => (
+          <button key={p} type="button" role="tab" aria-selected={profile === p} className={profile === p ? "on" : ""} onClick={() => setProfile(p)}>{PROFILE_NAME[p]}</button>
         ))}
       </div>
+      <p className="pl-hint">{PROFILE_HINT[profile]} · กด − / ＋ ที่แต่ละกลุ่มเพื่อตั้งสัดส่วนของสไตล์นี้</p>
 
       <div className="pl-bar" aria-hidden="true">
-        {ORDER.filter(k => mix[k] > 0).map(k => <i key={k} className={`pl-c-${k}`} style={{ flex: mix[k] }} title={`${BUCKETS[k].name} ${mix[k]}%`} />)}
+        {ORDER.filter(k => mix[k] > 0).map(k => <i key={k} style={{ flex: mix[k], background: BUCKET_META[k].color }} title={`${BUCKETS[k].name} ${mix[k]}%`} />)}
       </div>
 
       <div className="pl-tools">
@@ -203,9 +206,9 @@ export default function PortfolioPlanner({ items, loaded, onAdd, onScreen }: {
         <button type="button" className="pl-refresh" disabled={busy} title="ค้นหาใหม่" aria-label="ค้นหาใหม่"
           onClick={() => { active.forEach(b => delete memo[key(b)]); run(active); }}>↻</button>
       </div>
-      {sum !== 100 && <p className="pl-sum">รวม {sum}% · {sum > 100 ? `เกิน ${sum - 100}%` : `ขาด ${100 - sum}%`} <button type="button" onClick={() => setMix(fullMix(profile))}>รีเซ็ต</button></p>}
+      {sum !== 100 && <p className="pl-sum">รวม {sum}% · {sum > 100 ? `เกิน ${sum - 100}%` : `ขาด ${100 - sum}%`} <button type="button" onClick={() => updateMix({ ...PROFILE_MIX[profile] })}>คืนค่าเริ่มต้น</button></p>}
 
-      {ORDER.filter(k => mix[k] > 0 || PROFILES[profile].mix[k]).map(k => {
+      {ORDER.map(k => {
         const bk = BUCKETS[k];
         const r = results[key(k)];
         const list = r?.picks.length ? r.picks : r?.near ?? [];
@@ -214,8 +217,8 @@ export default function PortfolioPlanner({ items, loaded, onAdd, onScreen }: {
         return (
           <div key={k} className={`pl-bucket pl-b-${k}${mix[k] === 0 ? " off" : ""}`}>
             <header>
-              <span className={`pl-dot pl-c-${k}`} aria-hidden="true" />
-              <span className="pl-title"><b>{bk.icon} {bk.name}</b><small>{bk.hint}</small></span>
+              <span className="pl-dot" style={{ background: BUCKET_META[k].color }} aria-hidden="true" />
+              <span className="pl-title"><b>{bk.name}</b><small>{bk.hint}</small></span>
               <span className="pl-pct">
                 <button type="button" aria-label={`ลด ${bk.name}`} onClick={() => step(k, -5)}>−</button>
                 <b>{mix[k]}%</b>
