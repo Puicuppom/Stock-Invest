@@ -1495,6 +1495,8 @@ function recalculate() {
         if (valueCell) valueCell.innerHTML = valueCellHtml(asset);
         const profitCell = card.querySelector('.cell-profit');
         if (profitCell) profitCell.innerHTML = profitCellHtml(asset, cost, asset.value - cost, profitPct);
+        const dtGrid = card.querySelector('.dt-grid');
+        if (dtGrid) dtGrid.innerHTML = detailStatsHtml(asset);
         const priceCell = card.querySelector('.cell-price');
         if (priceCell) priceCell.innerHTML = priceCellHtml(asset);
 
@@ -1718,9 +1720,7 @@ function profitCellHtml(asset, cost, profit, profitPct) {
 function renderAdviceInner(tradeSignal, action) {
     const item = (cls, label, text, tcls, sub) =>
         `<div class="advice-item ${cls}"><span class="advice-label">${label}</span> <span class="advice-text ${tcls}">${text}</span>${sub ? ` <span class="advice-sub">${sub}</span>` : ''}</div>`;
-    let html = item('rb', '⚖ ปรับสัดส่วน', action.text, action.cls);
-    if (tradeSignal.text !== '—') html += item('sr', '📍 แนวรับ/ต้าน', tradeSignal.text, tradeSignal.cls, tradeSignal.sub);
-    return html;
+    return item('rb', '⚖ ปรับสัดส่วน', action.text, action.cls);
 }
 
 /* ซื้อไม่เกิน = แนวรับใกล้สุดใต้ราคา, ขาย = แนวต้านใกล้สุดเหนือราคา
@@ -1773,31 +1773,24 @@ function renderPriceLevelsInner(asset) {
     return buyHtml + sellHtml;
 }
 
+/* รายละเอียดเมื่อกางแถว: เฉพาะข้อมูลที่แถวยังไม่มี (มูลค่า/กำไร/สัดส่วน อยู่บนแถวแล้ว) */
+function detailStatsHtml(asset) {
+    if (isCashAsset(asset)) return '';
+    const price = getPrice(asset.name);
+    const shares = asset.shares || 0;
+    const totalCost = shares > 0 && asset.avgCost > 0 ? shares * asset.avgCost : 0;
+    const cell = (label, value, sub = '') => `<div class="dt-cell"><span class="dt-label">${label}</span><b class="dt-value">${value}</b>${sub}</div>`;
+    return cell('ราคา', price > 0 ? fmtTrade(price) : (priceCache[asset.name]?.error ? 'ไม่พบ' : '…'), extLineHtml(asset))
+        + cell('ทุน/หุ้น', asset.avgCost > 0 ? fmtTrade(asset.avgCost) : '—')
+        + cell('จำนวนหุ้น', shares > 0 ? fmtShares(shares) : '—')
+        + cell('ต้นทุนรวม', totalCost > 0 ? fmtUsd(totalCost) : '—');
+}
+
 function renderAssetCard(index, asset, curPct, ideal, cost, profit, profitPct, tradeSignal, action) {
     const cash = isCashAsset(asset);
     return `
-            <div class="asset-stats compact${cash ? ' cash' : ''}">
-                ${cash ? '' : `
-                <div class="stat-col">
-                    <span class="stat-label">ราคา</span>
-                    <div class="cell-price">${priceCellHtml(asset)}</div>
-                </div>`}
-                <div class="stat-col">
-                    <span class="stat-label">มูลค่า</span>
-                    <div class="cell-value">${valueCellHtml(asset)}</div>
-                </div>
-                ${cash ? '' : `
-                <div class="stat-col">
-                    <span class="stat-label">กำไร</span>
-                    <div class="cell-profit">${profitCellHtml(asset, cost, profit, profitPct)}</div>
-                </div>`}
-                <div class="stat-col">
-                    <span class="stat-label">สัดส่วน</span>
-                    <span class="stat-num asset-pct hi">${fmtPct(curPct)}</span>
-                    <span class="stat-sub muted">เป้า <span class="asset-target-pct">${fmtPct(asset.target || 0)}</span></span>
-                </div>
-            </div>
-            ${cash ? '' : `<div class="asset-levels">${renderPriceLevelsInner(asset)}</div>`}
+            ${cash ? '' : `<div class="dt-grid">${detailStatsHtml(asset)}</div>
+            <div class="asset-levels">${renderPriceLevelsInner(asset)}</div>`}
             <div class="asset-advice">${renderAdviceInner(tradeSignal, action)}</div>`;
 }
 

@@ -1745,3 +1745,35 @@ body.rb2.drag-active { overflow: hidden; }
   .rb2 .cr-value { min-width: 0; }
   .rb2 .cr-ext { overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 }
+
+/* ── รอบนี้: คอมใช้แถวแบบเดียวกับมือถือ · ขนาดตัวอักษรเท่าหน้าวิเคราะห์ · รายละเอียดไม่ซ้ำ ── */
+html:root { font-size: 16px; }
+.rb2, .rb2 body { font-size: 16px; }
+.rb2 .cr-alloc { display: none !important; }
+@media (min-width: 640px) {
+  .rb2 .list-head { grid-template-columns: minmax(0, 1fr) 160px 110px; }
+  .rb2 .cr-row { grid-template-columns: 40px minmax(0, 1fr) 160px 110px; }
+  .rb2 .cr-name small { display: inline-flex !important; }
+}
+.rb2 .cr-act { font-size: 12px; line-height: 20px; padding: 0 8px; }
+.rb2 .sort-bar select, .rb2 .sort-select-wrap, .rb2 .sort-count { font-size: 14px; }
+
+/* แผงรายละเอียด */
+.rb2 .cr-detail .asset-header { padding: 12px 0 4px; }
+.rb2 .cr-detail .asset-fv-inline { font-size: 14px; }
+.rb2 .dt-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 8px 0 10px; border: 1px solid var(--rb-line); border-radius: 12px; overflow: hidden; }
+.rb2 .dt-cell { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 10px 12px; border-left: 1px solid var(--rb-line); }
+.rb2 .dt-cell:first-child { border-left: 0; }
+.rb2 .dt-label { font-size: 12px; color: var(--ui-muted); }
+.rb2 .dt-value { font-size: 15px; font-weight: 600; color: var(--ui-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rb2 .dt-cell .cr-ext { margin-top: 1px; }
+@media (max-width: 480px) {
+  .rb2 .dt-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rb2 .dt-cell:nth-child(3) { border-left: 0; }
+  .rb2 .dt-cell:nth-child(n+3) { border-top: 1px solid var(--rb-line); }
+}
+.rb2 .asset-levels { display: flex; flex-direction: column; gap: 6px; font-size: 14px; margin-bottom: 8px; }
+.rb2 .asset-levels .lv-price { font-size: 16px; }
+.rb2 .asset-advice { font-size: 14px; }
+.rb2 .advice-label { font-size: 13px; }
+@media (min-width: 640px) { .rb2 .cr-name small .cr-target { display: inline !important; } }
