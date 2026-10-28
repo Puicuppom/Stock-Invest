@@ -811,7 +811,7 @@ function renderFxRate() {
     const el = document.getElementById('fx-rate');
     if (!el || !(usdThbRate > 0)) return;
     el.hidden = false;
-    el.innerHTML = `1 $ = <b>${usdThbRate.toFixed(2)}</b> ฿`;
+    el.innerHTML = `<b>${usdThbRate.toFixed(2)}</b> ฿/USD`;
     el.title = `อัตราแลกเปลี่ยน USD/THB · อัปเดต ${new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}`;
 }
 let displayCurrency = (() => {
