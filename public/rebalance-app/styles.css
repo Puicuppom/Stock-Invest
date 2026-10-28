@@ -1438,3 +1438,28 @@ select option, select optgroup { background-color: var(--ui-surface); color: var
 .trade-box .trade-opt input { width: 18px !important; height: 18px; min-height: 0; margin: 0; padding: 0; flex: none; }
 .trade-box .trade-opt span { flex: 1; }
 .sheet-sub { font-size: 12px; font-weight: 700; color: var(--muted); margin: 4px 2px 8px; }
+
+/* การ์ด "พอร์ตใกล้เคียงแบบไหน" */
+.plan-card { margin: 10px 0 4px; border: 1px solid var(--ui-border, var(--border)); border-radius: 16px; background: var(--ui-surface, var(--surface)); padding: 10px 12px; }
+.plan-card > summary { list-style: none; cursor: pointer; display: flex; flex-direction: column; gap: 8px; }
+.plan-card > summary::-webkit-details-marker { display: none; }
+.plan-head { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.plan-head b { color: var(--ui-text, var(--text)); }
+.plan-head em { margin-left: auto; font-style: normal; font-weight: 800; color: var(--ui-accent, var(--accent)); }
+.plan-head::after { content: '▾'; font-size: 11px; transition: transform .15s; }
+.plan-card[open] .plan-head::after { transform: rotate(180deg); }
+.plan-bar { display: flex; height: 10px; border-radius: 999px; overflow: hidden; gap: 2px; background: color-mix(in srgb, var(--ui-text, #fff) 6%, transparent); }
+.plan-bar i { display: block; min-width: 3px; }
+.plan-body { margin-top: 10px; display: flex; flex-direction: column; gap: 2px; }
+.plan-row { display: grid; grid-template-columns: minmax(0, 1fr) 48px 92px; gap: 6px; align-items: center; padding: 6px 0; border-top: 1px solid color-mix(in srgb, var(--ui-text, #fff) 6%, transparent); font-size: 13px; }
+.plan-row > span:first-child { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-width: 0; }
+.plan-row > span:first-child small { flex-basis: 100%; padding-left: 14px; font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.plan-th { border-top: 0; font-size: 11px; color: var(--muted); padding-top: 0; }
+.plan-cur, .plan-tgt { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+.plan-tgt { color: var(--muted); font-weight: 600; }
+.plan-tgt small { font-size: 10px; }
+.over { color: var(--red, #f87171); } .under { color: var(--amber, #fbbf24); } .plan-cur.ok { color: var(--green, #4ade80); }
+.plan-dot { width: 8px; height: 8px; border-radius: 999px; display: inline-block; }
+.plan-alt { margin-top: 6px; font-size: 12px; color: var(--muted); }
+.plan-note { margin: 6px 0 0; font-size: 11px; color: var(--muted); line-height: 1.45; }
+.cr-bucket { font-size: 11px; margin-right: 1px; }

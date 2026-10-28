@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStockData } from "@/lib/stock-service";
+import { classifyAsset } from "@/lib/portfolio-plan";
 import { buildSrLevels, nearestSrLevels, type SrLevel } from "@/lib/sr-levels";
 import type { PivotLevels, PriceZone, SrMode } from "@/lib/types";
 
@@ -37,6 +38,8 @@ export async function GET(request: NextRequest) {
       price: data.lastClose,
       fairValue: data.fairValue,
       srLevels: nearestLevels(data.pivot, data.zones, data.lastClose),
+      // จัดกลุ่มอัตโนมัติ (หน้าปรับพอร์ต)
+      plan: classifyAsset(data),
     });
   } catch {
     return NextResponse.json({ error: "โหลดราคาไม่สำเร็จ" }, { status: 502 });

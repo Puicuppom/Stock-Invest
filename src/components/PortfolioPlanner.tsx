@@ -8,11 +8,10 @@ import { interestScore } from "@/lib/screener-ranking";
 import { returnPercent, type MarketContext } from "@/lib/momentum";
 import { analyzeTrend, LEAN_GLYPH, LEAN_SHORT, trendLean } from "@/lib/trend";
 import type { StockData, WatchlistItem } from "@/lib/types";
+import { PROFILE_MIX, type BucketKey, type Profile } from "@/lib/portfolio-plan";
 
 /* ── ผู้ช่วยจัดพอร์ต: เลือกสไตล์ → สัดส่วนตัวอย่าง → คัดหุ้นให้แต่ละกลุ่มอัตโนมัติ ── */
 
-type BucketKey = "core" | "income" | "quality" | "dip" | "small" | "cash";
-type Profile = "safe" | "balanced" | "growth";
 type Market = "US" | "TH";
 
 export const BUCKETS: Record<BucketKey, { icon: string; name: string; hint: string; style: ScreeningStyle | null }> = {
@@ -26,9 +25,9 @@ export const BUCKETS: Record<BucketKey, { icon: string; name: string; hint: stri
 const ORDER: BucketKey[] = ["core", "income", "quality", "dip", "small", "cash"];
 
 const PROFILES: Record<Profile, { icon: string; name: string; hint: string; mix: Partial<Record<BucketKey, number>> }> = {
-  safe: { icon: "🛡️", name: "มั่นคง", hint: "เน้นไม่ขาดทุนหนัก รับปันผล", mix: { core: 55, income: 25, quality: 10, cash: 10 } },
-  balanced: { icon: "⚖️", name: "สมดุล", hint: "โตไปพร้อมความเสี่ยงพอดี", mix: { core: 40, income: 15, quality: 25, dip: 10, cash: 10 } },
-  growth: { icon: "🚀", name: "เติบโต", hint: "ถือยาว รับผันผวนได้มาก", mix: { core: 30, quality: 35, dip: 20, small: 10, cash: 5 } },
+  safe: { icon: "🛡️", name: "มั่นคง", hint: "เน้นไม่ขาดทุนหนัก รับปันผล", mix: PROFILE_MIX.safe },
+  balanced: { icon: "⚖️", name: "สมดุล", hint: "โตไปพร้อมความเสี่ยงพอดี", mix: PROFILE_MIX.balanced },
+  growth: { icon: "🚀", name: "เติบโต", hint: "ถือยาว รับผันผวนได้มาก", mix: PROFILE_MIX.growth },
 };
 
 /* ETF แกนหลักที่คัดไว้ (US) — ไทยใช้ผลค้นหา ETF จากตลาด */

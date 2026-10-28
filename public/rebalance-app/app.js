@@ -71,6 +71,21 @@ function getActivePortfolioName() {
     return portfolioIndex.list.find(p => p.id === activePortfolioId)?.name || 'พอร์ตหลัก';
 }
 
+/* กลุ่มอัตโนมัติ + สไตล์พอร์ต (สำเนาของ src/lib/portfolio-plan.ts) */
+const PLAN_BUCKETS = {
+    core: { icon: '📦', name: 'ETF หลัก', color: '#38bdf8' },
+    income: { icon: '💰', name: 'ปันผล', color: '#fbbf24' },
+    quality: { icon: '🚀', name: 'หุ้นแกร่ง/เติบโต', color: '#22c55e' },
+    dip: { icon: '🏷️', name: 'หุ้นลดราคา', color: '#f472b6' },
+    small: { icon: '💎', name: 'หุ้นจิ๋ว/เสี่ยงสูง', color: '#a78bfa' },
+    cash: { icon: '💵', name: 'เงินสด', color: '#94a3b8' }
+};
+const PLAN_PROFILES = {
+    safe: { icon: '🛡️', name: 'มั่นคง', mix: { core: 55, income: 25, quality: 10, cash: 10 } },
+    balanced: { icon: '⚖️', name: 'สมดุล', mix: { core: 40, income: 15, quality: 25, dip: 10, cash: 10 } },
+    growth: { icon: '🚀', name: 'เติบโต', mix: { core: 30, quality: 35, dip: 20, small: 10, cash: 5 } }
+};
+
 const DEFAULT_PORTFOLIO_GROUPS = [
     { id: 'income', name: 'ปันผล', hint: 'Income · ปันผล Reinvest ซ่อมพอร์ต', kind: 'etf', profitTaking: false },
     { id: 'growth', name: 'เติบโต', hint: 'Tech Growth · เสาหลักหุ้นรายตัว', kind: 'stock', profitTaking: true },
@@ -332,12 +347,14 @@ async function fetchPrices(fullRender = false) {
                     at: Date.now(),
                     fairValue: data.fairValue || null,
                     srLevels: data.srLevels || null,
+                    plan: data.plan || null,
                 };
             } else {
                 priceCache[symbol] = {
                     price: priceCache[symbol]?.price || 0,
                     fairValue: priceCache[symbol]?.fairValue || null,
                     srLevels: priceCache[symbol]?.srLevels || null,
+                    plan: priceCache[symbol]?.plan || null,
                     error: true,
                 };
             }
@@ -345,6 +362,8 @@ async function fetchPrices(fullRender = false) {
             priceCache[symbol] = {
                 price: priceCache[symbol]?.price || 0,
                 fairValue: priceCache[symbol]?.fairValue || null,
+                srLevels: priceCache[symbol]?.srLevels || null,
+                plan: priceCache[symbol]?.plan || null,
                 error: true,
             };
         }
@@ -1371,6 +1390,7 @@ function updateSummary(totalValue, totalTarget) {
         .map(g => `${getGroupLabel(g.id)} ${fmtPct(getTargetByGroup(g.id))}`)
         .join(' · ');
     updateTabUI();
+    renderPlanCard();
 }
 
 function recalculate() {
@@ -1382,6 +1402,12 @@ function recalculate() {
         const card = document.querySelector(`.asset-card[data-index="${index}"]`);
         if (!card) return;
 
+        const crPct = card.querySelector('.cr-pct');
+        if (crPct) crPct.innerHTML = crPctHtml(asset, curPct);
+        const crValue = card.querySelector('.cr-value');
+        if (crValue) crValue.innerHTML = crValueHtml(asset);
+        const crProfit = card.querySelector('.cr-profit');
+        if (crProfit) crProfit.innerHTML = crProfitHtml(asset, cost, asset.value - cost, profitPct);
         const targetPctEl = card.querySelector('.asset-target-pct');
         if (targetPctEl) targetPctEl.textContent = fmtPct(asset.target || 0);
         const pctEl = card.querySelector('.asset-pct');
@@ -1701,6 +1727,28 @@ function renderAssetGrid(index, asset, curPct, ideal, profitFmt, cost, profit, p
     return renderAssetCard(index, asset, curPct, ideal, cost, profit, profitPct, tradeSignal, action);
 }
 
+/* ส่วนบนของแถว (แสดงตอนพับ) — ใช้ทั้งตอนวาดใหม่และตอนอัปเดตสด */
+function crPctHtml(asset, curPct) {
+    const b = assetBucket(asset);
+    const ico = b ? `<span class="cr-bucket" title="${PLAN_BUCKETS[b.bucket].name}${b.reason ? ' · ' + b.reason : ''}">${PLAN_BUCKETS[b.bucket].icon}</span>` : '';
+    return `${ico}◔ ${fmtPct(curPct)} <span class="cr-target">/ ${fmtPct(asset.target || 0)}</span>`;
+}
+
+function crValueHtml(asset) {
+    const other = isThbDisplay()
+        ? `≈ $${fmt(asset.value || 0, 2)}`
+        : (usdThbRate > 0 ? `≈ ฿${fmt((asset.value || 0) * usdThbRate, 0)}` : '');
+    return `<b>${fmtUsd(asset.value || 0)}</b><small>${other}</small>`;
+}
+
+function crProfitHtml(asset, cost, profit, profitPct) {
+    const up = profit >= 0;
+    return cost > 0 && !isCashAsset(asset)
+        ? `<b class="${up ? 'gain' : 'loss'}">${up ? '↗' : '↘'} ${up ? '+' : '−'}${fmtPct(Math.abs(profitPct))}</b>
+           <small class="${up ? 'gain' : 'loss'}">(${up ? '+' : '−'}${fmtUsd(Math.abs(profit))})</small>`
+        : `<b class="muted">—</b><small class="muted">${isCashAsset(asset) ? 'เงินสด' : 'ยังไม่ใส่ทุน'}</small>`;
+}
+
 function appendAssetCard(list, payload) {
     const { index, asset, curPct, ideal, action, cost, profit, profitPct, tradeSignal } = payload;
     const profitFmt = cost > 0 ? formatProfit(profit, profitPct) : { text: '—', cls: '' };
@@ -1709,15 +1757,7 @@ function appendAssetCard(list, payload) {
     row.className = 'asset-card compact' + (open ? ' open' : '');
     row.dataset.index = index;
     row.dataset.name = asset.name;
-    const cash = isCashAsset(asset);
-    const other = isThbDisplay()
-        ? `≈ $${fmt(asset.value || 0, 2)}`
-        : (usdThbRate > 0 ? `≈ ฿${fmt((asset.value || 0) * usdThbRate, 0)}` : '');
-    const up = profit >= 0;
-    const profitHtml = cost > 0 && !cash
-        ? `<b class="${up ? 'gain' : 'loss'}">${up ? '↗' : '↘'} ${up ? '+' : '−'}${fmtPct(Math.abs(profitPct))}</b>
-           <small class="${up ? 'gain' : 'loss'}">(${up ? '+' : '−'}${fmtUsd(Math.abs(profit))})</small>`
-        : `<b class="muted">—</b><small class="muted">${cash ? 'เงินสด' : 'ยังไม่ใส่ทุน'}</small>`;
+    const profitHtml = crProfitHtml(asset, cost, profit, profitPct);
     const act = `<span class="cr-acts">${rowActsHtml(asset, action, tradeSignal)}</span>`;
     row.innerHTML = `
         <div class="cr-swipe-wrap">
@@ -1730,10 +1770,10 @@ function appendAssetCard(list, payload) {
             <div class="asset-badge">${asset.name.slice(0, 4)}${logoImg(asset)}</div>
             <div class="cr-name">
                 <b>${asset.name}</b>
-                <small>◔ ${fmtPct(curPct)} <span class="cr-target">/ ${fmtPct(asset.target || 0)}</span></small>
+                <small class="cr-pct">${crPctHtml(asset, curPct)}</small>
                 ${act}
             </div>
-            <div class="cr-value"><b>${fmtUsd(asset.value || 0)}</b><small>${other}</small></div>
+            <div class="cr-value">${crValueHtml(asset)}</div>
             <div class="cr-profit">${profitHtml}</div>
         </div>
         </div>
@@ -2883,4 +2923,64 @@ function cashMove(index, dir) {
     if (dir < 0 && amt > (cash.shares || 0) + 1e-9) { showToast(`ถอนได้ไม่เกิน ${fmtTrade(cash.shares || 0)}`, 'error'); return; }
     cash.shares = Math.round(((cash.shares || 0) + dir * amt) * 100) / 100;
     afterTrade(cash.name, `${dir > 0 ? 'เติม' : 'ถอน'}เงินสด ${fmtTrade(amt)} · คงเหลือ ${fmtTrade(cash.shares)}`);
+}
+
+
+/* ── จัดกลุ่มอัตโนมัติ + พอร์ตใกล้เคียงสไตล์ไหน ──
+ * กลุ่มคำนวณที่เซิร์ฟเวอร์ (src/lib/portfolio-plan.ts) · ตารางสไตล์ด้านล่างเป็นสำเนาของ PROFILE_MIX */
+
+function assetBucket(asset) {
+    if (isCashAsset(asset)) return { bucket: 'cash', reason: '' };
+    const p = priceCache[asset.name]?.plan;
+    return p && PLAN_BUCKETS[p.bucket] ? p : null;
+}
+
+function renderPlanCard() {
+    const el = document.getElementById('plan-card');
+    if (!el) return;
+    const items = myPortfolio.filter(a => !isCashAsset(a) || (a.shares || 0) > 0 || (a.target || 0) > 0);
+    const totalValue = items.reduce((s, a) => s + (a.value || 0), 0);
+    const byValue = totalValue > 0;
+    const weight = a => byValue ? (a.value || 0) : (a.target || 0);
+    const total = items.reduce((s, a) => s + weight(a), 0);
+    if (!items.length || total <= 0) { el.hidden = true; return; }
+
+    const cur = {}, names = {};
+    let unknown = 0;
+    for (const a of items) {
+        const b = assetBucket(a);
+        if (!b) { unknown++; continue; }
+        cur[b.bucket] = (cur[b.bucket] || 0) + weight(a) / total * 100;
+        (names[b.bucket] = names[b.bucket] || []).push(a.name);
+    }
+    // ใกล้เคียง = ส่วนต่างรวมน้อยสุด (ผลรวม |ต่าง| ÷ 2 = % ที่ต้องย้าย)
+    const ranked = Object.entries(PLAN_PROFILES).map(([id, p]) => {
+        const diff = Object.keys(PLAN_BUCKETS).reduce((s, k) => s + Math.abs((cur[k] || 0) - (p.mix[k] || 0)), 0) / 2;
+        return { id, p, diff };
+    }).sort((x, y) => x.diff - y.diff);
+    const best = ranked[0];
+    const match = Math.max(0, 100 - best.diff);
+    const wasOpen = el.open;
+    const keys = Object.keys(PLAN_BUCKETS).filter(k => (cur[k] || 0) > 0.05 || (best.p.mix[k] || 0) > 0);
+    el.hidden = false;
+    el.innerHTML = `
+        <summary>
+            <span class="plan-head">🧭 พอร์ตใกล้เคียงแบบ <b>${best.p.icon} ${best.p.name}</b> <em>${match.toFixed(0)}%</em></span>
+            <span class="plan-bar">${keys.filter(k => cur[k] > 0).map(k => `<i style="flex:${cur[k]};background:${PLAN_BUCKETS[k].color}" title="${PLAN_BUCKETS[k].name} ${fmt(cur[k], 0)}%"></i>`).join('')}</span>
+        </summary>
+        <div class="plan-body">
+            <div class="plan-row plan-th"><span>กลุ่ม</span><span>${byValue ? 'ตอนนี้' : 'เป้า'}</span><span>${best.p.icon} ${best.p.name}</span></div>
+            ${keys.map(k => {
+                const c = cur[k] || 0, t = best.p.mix[k] || 0, gap = c - t;
+                const tone = Math.abs(gap) < 5 ? 'ok' : gap > 0 ? 'over' : 'under';
+                return `<div class="plan-row">
+                    <span><i class="plan-dot" style="background:${PLAN_BUCKETS[k].color}"></i>${PLAN_BUCKETS[k].icon} ${PLAN_BUCKETS[k].name}<small>${(names[k] || []).join(' · ') || '—'}</small></span>
+                    <span class="plan-cur ${tone}">${fmt(c, 0)}%</span>
+                    <span class="plan-tgt">${t}%${tone !== 'ok' ? ` <small class="${tone}">${gap > 0 ? 'เกิน' : 'ขาด'} ${fmt(Math.abs(gap), 0)}</small>` : ' ✓'}</span>
+                </div>`;
+            }).join('')}
+            <div class="plan-alt">${ranked.slice(1).map(r => `${r.p.icon} ${r.p.name} ${Math.max(0, 100 - r.diff).toFixed(0)}%`).join(' · ')}</div>
+            <p class="plan-note">${unknown ? `กำลังจัดกลุ่มอีก ${unknown} ตัว · ` : ''}คิดจาก${byValue ? 'มูลค่าจริง' : 'สัดส่วนเป้า'} · จัดกลุ่มอัตโนมัติจากประเภท ปันผล ขนาดบริษัท และราคาที่ลงจากจุดสูงสุด · สัดส่วนสไตล์เป็นตัวอย่างทั่วไป ดูหุ้นแนะนำได้ที่ คัดหุ้น › 🧭 จัดพอร์ต</p>
+        </div>`;
+    el.open = wasOpen;
 }
