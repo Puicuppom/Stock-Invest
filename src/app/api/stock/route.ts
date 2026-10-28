@@ -32,7 +32,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const data = await getStockData(symbol, symbol.toUpperCase().endsWith(".BK") ? "TH" : "US");
+    // หน้าปรับพอร์ตใช้แค่ราคา มูลค่ายุติธรรม แนวรับ/ต้าน และกลุ่ม → ข้ามปฏิทิน/ข้อมูลบริษัท/ราคานอกเวลา (เร็วขึ้น)
+    const data = await getStockData(symbol, symbol.toUpperCase().endsWith(".BK") ? "TH" : "US", { screening: true });
     return NextResponse.json({
       symbol: data.resolvedSymbol,
       price: data.lastClose,

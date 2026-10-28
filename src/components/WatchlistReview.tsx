@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import ScreenRow from "./ScreenRow";
+import { getCachedStock } from "@/hooks/useSrWatchlistTags";
 import { useLiveQuotes } from "@/hooks/useLiveQuotes";
 import { screenStock, screeningStyles, valuationRiskFlags, type ScreeningStyle } from "@/lib/screener";
 import { analyzeDip } from "@/lib/dip";
@@ -50,6 +51,9 @@ export default function WatchlistReview({ items, loaded }: { items: WatchlistIte
     for (let i = 0; i < items.length; i += 4) {
       const batch = items.slice(i, i + 4);
       const res = await Promise.all(batch.map(async item => {
+        // หน้าวิเคราะห์โหลดไว้แล้ว → ใช้เลย ไม่ต้องดึงซ้ำ
+        const cached = getCachedStock(watchlistId(item));
+        if (cached) return { item, data: cached };
         try { return { item, data: await load(`/api/stock/${encodeURIComponent(item.symbol)}?market=${item.market}&mode=screen`, abort.signal) as StockData }; }
         catch { return { item, error: true }; }
       }));

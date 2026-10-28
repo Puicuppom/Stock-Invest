@@ -283,6 +283,7 @@ function sortPortfolioByGroup() {
 }
 
 let priceCache = {};
+let priceRefetch = false;
 let priceFetching = false;
 
 /* พอร์ตย่อยที่ยังไม่มีข้อมูลในเครื่องนี้ (เช่น สร้างจากอีกเครื่อง) — เริ่มว่าง แล้วรอโหลดจากคลาวด์ */
@@ -349,6 +350,8 @@ function syncAssetValues() {
 async function fetchPrices(fullRender = false) {
     const fxPromise = fetchUsdThbRate();
     if (priceFetching) {
+        // กำลังโหลดรอบก่อนอยู่ → นัดโหลดอีกรอบเมื่อเสร็จ (เช่น คลาวด์เพิ่มหุ้นเข้ามาระหว่างนั้น)
+        priceRefetch = priceRefetch || fullRender || 'yes';
         await fxPromise;
         return { busy: true, total: 0, failed: 0 };
     }
@@ -402,6 +405,12 @@ async function fetchPrices(fullRender = false) {
         renderAndCalculate();
     } else {
         recalculate();
+    }
+    if (priceRefetch) {
+        const full = priceRefetch === true;
+        priceRefetch = false;
+        // โหลดเฉพาะตัวที่ยังไม่มีข้อมูลวิเคราะห์ ไม่ต้องโหลดทั้งพอร์ตซ้ำ
+        if (myPortfolio.some(x => !isCashAsset(x) && !priceCache[x.name]?.srLevels && !priceCache[x.name]?.error)) setTimeout(() => fetchPrices(full), 0);
     }
     return { total: symbols.length, failed: symbols.filter(sym => priceCache[sym]?.error).length };
 }
@@ -826,7 +835,15 @@ function toggleCurrency() {
     if (typeof refreshAssetSheet === 'function' && assetSheetIndex != null) refreshAssetSheet();
 }
 
-async function fetchUsdThbRate() {
+let fxJob = null, fxAt = 0;
+function fetchUsdThbRate() {
+    // ใช้ร่วมกันระหว่างที่กำลังโหลด และไม่ดึงซ้ำภายใน 5 นาที
+    if (fxJob) return fxJob;
+    if (Date.now() - fxAt < 300000 && usdThbRate > 0) return Promise.resolve();
+    fxJob = loadUsdThbRate().finally(() => { fxJob = null; fxAt = Date.now(); });
+    return fxJob;
+}
+async function loadUsdThbRate() {
     try {
         const res = await fetch('/api/stock?symbol=THB%3DX');
         const data = await res.json();

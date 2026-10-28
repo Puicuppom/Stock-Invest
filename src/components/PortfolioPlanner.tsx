@@ -38,6 +38,28 @@ type BucketResult = { picks: Pick[]; near: Pick[]; checked: number; done: boolea
 // เก็บผลไว้ข้ามการเปลี่ยนหน้า (ไม่ต้องค้นใหม่)
 const memo: Record<string, BucketResult> = {};
 let memoCtx: Record<Market, MarketContext | null> = { US: null, TH: null };
+// หุ้นตัวเดียวกันโผล่หลายกลุ่ม → ดึงครั้งเดียว ใช้ร่วมกัน (เก็บ promise ไว้ กันยิงซ้ำระหว่างที่กำลังโหลด)
+const stockMemo = new Map<string, Promise<StockData | null>>();
+function loadScreenStock(symbol: string, m: Market, signal: AbortSignal): Promise<StockData | null> {
+  const k = `${m}:${symbol}`;
+  let job = stockMemo.get(k);
+  if (!job) {
+    job = fetch(`/api/stock/${encodeURIComponent(symbol)}?market=${m}&mode=screen`, { signal: AbortSignal.timeout(30000) })
+      .then(r => (r.ok ? (r.json() as Promise<StockData>) : null))
+      .catch(() => null);
+    job.then(d => { if (!d) stockMemo.delete(k); });   // โหลดไม่ได้ → ลองใหม่ได้รอบหน้า
+    stockMemo.set(k, job);
+  }
+  // ยกเลิกเฉพาะฝั่งที่รอ ไม่ยกเลิกการโหลดที่กลุ่มอื่นใช้ร่วม
+  return new Promise(resolve => {
+    if (signal.aborted) return resolve(null);
+    const onAbort = () => resolve(null);
+    signal.addEventListener("abort", onAbort, { once: true });
+    job!.then(d => { signal.removeEventListener("abort", onAbort); resolve(d); });
+  });
+}
+// กลุ่มที่กำลังค้นอยู่ (กันเริ่มซ้ำ และให้กลุ่มที่ค้างจากการออกหน้ากลางคันได้ค้นต่อ)
+const running = new Map<string, AbortController>();
 
 /** ETF หลัก: ใช้เกณฑ์ ETF แต่ไม่บังคับว่าต้องลดราคา */
 function checksFor(bucket: BucketKey, data: StockData, ctx: MarketContext | null): ScreeningCheck[] {
@@ -88,10 +110,12 @@ export default function PortfolioPlanner({ items, loaded, onAdd, onScreen }: {
   // ค้นหาเฉพาะกลุ่มที่ยังไม่มีผล (หรือกด ↻)
   useEffect(() => {
     if (!ready) return;
-    const todo = active.filter(b => !memo[key(b)]);
+    const todo = active.filter(b => !memo[key(b)] || (!memo[key(b)].done && !running.has(key(b))));
     if (todo.length) run(todo);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, market, active.join(",")]);
+  // เปลี่ยนตลาด → หยุดค้นของตลาดเดิม
+  useEffect(() => () => { ctrl.current?.abort(); ctrl.current = null; }, [market]);
 
   async function marketCtx(signal: AbortSignal): Promise<MarketContext | null> {
     if (memoCtx[market]) return memoCtx[market];
@@ -105,14 +129,26 @@ export default function PortfolioPlanner({ items, loaded, onAdd, onScreen }: {
   }
 
   async function run(buckets: BucketKey[]) {
-    ctrl.current?.abort();
-    const abort = new AbortController();
-    ctrl.current = abort;
+    // ไม่ยกเลิกกลุ่มอื่นที่กำลังค้นอยู่ — ยกเลิกเฉพาะตอนเปลี่ยนตลาดหรือออกจากหน้า
+    if (!ctrl.current || ctrl.current.signal.aborted) ctrl.current = new AbortController();
+    const abort = ctrl.current;
     const m = market;
+    const todo = buckets.filter(b => !running.has(`${m}:${b}`));
+    if (!todo.length) return;
     const set = (b: BucketKey, r: BucketResult) => { memo[`${m}:${b}`] = r; setResults(prev => ({ ...prev, [`${m}:${b}`]: r })); };
-    buckets.forEach(b => set(b, { picks: [], near: [], checked: 0, done: false }));
+    todo.forEach(b => { running.set(`${m}:${b}`, abort); set(b, { picks: [], near: [], checked: 0, done: false }); });
     const ctx = await marketCtx(abort.signal);
-    await Promise.all(buckets.map(b => scanBucket(b, m, ctx, abort.signal, r => set(b, r))));
+    await Promise.all(todo.map(async b => {
+      try { await scanBucket(b, m, ctx, abort.signal, r => set(b, r)); }
+      finally {
+        // ลบเฉพาะงานของรอบนี้ (ถ้ากด ↻ ไปแล้ว อย่าไปลบผลของรอบใหม่)
+        if (running.get(`${m}:${b}`) === abort) {
+          running.delete(`${m}:${b}`);
+          // ถูกยกเลิกกลางคัน → ลบผลค้าง ให้เริ่มใหม่ได้เมื่อกลับมา
+          if (abort.signal.aborted && !memo[`${m}:${b}`]?.done) delete memo[`${m}:${b}`];
+        }
+      }
+    }));
   }
 
   async function scanBucket(b: BucketKey, m: Market, ctx: MarketContext | null, signal: AbortSignal, emit: (r: BucketResult) => void) {
@@ -141,10 +177,8 @@ export default function PortfolioPlanner({ items, loaded, onAdd, onScreen }: {
         const batch = queue.splice(0, CONCURRENCY);
         const rows = await Promise.all(batch.map(async symbol => {
           seen.add(symbol);
-          try {
-            const r = await fetch(`/api/stock/${encodeURIComponent(symbol)}?market=${m}&mode=screen`, { signal: AbortSignal.any([signal, AbortSignal.timeout(30000)]) });
-            return r.ok ? { symbol, data: (await r.json()) as StockData } : null;
-          } catch { return null; }
+          const data = await loadScreenStock(symbol, m, signal);
+          return data ? { symbol, data } : null;
         }));
         for (const row of rows) {
           if (!row) continue;
@@ -204,7 +238,7 @@ export default function PortfolioPlanner({ items, loaded, onAdd, onScreen }: {
           <input type="text" inputMode="decimal" placeholder="ไม่ระบุก็ได้" value={amount} onChange={e => setAmount(e.target.value.replace(/[^\d.,]/g, ""))} />
         </label>
         <button type="button" className="pl-refresh" disabled={busy} title="ค้นหาใหม่" aria-label="ค้นหาใหม่"
-          onClick={() => { active.forEach(b => delete memo[key(b)]); run(active); }}>↻</button>
+          onClick={() => { ctrl.current?.abort(); ctrl.current = null; active.forEach(b => { delete memo[key(b)]; running.delete(key(b)); }); for (const k of [...stockMemo.keys()]) if (k.startsWith(`${market}:`)) stockMemo.delete(k); run(active); }}>↻</button>
       </div>
       {sum !== 100 && <p className="pl-sum">รวม {sum}% · {sum > 100 ? `เกิน ${sum - 100}%` : `ขาด ${100 - sum}%`} <button type="button" onClick={() => updateMix({ ...PROFILE_MIX[profile] })}>คืนค่าเริ่มต้น</button></p>}
 
