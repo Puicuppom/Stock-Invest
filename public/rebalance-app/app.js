@@ -283,6 +283,8 @@ function sortPortfolioByGroup() {
 }
 
 let priceCache = {};
+const PLAN_CACHE_KEY = 'planBucketCache:v1';
+let planCache = (() => { try { return JSON.parse(localStorage.getItem(PLAN_CACHE_KEY) || '{}') || {}; } catch { return {}; } })();
 let priceRefetch = false;
 let priceFetching = false;
 
@@ -375,6 +377,7 @@ async function fetchPrices(fullRender = false) {
                     srLevels: data.srLevels || null,
                     plan: data.plan || null,
                 };
+                rememberPlan(symbol, data.plan);
             } else {
                 priceCache[symbol] = {
                     price: priceCache[symbol]?.price || 0,
@@ -1477,6 +1480,7 @@ function recalculate() {
         const card = document.querySelector(`.asset-card[data-index="${index}"]`);
         if (!card) return;
 
+        paintBucket(card, asset);
         const crPct = card.querySelector('.cr-pct');
         if (crPct) crPct.innerHTML = crPctHtml(asset, curPct);
         const crAlloc = card.querySelector('.cr-alloc');
@@ -1849,6 +1853,7 @@ function appendAssetCard(list, payload) {
     row.className = 'asset-card compact' + (open ? ' open' : '');
     row.dataset.index = index;
     row.dataset.name = asset.name;
+    paintBucket(row, asset);
     const profitHtml = crProfitHtml(asset, cost, profit, profitPct);
     const act = `<span class="cr-acts">${rowActsHtml(asset, action, tradeSignal)}</span>`;
     row.innerHTML = `
@@ -3024,10 +3029,26 @@ function cashMove(index, dir) {
 /* ── จัดกลุ่มอัตโนมัติ + พอร์ตใกล้เคียงสไตล์ไหน ──
  * กลุ่มคำนวณที่เซิร์ฟเวอร์ (src/lib/portfolio-plan.ts) · ตารางสไตล์ด้านล่างเป็นสำเนาของ PROFILE_MIX */
 
+/* จำกลุ่มของแต่ละหุ้นไว้ในเครื่อง → เปิดแอปแล้วเห็นสีกลุ่มทันที ไม่ต้องรอโหลด */
+function rememberPlan(symbol, plan) {
+    if (!plan || !PLAN_BUCKETS[plan.bucket]) return;
+    const old = planCache[symbol];
+    if (old && old.bucket === plan.bucket && old.reason === plan.reason) return;
+    planCache[symbol] = { bucket: plan.bucket, reason: plan.reason || '' };
+    try { localStorage.setItem(PLAN_CACHE_KEY, JSON.stringify(planCache)); } catch { /* ignore */ }
+}
 function assetBucket(asset) {
     if (isCashAsset(asset)) return { bucket: 'cash', reason: '' };
-    const p = priceCache[asset.name]?.plan;
+    const p = priceCache[asset.name]?.plan || planCache[asset.name];
     return p && PLAN_BUCKETS[p.bucket] ? p : null;
+}
+function bucketColor(asset) {
+    const b = assetBucket(asset);
+    return b ? PLAN_BUCKETS[b.bucket].color : '';
+}
+function paintBucket(card, asset) {
+    const c = bucketColor(asset);
+    if (c) card.style.setProperty('--bk', c); else card.style.removeProperty('--bk');
 }
 
 /* แผนของพอร์ตนี้ (มั่นคง/สมดุล/เติบโต) — เลือกเอง · ยังไม่เลือก = ใช้แบบที่ใกล้เคียงที่สุด */

@@ -1777,3 +1777,9 @@ html:root { font-size: 16px; }
 .rb2 .asset-advice { font-size: 14px; }
 .rb2 .advice-label { font-size: 13px; }
 @media (min-width: 640px) { .rb2 .cr-name small .cr-target { display: inline !important; } }
+
+/* สีกลุ่มหุ้น: แถบสีด้านซ้ายของแถว + วงรอบโลโก้ (เห็นชัดทั้งมือถือและคอม) */
+.rb2 .asset-card { position: relative; }
+.rb2 .asset-card::before { content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 0 3px 3px 0; background: var(--bk, transparent); z-index: 2; pointer-events: none; }
+.rb2 .asset-card .cr-row .asset-badge { box-shadow: 0 0 0 2px var(--ui-surface), 0 0 0 4px var(--bk, transparent); }
+.rb2 .cr-bucket { width: 10px; height: 10px; border-radius: 3px; flex: none; }
