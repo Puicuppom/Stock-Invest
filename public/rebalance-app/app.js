@@ -74,10 +74,10 @@ function getActivePortfolioName() {
 /* กลุ่มอัตโนมัติ + สไตล์พอร์ต (สำเนาของ src/lib/portfolio-plan.ts) */
 const PLAN_BUCKETS = {
     core: { icon: '📦', name: 'ETF', color: '#38bdf8' },
-    income: { icon: '💰', name: 'ปันผล', color: '#fbbf24' },
-    quality: { icon: '🚀', name: 'หุ้นแกร่ง/เติบโต', color: '#22c55e' },
-    dip: { icon: '🏷️', name: 'หุ้นลดราคา', color: '#f472b6' },
-    small: { icon: '💎', name: 'หุ้นจิ๋ว/เสี่ยงสูง', color: '#a78bfa' },
+    income: { icon: '💰', name: 'หุ้นปันผล', color: '#f59e0b' },
+    quality: { icon: '🚀', name: 'หุ้นเติบโต', color: '#22c55e' },
+    dip: { icon: '🏷️', name: 'หุ้นลดราคา', color: '#ec4899' },
+    small: { icon: '💎', name: 'หุ้นขนาดเล็ก', color: '#a78bfa' },
     cash: { icon: '💵', name: 'เงินสด', color: '#94a3b8' }
 };
 const PLAN_PROFILES = {
@@ -1730,8 +1730,8 @@ function renderAssetGrid(index, asset, curPct, ideal, profitFmt, cost, profit, p
 /* ส่วนบนของแถว (แสดงตอนพับ) — ใช้ทั้งตอนวาดใหม่และตอนอัปเดตสด */
 function crPctHtml(asset, curPct) {
     const b = assetBucket(asset);
-    const ico = b ? `<span class="cr-bucket" title="${PLAN_BUCKETS[b.bucket].name}${b.reason ? ' · ' + b.reason : ''}">${PLAN_BUCKETS[b.bucket].icon}</span>` : '';
-    return `${ico}◔ ${fmtPct(curPct)} <span class="cr-target">/ ${fmtPct(asset.target || 0)}</span>`;
+    const ico = b ? `<i class="cr-bucket" style="background:${PLAN_BUCKETS[b.bucket].color}" title="${PLAN_BUCKETS[b.bucket].name}${b.reason ? ' · ' + b.reason : ''}"></i>` : '';
+    return `${ico || '◔ '}${fmtPct(curPct)} <span class="cr-target">/ ${fmtPct(asset.target || 0)}</span>`;
 }
 
 function crValueHtml(asset) {
@@ -2953,34 +2953,44 @@ function renderPlanCard() {
         cur[b.bucket] = (cur[b.bucket] || 0) + weight(a) / total * 100;
         (names[b.bucket] = names[b.bucket] || []).push(a.name);
     }
-    // ใกล้เคียง = ส่วนต่างรวมน้อยสุด (ผลรวม |ต่าง| ÷ 2 = % ที่ต้องย้าย)
+    // ใกล้เคียง = 100 − (ผลรวม |ต่าง| ÷ 2) คือส่วนที่ไม่ต้องย้าย
     const ranked = Object.entries(PLAN_PROFILES).map(([id, p]) => {
         const diff = Object.keys(PLAN_BUCKETS).reduce((s, k) => s + Math.abs((cur[k] || 0) - (p.mix[k] || 0)), 0) / 2;
-        return { id, p, diff };
-    }).sort((x, y) => x.diff - y.diff);
+        return { id, p, match: Math.max(0, 100 - diff) };
+    }).sort((x, y) => y.match - x.match);
     const best = ranked[0];
-    const match = Math.max(0, 100 - best.diff);
+    const keys = Object.keys(PLAN_BUCKETS).filter(k => (cur[k] || 0) > 0.05 || (best.p.mix[k] || 0) > 0)
+        .sort((x, y) => (cur[y] || 0) - (cur[x] || 0) || (best.p.mix[y] || 0) - (best.p.mix[x] || 0));
     const wasOpen = el.open;
-    const keys = Object.keys(PLAN_BUCKETS).filter(k => (cur[k] || 0) > 0.05 || (best.p.mix[k] || 0) > 0);
     el.hidden = false;
     el.innerHTML = `
         <summary>
-            <span class="plan-head">🧭 พอร์ตใกล้เคียงแบบ <b>${best.p.icon} ${best.p.name}</b> <em>${match.toFixed(0)}%</em></span>
-            <span class="plan-bar">${keys.filter(k => cur[k] > 0).map(k => `<i style="flex:${cur[k]};background:${PLAN_BUCKETS[k].color}" title="${PLAN_BUCKETS[k].name} ${fmt(cur[k], 0)}%"></i>`).join('')}</span>
+            <div class="pc-top">
+                <span class="pc-title">สัดส่วนสินทรัพย์</span>
+                <span class="pc-match" title="ความใกล้เคียงกับสไตล์ ${best.p.name}">ใกล้เคียง <b>${best.p.name}</b> <span class="pc-score">${best.match.toFixed(0)}%</span></span>
+                <span class="pc-chev" aria-hidden="true"></span>
+            </div>
+            <div class="pc-bar">${keys.filter(k => cur[k] > 0).map(k => `<i style="flex:${cur[k]};background:${PLAN_BUCKETS[k].color}" title="${PLAN_BUCKETS[k].name} ${fmt(cur[k], 1)}%"></i>`).join('')}</div>
+            <div class="pc-legend">${keys.filter(k => cur[k] > 0).map(k => `<span><i style="background:${PLAN_BUCKETS[k].color}"></i>${PLAN_BUCKETS[k].name} <b>${fmt(cur[k], 0)}%</b></span>`).join('')}</div>
         </summary>
-        <div class="plan-body">
-            <div class="plan-row plan-th"><span>กลุ่ม</span><span>${byValue ? 'ตอนนี้' : 'เป้า'}</span><span>${best.p.icon} ${best.p.name}</span></div>
+        <div class="pc-body">
+            <div class="pc-profiles" role="tablist" aria-label="เทียบกับสไตล์">
+                ${ranked.map(r => `<span class="${r === best ? 'on' : ''}">${r.p.name}<b>${r.match.toFixed(0)}%</b></span>`).join('')}
+            </div>
+            <div class="pc-head"><span>กลุ่ม</span><span>${byValue ? 'ตอนนี้' : 'เป้า'}</span><span>${best.p.name}</span><span>ส่วนต่าง</span></div>
             ${keys.map(k => {
                 const c = cur[k] || 0, t = best.p.mix[k] || 0, gap = c - t;
                 const tone = Math.abs(gap) < 5 ? 'ok' : gap > 0 ? 'over' : 'under';
-                return `<div class="plan-row">
-                    <span><i class="plan-dot" style="background:${PLAN_BUCKETS[k].color}"></i>${PLAN_BUCKETS[k].icon} ${PLAN_BUCKETS[k].name}<small>${(names[k] || []).join(' · ') || '—'}</small></span>
-                    <span class="plan-cur ${tone}">${fmt(c, 0)}%</span>
-                    <span class="plan-tgt">${t}%${tone !== 'ok' ? ` <small class="${tone}">${gap > 0 ? 'เกิน' : 'ขาด'} ${fmt(Math.abs(gap), 0)}</small>` : ' ✓'}</span>
+                const max = Math.max(c, t, 1);
+                return `<div class="pc-row">
+                    <div class="pc-name"><i style="background:${PLAN_BUCKETS[k].color}"></i><span>${PLAN_BUCKETS[k].name}<small>${(names[k] || []).join(', ') || '—'}</small></span></div>
+                    <span class="pc-num">${fmt(c, 1)}%</span>
+                    <span class="pc-num muted">${t}%</span>
+                    <span class="pc-gap ${tone}">${tone === 'ok' ? '—' : `${gap > 0 ? '+' : '−'}${fmt(Math.abs(gap), 1)}`}</span>
+                    <div class="pc-track"><i style="width:${c / 100 * 100}%;background:${PLAN_BUCKETS[k].color}"></i><b style="left:${t}%" title="${best.p.name} ${t}%"></b></div>
                 </div>`;
             }).join('')}
-            <div class="plan-alt">${ranked.slice(1).map(r => `${r.p.icon} ${r.p.name} ${Math.max(0, 100 - r.diff).toFixed(0)}%`).join(' · ')}</div>
-            <p class="plan-note">${unknown ? `กำลังจัดกลุ่มอีก ${unknown} ตัว · ` : ''}คิดจาก${byValue ? 'มูลค่าจริง' : 'สัดส่วนเป้า'} · จัดกลุ่มอัตโนมัติจากประเภท ปันผล ขนาดบริษัท และราคาที่ลงจากจุดสูงสุด · สัดส่วนสไตล์เป็นตัวอย่างทั่วไป ดูหุ้นแนะนำได้ที่ คัดหุ้น › 🧭 จัดพอร์ต</p>
+            <p class="pc-note">${unknown ? `กำลังจัดกลุ่มอีก ${unknown} รายการ · ` : ''}คิดจาก${byValue ? 'มูลค่าปัจจุบัน' : 'สัดส่วนเป้าหมาย'} · ขีดตั้ง = สัดส่วนของสไตล์${best.p.name} · สัดส่วนสไตล์เป็นตัวอย่างทั่วไป ไม่ใช่คำแนะนำการลงทุน</p>
         </div>`;
     el.open = wasOpen;
 }

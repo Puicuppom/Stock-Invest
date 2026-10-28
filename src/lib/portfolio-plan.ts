@@ -1,5 +1,4 @@
 import { analyzeDip } from "./dip";
-import { isLeveragedName } from "./etf";
 import type { StockData } from "./types";
 
 /** กลุ่มในพอร์ต (ใช้ทั้งผู้ช่วยจัดพอร์ต และจัดกลุ่มอัตโนมัติในหน้าปรับพอร์ต) */
@@ -13,18 +12,10 @@ export const PROFILE_MIX: Record<Profile, Partial<Record<BucketKey, number>>> = 
   growth: { core: 30, quality: 35, dip: 20, small: 10, cash: 5 },
 };
 
-/* ETF ปันผล = กองที่คัดหุ้นปันผล (SCHD, VYM) · กองดัชนีที่ขายออปชั่นเก็บรายได้ (QQQI, JEPQ) ยังนับเป็น ETF หลัก */
-const DIVIDEND_ETF_NAME = /dividend|high div|ปันผล/i;
-
-/** จัดกลุ่มสินทรัพย์จากข้อมูลจริง: ETF (หลัก/ปันผล/เลเวอเรจ) · หุ้น (ปันผล/จิ๋ว/ลดราคา/แกร่ง) */
+/** จัดกลุ่มสินทรัพย์จากข้อมูลจริง: ETF · หุ้น (ปันผล/จิ๋ว/ลดราคา/แกร่ง) */
 export function classifyAsset(data: StockData): { bucket: BucketKey; reason: string } {
-  const name = `${data.longName ?? ""} ${data.etf?.category ?? ""}`;
-  if (data.assetKind === "gold-etf") return { bucket: "core", reason: "ETF ทอง · ช่วยกระจายความเสี่ยง" };
-  if (data.assetKind === "etf") {
-    if (data.etf?.leveraged || isLeveragedName(name)) return { bucket: "small", reason: "ETF เลเวอเรจ/สวนตลาด · เสี่ยงสูง" };
-    if (DIVIDEND_ETF_NAME.test(name)) return { bucket: "income", reason: "ETF หุ้นปันผล" };
-    return { bucket: "core", reason: "ETF" };
-  }
+  // ETF ทุกชนิด (ดัชนี ปันผล ออปชั่น ทอง) อยู่หมวด ETF
+  if (data.assetKind === "etf" || data.assetKind === "gold-etf") return { bucket: "core", reason: data.etf?.category ?? "ETF" };
   if (data.assetKind !== "stock") return { bucket: "core", reason: "สินทรัพย์อื่น" };
 
   const y = data.fairValue.dividendYieldPercent;
