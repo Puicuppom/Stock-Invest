@@ -1931,7 +1931,12 @@ function toggleSortDir() {
     renderAndCalculate();
 }
 
+/* เงินสดอยู่ล่างสุดเสมอ (ทุกโหมดเรียง) */
 function sortItems(items) {
+    const sorted = sortItemsRaw(items);
+    return [...sorted.filter(i => !isCashAsset(i.asset)), ...sorted.filter(i => isCashAsset(i.asset))];
+}
+function sortItemsRaw(items) {
     if (sortMode === 'manual') return items;
     const key = item => {
         if (sortMode === 'value') return item.asset.value || 0;
