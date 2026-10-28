@@ -1780,7 +1780,7 @@ function detailStatsHtml(asset) {
     const shares = asset.shares || 0;
     const totalCost = shares > 0 && asset.avgCost > 0 ? shares * asset.avgCost : 0;
     const cell = (label, value, sub = '') => `<div class="dt-cell"><span class="dt-label">${label}</span><b class="dt-value">${value}</b>${sub}</div>`;
-    return cell('ราคา', price > 0 ? fmtTrade(price) : (priceCache[asset.name]?.error ? 'ไม่พบ' : '…'), extLineHtml(asset))
+    return cell('ราคา', price > 0 ? fmtTrade(price) : (priceCache[asset.name]?.error ? 'ไม่พบ' : '…'))
         + cell('ทุน/หุ้น', asset.avgCost > 0 ? fmtTrade(asset.avgCost) : '—')
         + cell('จำนวนหุ้น', shares > 0 ? fmtShares(shares) : '—')
         + cell('ต้นทุนรวม', totalCost > 0 ? fmtUsd(totalCost) : '—');
@@ -1836,7 +1836,7 @@ function crValueHtml(asset) {
 function crProfitHtml(asset, cost, profit, profitPct) {
     const up = profit >= 0;
     return cost > 0 && !isCashAsset(asset)
-        ? `<b class="${up ? 'gain' : 'loss'}">${up ? '↗' : '↘'} ${up ? '+' : '−'}${fmtPct(Math.abs(profitPct))}</b>
+        ? `<b class="${up ? 'gain' : 'loss'}">${up ? '+' : '−'}${fmtPct(Math.abs(profitPct))}</b>
            <small class="${up ? 'gain' : 'loss'}">(${up ? '+' : '−'}${fmtUsd(Math.abs(profit))})</small>`
         : `<b class="muted">—</b><small class="muted">${isCashAsset(asset) ? 'เงินสด' : 'ยังไม่ใส่ทุน'}</small>`;
 }
