@@ -105,6 +105,10 @@ function savePlanProfiles(touch = true) {
     try { localStorage.setItem(PLAN_STORE_KEY, JSON.stringify({ profiles: Object.fromEntries(Object.entries(PLAN_PROFILES).map(([k, v]) => [k, v.mix])), updatedAt: planStore.updatedAt })); } catch { /* ignore */ }
 }
 
+/* แผนของพอร์ตนี้ — ต้องประกาศก่อน bootstrap() */
+let myPlan = (() => { const v = localStorage.getItem(pfStorageKey(activePortfolioId, 'myPlan')); return PLAN_PROFILES[v] ? v : ''; })();
+let planView = '';   // แท็บที่กำลังดูในการ์ด
+
 const DEFAULT_PORTFOLIO_GROUPS = [
     { id: 'income', name: 'ปันผล', hint: 'Income · ปันผล Reinvest ซ่อมพอร์ต', kind: 'etf', profitTaking: false },
     { id: 'growth', name: 'เติบโต', hint: 'Tech Growth · เสาหลักหุ้นรายตัว', kind: 'stock', profitTaking: true },
@@ -647,6 +651,10 @@ function applyCloudData(cloud) {
         store.setItem('activeTab', activeTab);
         updateTabUI();
     }
+    if (typeof cloud.myPlan === 'string' && (cloud.myPlan === '' || PLAN_PROFILES[cloud.myPlan])) {
+        myPlan = cloud.myPlan;
+        store.setItem('myPlan', cloud.myPlan);
+    }
     if (cloud.planProfiles?.profiles && Number(cloud.planProfiles.updatedAt) > planStore.updatedAt) {
         for (const [id, mix] of Object.entries(cloud.planProfiles.profiles)) if (PLAN_PROFILES[id] && mix) PLAN_PROFILES[id].mix = { ...mix };
         planStore.updatedAt = Number(cloud.planProfiles.updatedAt);
@@ -677,6 +685,7 @@ function getCloudPayload() {
         strategyTargets: store.getItem('strategyTargets') || '2',
         portfolioGroups,
         deletedAssets,
+        myPlan: store.getItem('myPlan') || '',
         planProfiles: { profiles: Object.fromEntries(Object.entries(PLAN_PROFILES).map(([k, v]) => [k, v.mix])), updatedAt: planStore.updatedAt },
         updatedAt: Date.now()
     };
@@ -2992,67 +3001,127 @@ function assetBucket(asset) {
     return p && PLAN_BUCKETS[p.bucket] ? p : null;
 }
 
-function renderPlanCard() {
-    const el = document.getElementById('plan-card');
-    if (!el) return;
+/* แผนของพอร์ตนี้ (มั่นคง/สมดุล/เติบโต) — เลือกเอง · ยังไม่เลือก = ใช้แบบที่ใกล้เคียงที่สุด */
+function setMyPlan(id) {
+    if (!PLAN_PROFILES[id]) return;
+    myPlan = id;
+    planView = id;
+    store.setItem('myPlan', id);
+    store.setItem('localUpdatedAt', String(Date.now()));
+    scheduleCloudSave();
+    renderPlanCard();
+    showToast(`ตั้งแผนพอร์ตเป็น ${PLAN_PROFILES[id].name} แล้ว`);
+}
+function viewPlan(id) {
+    planView = id;
+    renderPlanCard();
+}
+
+function planStats() {
     const items = myPortfolio.filter(a => !isCashAsset(a) || (a.shares || 0) > 0 || (a.target || 0) > 0);
     const totalValue = items.reduce((s, a) => s + (a.value || 0), 0);
     const byValue = totalValue > 0;
     const weight = a => byValue ? (a.value || 0) : (a.target || 0);
     const total = items.reduce((s, a) => s + weight(a), 0);
-    if (!items.length || total <= 0) { el.hidden = true; return; }
-
-    const cur = {}, names = {};
+    const cur = {}, names = {}, members = {};
     let unknown = 0;
     for (const a of items) {
         const b = assetBucket(a);
         if (!b) { unknown++; continue; }
-        cur[b.bucket] = (cur[b.bucket] || 0) + weight(a) / total * 100;
+        if (total > 0) cur[b.bucket] = (cur[b.bucket] || 0) + weight(a) / total * 100;
         (names[b.bucket] = names[b.bucket] || []).push(a.name);
     }
-    // ใกล้เคียง = 100 − (ผลรวม |ต่าง| ÷ 2) คือส่วนที่ไม่ต้องย้าย
+    // สมาชิกทุกตัว (รวมที่ยังไม่มีมูลค่า) สำหรับปรับเป้า
+    for (const a of myPortfolio) {
+        const b = assetBucket(a);
+        if (b) (members[b.bucket] = members[b.bucket] || []).push(a);
+    }
     const ranked = Object.entries(PLAN_PROFILES).map(([id, p]) => {
         const diff = Object.keys(PLAN_BUCKETS).reduce((s, k) => s + Math.abs((cur[k] || 0) - (p.mix[k] || 0)), 0) / 2;
         return { id, p, match: Math.max(0, 100 - diff) };
-    }).sort((x, y) => y.match - x.match);
-    const best = ranked[0];
-    const keys = Object.keys(PLAN_BUCKETS).filter(k => (cur[k] || 0) > 0.05 || (best.p.mix[k] || 0) > 0)
-        .sort((x, y) => (cur[y] || 0) - (cur[x] || 0) || (best.p.mix[y] || 0) - (best.p.mix[x] || 0));
+    });
+    return { items, byValue, total, cur, names, members, unknown, ranked };
+}
+
+/* ปรับ % เป้าของหุ้นแต่ละตัวให้ตรงแผน: แบ่ง % ของกลุ่มตามสัดส่วนเป้าเดิมในกลุ่ม (ไม่มีเป้า → ตามมูลค่า → เท่ากัน) */
+function applyPlanTargets(id) {
+    const p = PLAN_PROFILES[id];
+    if (!p) return;
+    const { members, unknown } = planStats();
+    if (unknown) { showToast(`รอจัดกลุ่มอีก ${unknown} ตัวก่อน แล้วลองใหม่`, 'warn'); return; }
+    const missing = Object.keys(p.mix).filter(k => p.mix[k] > 0 && !(members[k] || []).length);
+    const dropped = Object.keys(members).filter(k => !(p.mix[k] > 0)).flatMap(k => members[k].map(a => a.name));
+    const lines = [`ปรับเป้าหุ้นทุกตัวให้ตรงแผน "${p.name}"?`];
+    if (missing.length) lines.push(`• ยังไม่มีหุ้นในกลุ่ม: ${missing.map(k => `${PLAN_BUCKETS[k].name} ${p.mix[k]}%`).join(', ')} (เป้ารวมจะไม่ครบ 100% จนกว่าจะเพิ่มหุ้น)`);
+    if (dropped.length) lines.push(`• แผนนี้ไม่มีกลุ่มของ ${dropped.join(', ')} → เป้าเป็น 0%`);
+    if (!confirm(lines.join('\n'))) return;
+    for (const [k, list] of Object.entries(members)) {
+        const pct = p.mix[k] || 0;
+        const byTarget = list.reduce((s, a) => s + (a.target || 0), 0);
+        const byVal = list.reduce((s, a) => s + (a.value || 0), 0);
+        list.forEach(a => {
+            const w = byTarget > 0 ? (a.target || 0) / byTarget : byVal > 0 ? (a.value || 0) / byVal : 1 / list.length;
+            a.target = Math.round(pct * w * 100) / 100;
+        });
+    }
+    if (myPlan !== id) { myPlan = id; store.setItem('myPlan', id); }
+    persistPortfolio();
+    flushCloudSave();
+    renderAndCalculate();
+    showToast(`ปรับเป้าตามแผน ${p.name} แล้ว`);
+}
+
+function renderPlanCard() {
+    const el = document.getElementById('plan-card');
+    if (!el) return;
+    const { items, byValue, total, cur, names, unknown, ranked } = planStats();
+    if (!items.length || total <= 0) { el.hidden = true; return; }
+    const best = [...ranked].sort((x, y) => y.match - x.match)[0];
+    const mine = ranked.find(r => r.id === myPlan) || null;
+    const head = mine || best;                       // หัวการ์ด: แผนของฉัน (ถ้าตั้งไว้) ไม่งั้นแบบที่ใกล้สุด
+    const view = ranked.find(r => r.id === planView) || head;
+    const keys = Object.keys(PLAN_BUCKETS).filter(k => (cur[k] || 0) > 0.05 || (view.p.mix[k] || 0) > 0)
+        .sort((x, y) => (cur[y] || 0) - (cur[x] || 0) || (view.p.mix[y] || 0) - (view.p.mix[x] || 0));
     const wasOpen = el.open;
     el.hidden = false;
     el.innerHTML = `
         <summary>
             <div class="pc-top">
                 <span class="pc-title">สัดส่วนสินทรัพย์</span>
-                <span class="pc-match" title="ความใกล้เคียงกับสไตล์ ${best.p.name}">ใกล้เคียง <b>${best.p.name}</b> <span class="pc-score">${best.match.toFixed(0)}%</span></span>
+                <span class="pc-match">${mine ? 'แผน' : 'ใกล้เคียง'} <b>${head.p.name}</b> <span class="pc-score" title="${mine ? 'ตรงตามแผน' : 'ความใกล้เคียง'}">${head.match.toFixed(0)}%</span></span>
                 <span class="pc-chev" aria-hidden="true"></span>
             </div>
             <div class="pc-bar">${keys.filter(k => cur[k] > 0).map(k => `<i style="flex:${cur[k]};background:${PLAN_BUCKETS[k].color}" title="${PLAN_BUCKETS[k].name} ${fmt(cur[k], 1)}%"></i>`).join('')}</div>
             <div class="pc-legend">${keys.filter(k => cur[k] > 0).map(k => `<span><i style="background:${PLAN_BUCKETS[k].color}"></i>${PLAN_BUCKETS[k].name} <b>${fmt(cur[k], 0)}%</b></span>`).join('')}</div>
         </summary>
         <div class="pc-body">
-            <div class="pc-profiles" role="tablist" aria-label="เทียบกับสไตล์">
-                ${ranked.map(r => `<span class="${r === best ? 'on' : ''}">${r.p.name}<b>${r.match.toFixed(0)}%</b></span>`).join('')}
+            <div class="pc-profiles" role="tablist" aria-label="ดูแผน">
+                ${ranked.map(r => `<button type="button" role="tab" aria-selected="${r === view}" class="${r === view ? 'on' : ''}" onclick="viewPlan('${r.id}')">
+                    ${r.p.name}${r.id === myPlan ? ' <i class="pc-mine" title="แผนของคุณ"></i>' : ''}<b>${r.match.toFixed(0)}%</b></button>`).join('')}
             </div>
-            <div class="pc-head"><span>กลุ่ม</span><span>${byValue ? 'ตอนนี้' : 'เป้า'}</span><span>${best.p.name}</span><span>ส่วนต่าง</span></div>
+            <div class="pc-head"><span>กลุ่ม</span><span>${byValue ? 'ตอนนี้' : 'เป้า'}</span><span>${view.p.name}</span><span>ส่วนต่าง</span></div>
             ${keys.map(k => {
-                const c = cur[k] || 0, t = best.p.mix[k] || 0, gap = c - t;
+                const c = cur[k] || 0, t = view.p.mix[k] || 0, gap = c - t;
                 const tone = Math.abs(gap) < 5 ? 'ok' : gap > 0 ? 'over' : 'under';
-                const max = Math.max(c, t, 1);
                 return `<div class="pc-row">
-                    <div class="pc-name"><i style="background:${PLAN_BUCKETS[k].color}"></i><span>${PLAN_BUCKETS[k].name}<small>${(names[k] || []).join(', ') || '—'}</small></span></div>
+                    <div class="pc-name"><i style="background:${PLAN_BUCKETS[k].color}"></i><span>${PLAN_BUCKETS[k].name}<small>${(names[k] || []).join(', ') || 'ยังไม่มีหุ้นในกลุ่มนี้'}</small></span></div>
                     <span class="pc-num">${fmt(c, 1)}%</span>
                     <span class="pc-num muted">${t}%</span>
                     <span class="pc-gap ${tone}">${tone === 'ok' ? '—' : `${gap > 0 ? '+' : '−'}${fmt(Math.abs(gap), 1)}`}</span>
-                    <div class="pc-track"><i style="width:${c / 100 * 100}%;background:${PLAN_BUCKETS[k].color}"></i><b style="left:${t}%" title="${best.p.name} ${t}%"></b></div>
+                    <div class="pc-track"><i style="width:${Math.min(100, c)}%;background:${PLAN_BUCKETS[k].color}"></i><b style="left:${t}%" title="${view.p.name} ${t}%"></b></div>
                 </div>`;
             }).join('')}
-            <button type="button" class="pc-edit" onclick="openProfileSheet('${best.id}')">ปรับสัดส่วนของแต่ละสไตล์</button>
-            <p class="pc-note">${unknown ? `กำลังจัดกลุ่มอีก ${unknown} รายการ · ` : ''}คิดจาก${byValue ? 'มูลค่าปัจจุบัน' : 'สัดส่วนเป้าหมาย'} · ขีดตั้ง = สัดส่วนของสไตล์${best.p.name} · สัดส่วนสไตล์เป็นตัวอย่างทั่วไป ไม่ใช่คำแนะนำการลงทุน</p>
+            <div class="pc-actions">
+                ${view.id === myPlan
+                    ? `<span class="pc-current">แผนของพอร์ตนี้</span>`
+                    : `<button type="button" class="pc-btn primary" onclick="setMyPlan('${view.id}')">ใช้แผน${view.p.name}</button>`}
+                <button type="button" class="pc-btn" onclick="applyPlanTargets('${view.id}')">ปรับเป้าหุ้นตามแผนนี้</button>
+            </div>
+            <button type="button" class="pc-edit" onclick="openProfileSheet('${view.id}')">แก้สัดส่วนของแต่ละแผน</button>
+            <p class="pc-note">${unknown ? `กำลังจัดกลุ่มอีก ${unknown} รายการ · ` : ''}คิดจาก${byValue ? 'มูลค่าปัจจุบัน' : 'สัดส่วนเป้าหมาย'} · ขีดตั้ง = สัดส่วนของแผน${view.p.name} · สัดส่วนแผนเป็นตัวอย่างทั่วไป ไม่ใช่คำแนะนำการลงทุน</p>
         </div>`;
     el.open = wasOpen;
 }
-
 
 /* ── แผ่นแก้สัดส่วนสไตล์ ── */
 let profileSheetId = 'growth';

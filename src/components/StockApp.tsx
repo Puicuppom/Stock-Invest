@@ -337,7 +337,7 @@ export default function StockApp() {
 
       {selectedData && (
         <div className="detail-tabs" role="tablist" aria-label="หัวข้อ">
-          {([["overview", "📊 ภาพรวม"], ["chart", "📈 กราฟ"], ["fund", "🏢 พื้นฐาน"]] as const).map(([k, label]) => (
+          {([["overview", "ภาพรวม"], ["chart", "กราฟ"], ["fund", "พื้นฐาน"]] as const).map(([k, label]) => (
             <button key={k} type="button" role="tab" aria-selected={tab === k} className={tab === k ? "active" : ""} onClick={() => pickTab(k)}>{label}</button>
           ))}
         </div>

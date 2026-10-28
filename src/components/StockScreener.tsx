@@ -191,8 +191,8 @@ export default function StockScreener() {
     <p className="dash-metric-sub" role="status">{syncStatus}</p>
     <header><h1>คัดหุ้น</h1></header>
     <div className="screen-styles screen-view" role="group" aria-label="มุมมอง">
-      <button aria-pressed={view==="watchlist"} onClick={()=>setView("watchlist")}>⭐ Watchlist</button>
-      <button aria-pressed={view!=="watchlist"} onClick={()=>setView("plan")}>🧭 จัดพอร์ต</button>
+      <button aria-pressed={view==="watchlist"} onClick={()=>setView("watchlist")}>Watchlist</button>
+      <button aria-pressed={view!=="watchlist"} onClick={()=>setView("plan")}>จัดพอร์ต</button>
     </div>
     {view==="watchlist" ? <WatchlistReview items={items} loaded={loaded} />
     : view==="plan" ? <PortfolioPlanner items={items} loaded={loaded}
