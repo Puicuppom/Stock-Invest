@@ -1834,10 +1834,13 @@ function crValueHtml(asset) {
     const other = isThbDisplay()
         ? `≈ $${fmt(asset.value || 0, 2)}`
         : (usdThbRate > 0 ? `≈ ฿${fmt((asset.value || 0) * usdThbRate, 0)}` : '');
-    return `<b>${fmtUsd(asset.value || 0)}</b><small>${other}</small>${extLineHtml(asset)}`;
+    return `<b>${fmtUsd(asset.value || 0)}</b><small>${other}</small>`;
 }
 
 function crProfitHtml(asset, cost, profit, profitPct) {
+    return crProfitMain(asset, cost, profit, profitPct) + extLineHtml(asset);
+}
+function crProfitMain(asset, cost, profit, profitPct) {
     const up = profit >= 0;
     return cost > 0 && !isCashAsset(asset)
         ? `<b class="${up ? 'gain' : 'loss'}">${up ? '+' : '−'}${fmtPct(Math.abs(profitPct))}</b>

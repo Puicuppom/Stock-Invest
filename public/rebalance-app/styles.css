@@ -1783,3 +1783,8 @@ html:root { font-size: 16px; }
 .rb2 .asset-card::before { content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 0 3px 3px 0; background: var(--bk, transparent); z-index: 2; pointer-events: none; }
 .rb2 .asset-card .cr-row .asset-badge { box-shadow: 0 0 0 2px var(--ui-surface), 0 0 0 4px var(--bk, transparent); }
 .rb2 .cr-bucket { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+
+/* ก่อนเปิด/หลังปิด = บรรทัดที่ 3 ของก้อนขวา (ล้นไปทางซ้ายได้ ไม่ดันความกว้างคอลัมน์) */
+.rb2 .cr-profit .cr-ext { display: flex; justify-content: flex-end; gap: 4px; width: 0; min-width: 100%; max-width: none; overflow: visible; text-overflow: clip; margin-top: 2px; font-size: 12px; }
+.rb2 .cr-profit .cr-ext span { flex: none; }
+.rb2 .cr-row > .cr-value, .rb2 .cr-row > .cr-profit { align-self: start; padding-top: 2px; }
