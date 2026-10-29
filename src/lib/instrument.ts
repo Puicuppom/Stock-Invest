@@ -32,8 +32,13 @@ export function classifyInstrument(
     return "gold-etf";
   }
 
+  // หุ้นบริษัท (เช่น Goldman Sachs, Barrick Gold) ไม่ใช่ ETF แม้ชื่อมีคำว่า gold
+  if (instrumentType === "EQUITY") {
+    return "stock";
+  }
+
   const name = (longName ?? "").toLowerCase();
-  if (/gold|ทอง/.test(name)) {
+  if (/\bgold\b|ทองคำ/.test(name)) {
     return "gold-etf";
   }
 
