@@ -1788,3 +1788,9 @@ html:root { font-size: 16px; }
 .rb2 .cr-profit .cr-ext { display: flex; justify-content: flex-end; gap: 4px; width: 0; min-width: 100%; max-width: none; overflow: visible; text-overflow: clip; margin-top: 2px; font-size: 12px; }
 .rb2 .cr-profit .cr-ext span { flex: none; }
 .rb2 .cr-row > .cr-value, .rb2 .cr-row > .cr-profit { align-self: start; padding-top: 2px; }
+
+/* ปัดซ้าย: ซื้อขาย แยกจาก ตั้งค่า */
+.row-actions .ra-trade { background: color-mix(in srgb, var(--ui-success, #22c55e) 75%, #000); }
+.rb2 .row-actions { gap: 5px; padding: 0 6px; }
+.rb2 .row-actions button { width: 56px; }
+.rb2 .row-actions button small { font-size: 10.5px; white-space: nowrap; }

@@ -1526,9 +1526,14 @@ function recalculate() {
 
 let assetSheetIndex = null;
 
-function openAssetSheet(index) {
+/* แผ่นของสินทรัพย์: 'trade' = ซื้อ/ขาย (เงินสด: เติม/ถอน) · 'settings' = ตั้งค่า */
+let assetSheetMode = 'settings';
+function openAssetSheet(index, mode = 'settings') {
     assetSheetIndex = index;
-    document.getElementById('asset-sheet-title').textContent = myPortfolio[index].name;
+    assetSheetMode = mode;
+    const a = myPortfolio[index];
+    document.getElementById('asset-sheet-title').textContent = mode === 'trade'
+        ? `${a.name} · ${isCashAsset(a) ? 'เติม/ถอน' : 'ซื้อ/ขาย'}` : a.name;
     refreshAssetSheet();
     document.getElementById('asset-overlay').classList.add('open');
 }
@@ -1607,21 +1612,13 @@ function updateAssetGroup(index, newGroup) {
 }
 
 function renderAssetSheetBody({ index, asset, cost, profit, profitPct, tradeSignal, action }) {
+    const doneBtn = `<button class="btn-settings-done" type="button" onclick="closeAssetSheet()">เสร็จสิ้น</button>`;
+    if (assetSheetMode === 'trade') {
+        return (isCashAsset(asset) ? renderCashBox(index, asset) : renderTradeBox(index, asset)) + doneBtn;
+    }
     if (isCashAsset(asset)) {
         const adviceText = action ? action.text : '—';
         return `
-        <div class="trade-box">
-            <div class="trade-head">💵 คงเหลือ <b>${fmtTrade(asset.shares || 0)}</b></div>
-            <div class="asset-sheet-field">
-                <label>จำนวนเงิน ($)</label>
-                <input type="text" inputmode="decimal" id="cash-amt" placeholder="0.00" autocomplete="off">
-            </div>
-            <div class="trade-btns">
-                <button type="button" class="tb-buy" onclick="cashMove(${index}, 1)">＋ เติม</button>
-                <button type="button" class="tb-sell" onclick="cashMove(${index}, -1)">− ถอน</button>
-            </div>
-        </div>
-        <div class="sheet-sub">✎ แก้ไขเอง</div>
         ${renderGroupSelectHtml(index, asset)}
         <div class="asset-sheet-grid">
             <div class="asset-sheet-field">
@@ -1639,7 +1636,6 @@ function renderAssetSheetBody({ index, asset, cost, profit, profitPct, tradeSign
                 <div class="setting-hint asset-sheet-advice" id="asset-sheet-advice">${adviceText}</div>
             </div>
         </div>
-        <button class="btn-settings-done" type="button" style="margin-top:14px;background:var(--red)" onclick="deleteAssetFromSheet(${index})">ลบออกจากพอร์ต</button>
         <button class="btn-settings-done" type="button" onclick="closeAssetSheet()">เสร็จสิ้น</button>`;
     }
     const role = getAssetRole(asset.name);
@@ -1647,9 +1643,7 @@ function renderAssetSheetBody({ index, asset, cost, profit, profitPct, tradeSign
     const adviceText = action ? action.text : '—';
     return `
         ${role ? `<div class="setting-hint" style="margin-bottom:12px">${role}</div>` : ''}
-        ${renderTradeBox(index, asset)}
         ${renderGroupSelectHtml(index, asset)}
-        <div class="sheet-sub">✎ แก้ไขเอง</div>
         <div class="asset-sheet-grid">
             <div class="asset-sheet-field">
                 <label>จำนวนหุ้น</label>
@@ -1673,7 +1667,6 @@ function renderAssetSheetBody({ index, asset, cost, profit, profitPct, tradeSign
                 <div class="setting-hint asset-sheet-advice" id="asset-sheet-advice" style="margin-top:8px">${adviceText}</div>
             </div>` : ''}
         </div>
-        <button class="btn-settings-done" type="button" style="margin-top:14px;background:var(--red)" onclick="deleteAssetFromSheet(${index})">ลบออกจากพอร์ต</button>
         <button class="btn-settings-done" type="button" onclick="closeAssetSheet()">เสร็จสิ้น</button>`;
 }
 
@@ -1862,6 +1855,7 @@ function appendAssetCard(list, payload) {
     row.innerHTML = `
         <div class="cr-swipe-wrap">
         <span class="row-actions">
+            <button type="button" class="ra-trade" onclick="openAssetSheet(${index}, 'trade')" aria-label="${isCashAsset(asset) ? 'เติม/ถอน' : 'ซื้อ/ขาย'} ${asset.name}">${isCashAsset(asset) ? '±' : '⇅'}<small>${isCashAsset(asset) ? 'เติม/ถอน' : 'ซื้อขาย'}</small></button>
             <button type="button" class="ra-gear" onclick="openAssetSheet(${index})" aria-label="ตั้งค่า ${asset.name}">⚙<small>ตั้งค่า</small></button>
             ${portfolioIndex.list.length > 1 ? `<button type="button" class="ra-move" onclick="openMoveSheet(${index})" aria-label="ย้าย ${asset.name} ไปพอร์ตอื่น">⇄<small>ย้าย</small></button>` : ''}
             <button type="button" class="ra-del" onclick="deleteAsset(${index})" aria-label="ลบ ${asset.name}">✕<small>ลบ</small></button>
@@ -2948,6 +2942,21 @@ function cashAssetUsd(create) {
 function parseTradeNum(id) {
     const v = parseFloat(String(document.getElementById(id)?.value || '').replace(/,/g, ''));
     return Number.isFinite(v) && v > 0 ? v : null;
+}
+
+function renderCashBox(index, asset) {
+    return `
+        <div class="trade-box">
+            <div class="trade-head">💵 คงเหลือ <b>${fmtTrade(asset.shares || 0)}</b></div>
+            <div class="asset-sheet-field">
+                <label>จำนวนเงิน ($)</label>
+                <input type="text" inputmode="decimal" id="cash-amt" placeholder="0.00" autocomplete="off">
+            </div>
+            <div class="trade-btns">
+                <button type="button" class="tb-buy" onclick="cashMove(${index}, 1)">＋ เติม</button>
+                <button type="button" class="tb-sell" onclick="cashMove(${index}, -1)">− ถอน</button>
+            </div>
+        </div>`;
 }
 
 function renderTradeBox(index, asset) {
