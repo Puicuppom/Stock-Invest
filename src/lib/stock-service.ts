@@ -1,5 +1,5 @@
 import { fetchAnnualEps, historicalPE } from "./historical-valuation";
-import { PRIMARY_LISTINGS } from "./valuation-currency";
+import { fetchFx, PRIMARY_LISTINGS } from "./valuation-currency";
 import { fetchDailyCandles } from "./chart-service";
 import { calculateFairValue, fetchFundamentals } from "./fair-value";
 import { classifyInstrument } from "./instrument";
@@ -78,7 +78,7 @@ export async function getStockData(
   const primary = PRIMARY_LISTINGS[resolvedSymbol];
   const eventMarket = detectMarket(resolvedSymbol);
   const deep = options.deep && !options.screening;
-  const [daily, fundamentals, earnings, primaryDaily, listedEvents, listedCompany, extended, quarters, dividendRows] = await Promise.all([
+  const [daily, fundamentals, earnings, primaryDaily, listedEvents, listedCompany, extended, quartersRaw, dividendRows] = await Promise.all([
     fetchDailyCandles(resolvedSymbol),
     fetchFundamentals(resolvedSymbol),
     fetchAnnualEps(primary?.symbol ?? resolvedSymbol),
@@ -90,6 +90,7 @@ export async function getStockData(
     deep ? fetchDividendHistory(resolvedSymbol) : Promise.resolve([]),
   ]);
   let company = listedCompany;
+  let quarters = quartersRaw;
   if (!options.screening && primary && !company?.revenue.length) {
     const primaryCompany = await fetchCompanyInfo(primary.symbol);
     if (primaryCompany) company = { ...primaryCompany, summary: company?.summary ?? primaryCompany.summary, website: company?.website ?? primaryCompany.website };
@@ -100,6 +101,22 @@ export async function getStockData(
     const primaryEvents = await fetchCalendarEvents(primary.symbol, eventMarket);
     if (primaryEvents?.earningsDate) events = { earningsDate: primaryEvents.earningsDate, earningsEstimate: primaryEvents.earningsEstimate, exDividendDate: events?.exDividendDate ?? null };
   }
+
+  // งบ/ภาพรวม แสดงเป็นสกุลเงินของหุ้นที่ซื้อขาย (US = USD) — ยอดรวมแปลงด้วยอัตราแลกเปลี่ยนล่าสุด
+  const quoteCurrency = fundamentals?.quoteCurrency ?? (eventMarket === "TH" ? "THB" : "USD");
+  if (company?.currency && company.currency !== quoteCurrency) {
+    const fx = await fetchFx(company.currency, quoteCurrency).catch(() => null);
+    if (fx) {
+      const m = (rows: { year: string; value: number }[]) => rows.map(r => ({ ...r, value: r.value * fx.rate }));
+      company = { ...company, currency: quoteCurrency, revenue: m(company.revenue), netIncome: m(company.netIncome), fcf: m(company.fcf),
+        cash: company.cash != null ? company.cash * fx.rate : null, debt: company.debt != null ? company.debt * fx.rate : null };
+    }
+  }
+  // EPS รายไตรมาส: แปลงเป็นต่อหุ้นที่ซื้อขาย · ไม่รู้ตัวคูณ (ต่างสกุลเงิน) = ไม่แสดง ดีกว่าแสดงผิดหน่วย
+  const qFactor = fundamentals?.perShareFactor ?? null;
+  const qMismatch = fundamentals?.financialCurrency != null && fundamentals.financialCurrency !== quoteCurrency;
+  if (qFactor != null) quarters = quarters.map(q => ({ ...q, actual: q.actual != null ? q.actual * qFactor : null, estimate: q.estimate != null ? q.estimate * qFactor : null }));
+  else if (qMismatch || primary) quarters = [];
 
   if (fundamentals) fundamentals.historicalPE = historicalPE(
     primary ? primaryDaily?.candles ?? [] : daily.candles, earnings,

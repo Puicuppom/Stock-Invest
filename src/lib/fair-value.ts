@@ -143,6 +143,7 @@ async function fetchRawFundamentals(
     };
 
     const quotePrice = num(row.price?.regularMarketPrice);
+    base.quotePrice = quotePrice;
     // BVPS × reported P/B should reconstruct the quote, not a different share class.
     base.bookValueVerified = quotePrice != null && quotePrice > 0 && base.bookValue != null && base.bookValue > 0 && base.priceToBook != null && base.priceToBook > 0 && Math.abs(base.bookValue * base.priceToBook / quotePrice - 1) <= 0.1;
     // Berkshire is a diversified insurer/conglomerate, not a bank with stable ROE.
@@ -167,19 +168,62 @@ async function fetchRawFundamentals(
 
 export async function fetchFundamentals(resolvedSymbol: string): Promise<FairValueData | null> {
   const listed = await fetchRawFundamentals(resolvedSymbol);
-  if (!listed || listed.financialCurrency === listed.quoteCurrency) return listed;
+  if (!listed) return null;
+  if (listed.financialCurrency == null || listed.quoteCurrency == null || listed.financialCurrency === listed.quoteCurrency) return alignToQuote(listed, listed.trailingEps, null);
   const mapping = PRIMARY_LISTINGS[resolvedSymbol.toUpperCase()];
   if (!mapping || listed.financialCurrency !== mapping.currency || listed.quoteCurrency !== mapping.quote) {
-    const fx = listed.financialCurrency && listed.quoteCurrency ? await fetchFx(listed.financialCurrency, listed.quoteCurrency) : null;
-    return { ...listed,
-      freeCashflow: fx && listed.freeCashflow != null ? listed.freeCashflow * fx.rate : listed.freeCashflow,
+    const fx = await fetchFx(listed.financialCurrency, listed.quoteCurrency);
+    const conv = (v: number | null | undefined) => (fx && v != null && Number.isFinite(v) ? v * fx.rate : null);
+    return alignToQuote({ ...listed,
+      // ยอดรวมของบริษัท: แปลงสกุลเงินตรง ๆ ได้
+      freeCashflow: conv(listed.freeCashflow), operatingCashflow: conv(listed.operatingCashflow), ebitda: conv(listed.ebitda),
+      totalDebt: conv(listed.totalDebt), totalCash: conv(listed.totalCash),
       cashflowCurrency: fx ? listed.quoteCurrency : listed.financialCurrency,
-      normalizationNotes: ["ยังไม่ยืนยันหน่วยหุ้น/อัตราส่วน ADR สำหรับการแปลงสกุลเงินของหุ้นนี้", ...(fx ? ["แปลงเฉพาะ FCF รวม " + listed.financialCurrency + " → " + listed.quoteCurrency + " อัตรา " + fx.rate.toFixed(6) + " วันที่ " + new Date(fx.timestamp*1000).toISOString().slice(0,10) + " จาก Yahoo; ยังไม่ประเมินมูลค่าต่อหุ้น"] : ["ไม่มีอัตราแลกเปลี่ยนล่าสุดที่ยืนยันได้"])],
-    };
+      normalizationNotes: ["ยังไม่ยืนยันหน่วยหุ้น/อัตราส่วน ADR สำหรับการแปลงสกุลเงินของหุ้นนี้", ...(fx ? ["แปลงยอดรวม " + listed.financialCurrency + " → " + listed.quoteCurrency + " อัตรา " + fx.rate.toFixed(6) + " วันที่ " + new Date(fx.timestamp*1000).toISOString().slice(0,10) + " จาก Yahoo; ค่าต่อหุ้นคำนวณจากราคาและ P/E ของหุ้นที่ซื้อขาย"] : ["ไม่มีอัตราแลกเปลี่ยนล่าสุดที่ยืนยันได้"])],
+    }, listed.trailingEps, null);
   }
   const [primary, fx] = await Promise.all([fetchRawFundamentals(mapping.symbol), fetchFx(mapping.currency, mapping.quote)]);
   const normalized = primary && fx ? convertPrimaryFundamentals(primary, listed, fx, Date.now(), mapping) : null;
-  return normalized ?? { ...listed, normalizationNotes: ["แปลงสกุลเงินไม่สำเร็จ: ข้อมูลงบต้นทาง อัตราแลกเปลี่ยนล่าสุด หรือจำนวนหุ้นยังยืนยันไม่ได้"] };
+  if (normalized) return alignToQuote({ ...normalized, quotePrice: listed.quotePrice }, primary!.trailingEps, fx!.rate * (mapping.ordinaryPerListed ?? 1));
+  return alignToQuote({ ...listed, normalizationNotes: ["แปลงสกุลเงินไม่สำเร็จ: ข้อมูลงบต้นทาง อัตราแลกเปลี่ยนล่าสุด หรือจำนวนหุ้นยังยืนยันไม่ได้"] }, primary?.trailingEps ?? listed.trailingEps, null);
+}
+
+/**
+ * ค่าต่อหุ้นที่แสดง (EPS ปันผล มูลค่าทางบัญชี) ต้องเป็นสกุลเงินและหน่วยของหุ้นที่ซื้อขายจริง
+ * เช่น ADR ที่ Yahoo ให้ EPS เป็นวอน → คำนวณจาก ราคา ÷ P/E ของหุ้นที่ซื้อขาย (ซึ่งเป็น USD อยู่แล้ว)
+ * sourceEps = EPS ต้นทาง (ใช้หาตัวคูณสำหรับ EPS รายไตรมาส) · knownFactor = ตัวคูณที่รู้แน่ (FX × อัตราส่วน ADR)
+ */
+export function alignToQuote(d: FairValueData, sourceEps: number | null, knownFactor: number | null): FairValueData {
+  const p = d.quotePrice;
+  const mismatch = d.financialCurrency != null && d.quoteCurrency != null && d.financialCurrency !== d.quoteCurrency;
+  const out: FairValueData = { ...d };
+  const off = (v: number | null | undefined, implied: number, tol: number) => v == null || !Number.isFinite(v) || Math.abs(v / implied - 1) > tol;
+  // ต่างสกุลเงิน = เชื่อ P/E ของหุ้นที่ซื้อขาย · สกุลเดียวกัน = แก้เฉพาะที่เพี้ยนเกิน 5 เท่า (หน่วยผิด)
+  const tol = mismatch ? 0.25 : 4;
+  if (p != null && p > 0) {
+    if (d.trailingPE != null && d.trailingPE > 0 && off(d.trailingEps, p / d.trailingPE, tol)) out.trailingEps = p / d.trailingPE;
+    if (d.forwardPE != null && d.forwardPE > 0 && off(d.forwardEps, p / d.forwardPE, tol)) out.forwardEps = p / d.forwardPE;
+    if (d.dividendYield != null && d.dividendYield > 0 && off(d.dividendRate, d.dividendYield * p, tol)) out.dividendRate = d.dividendYield * p;
+    if (d.priceToBook != null && d.priceToBook > 0 && off(d.bookValue, p / d.priceToBook, tol)) out.bookValue = p / d.priceToBook;
+  }
+  // ตัวคูณต่อหุ้น: ใช้ที่รู้แน่ ไม่งั้นเทียบ EPS ที่ได้กับ EPS ต้นทาง
+  let factor = knownFactor;
+  // (เฉพาะเมื่อ EPS ถูกคำนวณใหม่จากราคา ÷ P/E แล้วเท่านั้น)
+  const corrected = out.trailingEps !== d.trailingEps;
+  if (factor == null && corrected && out.trailingEps != null && sourceEps != null && sourceEps !== 0 && Math.sign(out.trailingEps) === Math.sign(sourceEps)) factor = out.trailingEps / sourceEps;
+  if (factor == null && mismatch && out.forwardEps !== d.forwardEps && out.forwardEps != null && d.forwardEps != null && d.forwardEps !== 0 && Math.sign(out.forwardEps) === Math.sign(d.forwardEps)) factor = out.forwardEps / d.forwardEps;
+  if (factor != null && (!Number.isFinite(factor) || factor <= 0)) factor = null;
+  if (mismatch && !knownFactor) {
+    // ยังเป็นสกุลเงินต้นทาง (ขาดทุน = ไม่มี P/E ให้เทียบ): แปลงด้วยตัวคูณ ถ้าไม่มีให้ซ่อนดีกว่าแสดงผิด
+    const scale = (v: number | null | undefined, fixed: boolean) => fixed ? v ?? null : v != null && factor != null ? v * factor : null;
+    out.trailingEps = scale(out.trailingEps, out.trailingEps !== d.trailingEps);
+    out.forwardEps = scale(out.forwardEps, out.forwardEps !== d.forwardEps);
+    out.revenuePerShare = scale(d.revenuePerShare, false);
+    out.bookValue = scale(out.bookValue, out.bookValue !== d.bookValue);
+    out.bookValueVerified = false;
+  }
+  out.perShareFactor = mismatch || (factor != null && Math.abs(factor - 1) > 0.01) ? factor : null;
+  return out;
 }
 
 function qualityMetrics(data: FairValueData): import("./types").QualityMetrics {

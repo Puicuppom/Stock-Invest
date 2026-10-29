@@ -41,6 +41,10 @@ export interface FairValueData {
   cashflowCurrency?: string | null;
   historicalPE?: import("./historical-valuation").HistoricalPE | null;
   normalizationNotes?: string[];
+  /** ราคาของหลักทรัพย์ที่ซื้อขายจริง (สกุลเงิน quoteCurrency) */
+  quotePrice?: number | null;
+  /** ตัวคูณแปลงค่าต่อหุ้นจากงบต้นทาง → ต่อหุ้นที่ซื้อขาย (สกุลเงิน quoteCurrency) */
+  perShareFactor?: number | null;
   sector?: string | null;
   financialCurrency?: string | null;
   quoteCurrency?: string | null;
