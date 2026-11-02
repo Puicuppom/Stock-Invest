@@ -28,7 +28,7 @@ function normalizePortfolioIndex(raw) {
         const id = String(p?.id || '').replace(/[^a-z0-9]/gi, '');
         if (!id || seen.has(id)) continue;
         seen.add(id);
-        clean.push({ id, name: String(p.name || '').trim() || 'พอร์ต' });
+        clean.push({ id, name: String(p.name || '').trim() || 'พอร์ต', ...(p.cur === 'THB' ? { cur: 'THB' } : {}) });
     }
     if (!seen.has(PF_MAIN_ID)) clean.unshift({ id: PF_MAIN_ID, name: 'พอร์ตหลัก' });
     const deleted = (Array.isArray(raw?.deleted) ? raw.deleted : [])
@@ -59,6 +59,13 @@ const activePortfolioId = (() => {
     return portfolioIndex.list.some(p => p.id === saved) ? saved : PF_MAIN_ID;
 })();
 const ACTIVE_SYNC_KEY = pfSyncKey(activePortfolioId);
+/* พอร์ตกองทุนรวมไทย: ทุกค่าเก็บเป็นบาท ราคา = NAV ต่อหน่วย */
+const PF_CUR = portfolioIndex.list.find(p => p.id === activePortfolioId)?.cur === 'THB' ? 'THB' : 'USD';
+const IS_FUND_PF = PF_CUR === 'THB';
+const CASH_NAME = IS_FUND_PF ? 'THB' : 'USD';
+const CUR_SIGN = IS_FUND_PF ? '฿' : '$';
+const UNIT = IS_FUND_PF ? 'หน่วย' : 'หุ้น';
+if (IS_FUND_PF) document.documentElement.classList.add('fund-pf');
 
 /* localStorage ที่แยกตามพอร์ตที่เปิดอยู่ */
 const store = {
@@ -228,6 +235,7 @@ function getAssetRole(name) {
 }
 
 function mergeDefaultPortfolio(list) {
+    if (IS_FUND_PF) return list;
     const removed = new Set(deletedAssets.map(n => n.toUpperCase()));
     const names = new Set(list.map(a => a.name));
     defaultAssets.forEach(d => {
@@ -365,6 +373,16 @@ async function fetchPrices(fullRender = false) {
 
     priceFetching = true;
 
+    if (IS_FUND_PF) {
+        await fetchFundNavs(symbols);
+        priceFetching = false;
+        await fxPromise;
+        priceRefetch = false;
+        syncAssetValues();
+        if (fullRender || !document.querySelector('.asset-card')) renderAndCalculate(); else recalculate();
+        return { total: symbols.length, failed: symbols.filter(sym => priceCache[sym]?.error).length };
+    }
+
     await Promise.all(symbols.map(async (symbol) => {
         try {
             const res = await fetch(`/api/stock?symbol=${encodeURIComponent(symbol)}`);
@@ -421,7 +439,24 @@ async function fetchPrices(fullRender = false) {
 /* ── ราคาสด: ดึงทุกตัวในคำขอเดียว (ไม่แคช) ทุก 30 วิ ขณะเปิดหน้าอยู่ ── */
 let liveFetching = false;
 let lastLiveAt = 0;
+/* NAV กองทุนรวม (บาท/หน่วย) — อัปเดตวันละครั้งหลังกองทุนประกาศ */
+async function fetchFundNavs(codes) {
+    try {
+        const res = await fetch(`/api/fund?codes=${codes.map(encodeURIComponent).join(',')}`, { cache: 'no-store' });
+        const { navs } = res.ok ? await res.json() : { navs: {} };
+        for (const c of codes) {
+            const n = navs?.[c];
+            priceCache[c] = n && n.nav > 0
+                ? { price: n.nav, at: Date.now(), navDate: n.date, changePercent: n.changePercent, fundName: n.name, fairValue: null, srLevels: null, plan: null }
+                : { ...(priceCache[c] || {}), price: priceCache[c]?.price || 0, error: true };
+        }
+    } catch {
+        for (const c of codes) priceCache[c] = { ...(priceCache[c] || {}), price: priceCache[c]?.price || 0, error: true };
+    }
+}
+
 async function fetchLiveQuotes(render = true) {
+    if (IS_FUND_PF) return 0;
     const symbols = [...new Set(myPortfolio.filter(a => !isCashAsset(a)).map(a => a.name).filter(Boolean))];
     if (!symbols.length || liveFetching) return 0;
     liveFetching = true;
@@ -462,7 +497,7 @@ function refreshAssetSheetPrices() {
     const input = document.getElementById('trade-price');
     if (!input || input.dataset.touched || assetSheetIndex == null) return;
     const p = getPrice(myPortfolio[assetSheetIndex]?.name);
-    if (p > 0) input.value = formatInputVal(p);
+    if (p > 0) input.value = formatInputVal(p, IS_FUND_PF ? 4 : 2);
 }
 
 setInterval(() => {
@@ -818,7 +853,10 @@ function renderFxRate() {
     el.title = `อัตราแลกเปลี่ยน USD/THB · อัปเดต ${new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}`;
 }
 let displayCurrency = (() => {
-    try { return localStorage.getItem('rbCurrency') === 'THB' ? 'THB' : 'USD'; } catch { return 'USD'; }
+    try {
+        if (IS_FUND_PF) return localStorage.getItem('rbCurrencyFund') === 'USD' ? 'USD' : 'THB';
+        return localStorage.getItem('rbCurrency') === 'THB' ? 'THB' : 'USD';
+    } catch { return IS_FUND_PF ? 'THB' : 'USD'; }
 })();
 
 function updateCurrencyButton() {
@@ -836,9 +874,9 @@ function setCurrency(cur) {
 
 function toggleCurrency() {
     displayCurrency = displayCurrency === 'THB' ? 'USD' : 'THB';
-    try { localStorage.setItem('rbCurrency', displayCurrency); } catch { /* ignore */ }
+    try { localStorage.setItem(IS_FUND_PF ? 'rbCurrencyFund' : 'rbCurrency', displayCurrency); } catch { /* ignore */ }
     updateCurrencyButton();
-    if (displayCurrency === 'THB' && !(usdThbRate > 0)) {
+    if (displayCurrency !== PF_CUR && !(usdThbRate > 0)) {
         showToast('กำลังโหลดค่าเงินบาท…');
         fetchUsdThbRate();
     }
@@ -916,7 +954,7 @@ function updateTabUI() {
     updateGroupTargetSum();
     const addInput = document.getElementById('new-asset-name');
     if (addInput) {
-        addInput.placeholder = 'ชื่อย่อ เช่น MSFT · เงินสดพิมพ์ USD';
+        addInput.placeholder = IS_FUND_PF ? 'รหัสกองทุน เช่น K-USA-A(A) · เงินสดพิมพ์ THB' : 'ชื่อย่อ เช่น MSFT · เงินสดพิมพ์ USD';
     }
 }
 
@@ -1315,15 +1353,17 @@ function fmtPct(n) {
 
 /* สกุลเงินที่แสดง (ปุ่ม $ / ฿ บนหัว) — เปลี่ยนแค่การแสดงผล ข้อมูลที่กรอกยังเป็นดอลลาร์ */
 function isThbDisplay() {
+    if (IS_FUND_PF) return displayCurrency !== 'USD';
     return displayCurrency === 'THB' && usdThbRate > 0;
 }
 
 /* ราคาต่อหุ้น / จำนวนเงินที่ต้องซื้อขาย: เป็นดอลลาร์เสมอ เพราะซื้อขายเป็นดอลลาร์ (ปุ่ม ฿ เปลี่ยนแค่มูลค่ารวม/กำไร) */
 function fmtTrade(n) {
-    return '$' + fmt(n, 2);
+    return CUR_SIGN + fmt(n, 2);
 }
 
 function fmtUsd(n) {
+    if (IS_FUND_PF) return (displayCurrency === 'USD' && usdThbRate > 0) ? '$' + fmt(n / usdThbRate, 2) : '฿' + fmt(n, 2);
     if (isThbDisplay()) return '฿' + fmt(n * usdThbRate, 2);
     return '$' + fmt(n, 2);
 }
@@ -1358,7 +1398,7 @@ function usdToShares(usd, asset) {
 function formatShareAdvice(usd, asset) {
     const shares = usdToShares(usd, asset);
     if (!shares) return '';
-    return ` · ${fmt(shares, 2)} หุ้น`;
+    return ` · ${fmt(shares, 2)} ${UNIT}`;
 }
 
 function getAction(diff, asset) {
@@ -1646,12 +1686,12 @@ function renderAssetSheetBody({ index, asset, cost, profit, profitPct, tradeSign
         ${renderGroupSelectHtml(index, asset)}
         <div class="asset-sheet-grid">
             <div class="asset-sheet-field">
-                <label>จำนวนหุ้น</label>
+                <label>จำนวน${UNIT}</label>
                 <input type="text" inputmode="decimal" value="${asset.shares ? formatInputVal(asset.shares) : ''}" placeholder="0.00" autocomplete="off"
                     oninput="updateAsset(${index}, 'shares', this.value)">
             </div>
             <div class="asset-sheet-field">
-                <label>ต้นทุนเฉลี่ย/หุ้น ($)</label>
+                <label>ต้นทุนเฉลี่ย/${UNIT} (${CUR_SIGN})</label>
                 <input type="text" inputmode="decimal" value="${asset.avgCost ? formatInputVal(asset.avgCost) : ''}" placeholder="0.00" autocomplete="off"
                     oninput="updateAsset(${index}, 'avgCost', this.value)">
             </div>
@@ -1676,7 +1716,7 @@ function fmtShares(n) {
 
 function formatSharesLabel(asset) {
     if (isCashAsset(asset)) return '';
-    return asset.shares > 0 ? `${fmtShares(asset.shares)} หุ้น` : 'ยังไม่มีหุ้น';
+    return asset.shares > 0 ? `${fmtShares(asset.shares)} ${UNIT}` : `ยังไม่มี${UNIT}`;
 }
 
 /* เนื้อหาช่อง ราคา / มูลค่า บนการ์ด — ดอลลาร์ตัวหลัก, บาทบรรทัดรอง */
@@ -1777,9 +1817,12 @@ function detailStatsHtml(asset) {
     const shares = asset.shares || 0;
     const totalCost = shares > 0 && asset.avgCost > 0 ? shares * asset.avgCost : 0;
     const cell = (label, value, sub = '') => `<div class="dt-cell"><span class="dt-label">${label}</span><b class="dt-value">${value}</b>${sub}</div>`;
-    return cell('ราคา', price > 0 ? fmtTrade(price) : (priceCache[asset.name]?.error ? 'ไม่พบ' : '…'))
-        + cell('ทุน/หุ้น', asset.avgCost > 0 ? fmtTrade(asset.avgCost) : '—')
-        + cell('จำนวนหุ้น', shares > 0 ? fmtShares(shares) : '—')
+    const pc = priceCache[asset.name] || {};
+    const navSub = IS_FUND_PF && pc.navDate ? `<small class="dt-sub">${new Date(pc.navDate).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })}${Number.isFinite(pc.changePercent) ? ` · <span class="${pc.changePercent >= 0 ? 'gain' : 'loss'}">${pc.changePercent >= 0 ? '+' : ''}${fmt(pc.changePercent, 2)}%</span>` : ''}</small>` : '';
+    const px = n => IS_FUND_PF ? '฿' + fmt(n, 4) : fmtTrade(n);
+    return cell(IS_FUND_PF ? 'NAV' : 'ราคา', price > 0 ? px(price) : (pc.error ? 'ไม่พบ' : '…'), navSub)
+        + cell(`ทุน/${UNIT}`, asset.avgCost > 0 ? px(asset.avgCost) : '—')
+        + cell(`จำนวน${UNIT}`, shares > 0 ? fmtShares(shares) : '—')
         + cell('ต้นทุนรวม', totalCost > 0 ? fmtUsd(totalCost) : '—');
 }
 
@@ -1824,9 +1867,11 @@ function extLineHtml(asset) {
 }
 
 function crValueHtml(asset) {
-    const other = isThbDisplay()
+    const other = IS_FUND_PF
+        ? (displayCurrency === 'USD' ? `≈ ฿${fmt(asset.value || 0, 0)}` : (usdThbRate > 0 ? `≈ $${fmt((asset.value || 0) / usdThbRate, 2)}` : ''))
+        : isThbDisplay()
         ? `≈ $${fmt(asset.value || 0, 2)}`
-        : (usdThbRate > 0 ? `≈ ฿${fmt((asset.value || 0) * usdThbRate, 0)}` : '');
+        : (usdThbRate > 0 ? (IS_FUND_PF ? `≈ $${fmt((asset.value || 0) / usdThbRate, 2)}` : `≈ ฿${fmt((asset.value || 0) * usdThbRate, 0)}`) : '');
     return `<b>${fmtUsd(asset.value || 0)}</b><small>${other}</small>`;
 }
 
@@ -1889,7 +1934,7 @@ function appendAssetCard(list, payload) {
 
 /* โลโก้หุ้นจาก Financial Modeling Prep — โหลดไม่ได้ก็ลบรูปทิ้ง เหลือกล่องชื่อย่อเดิม */
 function logoImg(asset) {
-    if (isCashAsset(asset)) return '';
+    if (isCashAsset(asset) || IS_FUND_PF) return '';
     const sym = String(asset.name || '').toUpperCase().replace(/[^A-Z0-9.\-]/g, '');
     if (!sym) return '';
     return `<img class="asset-logo" src="https://financialmodelingprep.com/image-stock/${encodeURIComponent(sym)}.png" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">`;
@@ -2026,11 +2071,11 @@ function addAsset() {
     // ไม่มีแท็บกลุ่มแล้ว: USD/CASH → กลุ่มเงินสด, อื่น ๆ → เดาจากชื่อ
     const group = /^(USD|THB|CASH)$/.test(name) ? getCashGroupId() : inferGroup(name, inferKind(name, null));
     if (isCashGroup(group)) {
-        if (!name) name = 'USD';
+        if (!name) name = CASH_NAME;
     } else if (!name) {
         return;
     }
-    const kind = isCashGroup(group) ? 'cash' : (getGroupMeta(group)?.kind || inferKind(name, group));
+    const kind = isCashGroup(group) ? 'cash' : IS_FUND_PF ? 'fund' : (getGroupMeta(group)?.kind || inferKind(name, group));
     unmarkAssetDeleted(name);
     myPortfolio.push({
         name, kind, group,
@@ -2046,6 +2091,33 @@ function addAsset() {
 
 document.getElementById('new-asset-name').addEventListener('keydown', e => {
     if (e.key === 'Enter') addAsset();
+});
+
+/* พอร์ตกองทุน: พิมพ์แล้วแนะนำรหัสกองทุน (ค้นจากรหัส/ชื่อ) */
+let fundSearchTimer = null;
+document.getElementById('new-asset-name').addEventListener('input', e => {
+    if (!IS_FUND_PF) return;
+    clearTimeout(fundSearchTimer);
+    const q = e.target.value.trim();
+    const box = document.getElementById('fund-suggest');
+    if (!box) return;
+    if (q.length < 2) { box.innerHTML = ''; return; }
+    fundSearchTimer = setTimeout(async () => {
+        try {
+            const res = await fetch(`/api/fund?q=${encodeURIComponent(q)}`);
+            const { funds } = res.ok ? await res.json() : { funds: [] };
+            if (document.getElementById('new-asset-name').value.trim() !== q) return;
+            box.innerHTML = (funds || []).map(f => `<button type="button" class="fund-opt" data-code="${escapePfHtml(f.code)}"><b>${escapePfHtml(f.code)}</b><small>${escapePfHtml(f.name)}</small></button>`).join('')
+                || '<p class="fund-none">ไม่พบกองทุน</p>';
+        } catch { box.innerHTML = ''; }
+    }, 300);
+});
+document.getElementById('fund-suggest')?.addEventListener('click', e => {
+    const b = e.target.closest('.fund-opt');
+    if (!b) return;
+    document.getElementById('new-asset-name').value = b.dataset.code;
+    document.getElementById('fund-suggest').innerHTML = '';
+    addAsset();
 });
 
 /* Drag to reorder (≡ handle — long-press or drag vertically) */
@@ -2565,7 +2637,7 @@ function renderPortfolioList() {
                 <span class="pf-check">${active ? '✓' : ''}</span>
                 <span class="pf-info">
                     <span class="pf-name">${escapePfHtml(p.name)}</span>
-                    <span class="pf-meta">${meta}${p.id === PF_MAIN_ID ? ' · พอร์ตหลัก' : ''}</span>
+                    <span class="pf-meta">${meta}${p.id === PF_MAIN_ID ? ' · พอร์ตหลัก' : ''}${p.cur === 'THB' ? ' · กองทุนรวม (บาท)' : ''}</span>
                 </span>
             </button>
             <button type="button" class="pf-icon-btn" title="เปลี่ยนชื่อ" aria-label="เปลี่ยนชื่อ ${escapePfHtml(p.name)}" onclick="renamePortfolio('${p.id}')">✎</button>
@@ -2618,8 +2690,10 @@ async function createPortfolio() {
         input.focus();
         return;
     }
-    const copyGroups = document.getElementById('new-portfolio-copy-groups').checked;
+    const isFund = document.getElementById('new-portfolio-fund')?.checked === true;
+    const copyGroups = !isFund && document.getElementById('new-portfolio-copy-groups').checked;
     const id = newPortfolioId();
+    const cashName = isFund ? 'THB' : 'USD';
 
     // เริ่มต้นพอร์ตใหม่: เหลือแค่เงินสด USD ไม่ดึงหุ้นตั้งต้นของพอร์ตหลักมา
     const groups = copyGroups
@@ -2629,16 +2703,16 @@ async function createPortfolio() {
     const set = (k, v) => localStorage.setItem(pfStorageKey(id, k), v);
     set('portfolioGroups', JSON.stringify(groups));
     set('myPortfolio', JSON.stringify([
-        { name: 'USD', kind: 'cash', group: cashGroup, shares: 0, avgCost: 1, target: 0, peakValue: 0, tiersDone: [false, false, false] }
+        { name: cashName, kind: 'cash', group: cashGroup, shares: 0, avgCost: 1, target: 0, peakValue: 0, tiersDone: [false, false, false] }
     ]));
-    set('deletedAssets', JSON.stringify(defaultAssets.filter(a => a.kind !== 'cash').map(a => a.name.toUpperCase())));
+    set('deletedAssets', JSON.stringify(defaultAssets.filter(a => isFund || a.kind !== 'cash').map(a => a.name.toUpperCase())));
     set('strategyTargets', '2');
     set('profitTiers', JSON.stringify(profitTiers));
     set('dipBuyPct', String(dipBuyPct));
     set('activeTab', groups.find(g => g.kind !== 'cash')?.id || groups[0].id);
     set('localUpdatedAt', String(Date.now()));
 
-    portfolioIndex.list.push({ id, name });
+    portfolioIndex.list.push(isFund ? { id, name, cur: 'THB' } : { id, name });
     portfolioIndex.updatedAt = Date.now();
     savePortfolioIndexLocal();
     await savePortfolioIndexToCloud();
@@ -2790,7 +2864,7 @@ function openMoveSheet(index) {
     if (!asset) return;
     moveSheetIndex = index;
     document.getElementById('move-title').textContent = `ย้าย ${asset.name} ไปพอร์ต`;
-    const others = portfolioIndex.list.filter(p => p.id !== activePortfolioId);
+    const others = portfolioIndex.list.filter(p => p.id !== activePortfolioId && (p.cur === 'THB') === IS_FUND_PF);
     document.getElementById('move-list').innerHTML = others.map(p => {
         const assets = readPortfolioAssets(p.id);
         const has = assets?.some(x => String(x.name).toUpperCase() === asset.name.toUpperCase());
@@ -2929,11 +3003,11 @@ async function moveAssetTo(targetId) {
 
 /* ── ซื้อ / ขาย (เงินเข้า-ออกเงินสด USD) · เติม / ถอนเงินสด ── */
 function cashAssetUsd(create) {
-    let c = myPortfolio.find(x => isCashAsset(x) && String(x.name).toUpperCase() === 'USD');
+    let c = myPortfolio.find(x => isCashAsset(x) && String(x.name).toUpperCase() === CASH_NAME);
     if (!c && create) {
-        c = { name: 'USD', kind: 'cash', group: getCashGroupId(), shares: 0, avgCost: 1, target: 0, peakValue: 0, tiersDone: [false, false, false] };
+        c = { name: CASH_NAME, kind: 'cash', group: getCashGroupId(), shares: 0, avgCost: 1, target: 0, peakValue: 0, tiersDone: [false, false, false] };
         myPortfolio.push(c);
-        deletedAssets = deletedAssets.filter(n => n !== 'USD');
+        deletedAssets = deletedAssets.filter(n => n !== CASH_NAME);
         store.setItem('deletedAssets', JSON.stringify(deletedAssets));
     }
     return c || null;
@@ -2964,19 +3038,19 @@ function renderTradeBox(index, asset) {
     const cash = cashAssetUsd(false);
     return `
         <div class="trade-box">
-            <div class="trade-head">มี <b>${fmtShares(asset.shares)}</b> หุ้น · 💵 เงินสด <b id="trade-cash-left">${fmtTrade(cash?.shares || 0)}</b></div>
+            <div class="trade-head">มี <b>${fmtShares(asset.shares)}</b> ${UNIT} · 💵 เงินสด <b id="trade-cash-left">${fmtTrade(cash?.shares || 0)}</b></div>
             <div class="asset-sheet-grid trade-grid">
                 <div class="asset-sheet-field">
-                    <label>จำนวนหุ้น</label>
+                    <label>จำนวน${UNIT}</label>
                     <input type="text" inputmode="decimal" id="trade-qty" placeholder="0" autocomplete="off" oninput="updateTradeTotal()">
                 </div>
                 <div class="asset-sheet-field">
-                    <label>ราคา/หุ้น ($)</label>
-                    <input type="text" inputmode="decimal" id="trade-price" value="${price > 0 ? formatInputVal(price) : ''}" placeholder="0.00" autocomplete="off" oninput="this.dataset.touched='1';updateTradeTotal()">
+                    <label>${IS_FUND_PF ? 'NAV/หน่วย (฿)' : 'ราคา/หุ้น ($)'}</label>
+                    <input type="text" inputmode="decimal" id="trade-price" value="${price > 0 ? formatInputVal(price, IS_FUND_PF ? 4 : 2) : ''}" placeholder="0.00" autocomplete="off" oninput="this.dataset.touched='1';updateTradeTotal()">
                 </div>
             </div>
             <div class="trade-total" id="trade-total">รวม —</div>
-            <label class="trade-opt"><input type="checkbox" id="trade-use-cash" checked><span>ตัด/เข้าเงินสด USD</span></label>
+            <label class="trade-opt"><input type="checkbox" id="trade-use-cash" checked><span>ตัด/เข้าเงินสด ${CASH_NAME}</span></label>
             <div class="trade-btns">
                 <button type="button" class="tb-buy" onclick="tradeAsset(${index}, 'buy')">ซื้อ</button>
                 <button type="button" class="tb-sell" onclick="tradeAsset(${index}, 'sell')"${asset.shares > 0 ? '' : ' disabled'}>ขาย</button>
@@ -3006,7 +3080,7 @@ function tradeAsset(index, side) {
     const asset = myPortfolio[index];
     if (!asset || isCashAsset(asset)) return;
     const q = parseTradeNum('trade-qty'), p = parseTradeNum('trade-price');
-    if (!q || !p) { showToast('ใส่จำนวนหุ้นและราคาก่อน', 'error'); return; }
+    if (!q || !p) { showToast(`ใส่จำนวน${UNIT}และราคาก่อน`, 'error'); return; }
     const useCash = document.getElementById('trade-use-cash')?.checked;
     const amount = q * p;
     const shares = Number(asset.shares) || 0, avg = Number(asset.avgCost) || 0;
@@ -3019,16 +3093,16 @@ function tradeAsset(index, side) {
         asset.avgCost = (shares * avg + amount) / (shares + q);
         asset.shares = shares + q;
         if (cash) cash.shares = Math.round(((cash.shares || 0) - amount) * 100) / 100;
-        afterTrade(asset.name, `ซื้อ ${asset.name} ${fmtShares(q)} หุ้น @ ${fmtTrade(p)}${cash ? ` · ตัดเงินสด ${fmtTrade(amount)}` : ''}`);
+        afterTrade(asset.name, `ซื้อ ${asset.name} ${fmtShares(q)} ${UNIT} @ ${fmtTrade(p)}${cash ? ` · ตัดเงินสด ${fmtTrade(amount)}` : ''}`);
     } else {
-        if (q > shares + 1e-9) { showToast(`มีแค่ ${fmtShares(shares)} หุ้น`, 'error'); return; }
+        if (q > shares + 1e-9) { showToast(`มีแค่ ${fmtShares(shares)} ${UNIT}`, 'error'); return; }
         const realized = avg > 0 ? (p - avg) * q : null;
         const cash = useCash ? cashAssetUsd(true) : null;
         asset.shares = Math.max(0, Math.round((shares - q) * 1e6) / 1e6);
         if (asset.shares === 0) asset.peakValue = 0;
         if (cash) cash.shares = Math.round(((cash.shares || 0) + amount) * 100) / 100;
         const pl = realized == null ? '' : ` · ${realized >= 0 ? 'กำไร' : 'ขาดทุน'} ${fmtTrade(Math.abs(realized))}`;
-        afterTrade(asset.name, `ขาย ${asset.name} ${fmtShares(q)} หุ้น @ ${fmtTrade(p)}${pl}${cash ? ` · เข้าเงินสด ${fmtTrade(amount)}` : ''}`);
+        afterTrade(asset.name, `ขาย ${asset.name} ${fmtShares(q)} ${UNIT} @ ${fmtTrade(p)}${pl}${cash ? ` · เข้าเงินสด ${fmtTrade(amount)}` : ''}`);
     }
 }
 
@@ -3141,6 +3215,7 @@ function applyPlanTargets(id) {
 function renderPlanCard() {
     const el = document.getElementById('plan-card');
     if (!el) return;
+    if (IS_FUND_PF) { el.hidden = true; return; }
     const { items, byValue, total, cur, names, unknown, ranked } = planStats();
     if (!items.length || total <= 0) { el.hidden = true; return; }
     const best = [...ranked].sort((x, y) => y.match - x.match)[0];

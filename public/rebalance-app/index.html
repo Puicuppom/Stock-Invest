@@ -196,6 +196,10 @@
             <div class="pf-create-title">สร้างพอร์ตใหม่</div>
             <input type="text" id="new-portfolio-name" placeholder="ชื่อพอร์ต เช่น พอร์ตเกษียณ, พอร์ตลูก" autocomplete="off" maxlength="40">
             <label class="pf-copy-opt">
+                <input type="checkbox" id="new-portfolio-fund">
+                <span>พอร์ตกองทุนรวมไทย (คิดเป็นบาท · ดึง NAV อัตโนมัติ)</span>
+            </label>
+            <label class="pf-copy-opt">
                 <input type="checkbox" id="new-portfolio-copy-groups" checked>
                 <span>ใช้กลุ่มและสัดส่วนกลุ่มเดียวกับพอร์ตนี้</span>
             </label>
@@ -237,6 +241,7 @@
     <div class="sheet" onclick="event.stopPropagation()">
         <h3>เพิ่มสินทรัพย์ใหม่</h3>
         <input type="text" id="new-asset-name" placeholder="ชื่อย่อ เช่น QQQI, MSFT" autocomplete="off" inputmode="text">
+        <div class="fund-suggest" id="fund-suggest"></div>
         <div class="sheet-actions">
             <button class="btn-cancel" type="button" onclick="closeAddSheet()">ยกเลิก</button>
             <button class="btn-confirm" type="button" onclick="addAsset()">เพิ่ม</button>
