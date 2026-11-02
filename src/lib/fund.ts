@@ -2,7 +2,12 @@
  * กองทุนรวมไทย: รายชื่อ + NAV ล่าสุดจาก Finnomena (API สาธารณะ ไม่เป็นทางการ — ถ้ารูปแบบเปลี่ยน จะคืน null)
  */
 const BASE = "https://www.finnomena.com/fn3/api/fund";
-const HEADERS = { "User-Agent": "Mozilla/5.0 (InvestPui)", Accept: "application/json" };
+const HEADERS = {
+  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+  Accept: "application/json, text/plain, */*",
+  "Accept-Language": "th-TH,th;q=0.9,en;q=0.8",
+  Referer: "https://www.finnomena.com/fund",
+};
 
 export interface FundInfo { id: string; code: string; name: string }
 export interface FundNav { code: string; name: string; nav: number; date: string; changePercent: number | null }
@@ -11,8 +16,9 @@ let listMemo: { at: number; list: FundInfo[] } | null = null;
 
 export async function fundList(): Promise<FundInfo[]> {
   if (listMemo && Date.now() - listMemo.at < 6 * 3600_000) return listMemo.list;
-  const res = await fetch(`${BASE}/public/list`, { headers: HEADERS, next: { revalidate: 86400 }, signal: AbortSignal.timeout(10000) });
-  if (!res.ok) throw new Error("fund list failed");
+  // รายชื่อใหญ่ (~1MB) เกินแคชของ Next → เก็บในหน่วยความจำแทน
+  const res = await fetch(`${BASE}/public/list`, { headers: HEADERS, cache: "no-store", signal: AbortSignal.timeout(15000) });
+  if (!res.ok) throw new Error(`fund list failed (${res.status})`);
   const raw = (await res.json()) as { id?: string; short_code?: string; name_th?: string }[];
   const list = (Array.isArray(raw) ? raw : [])
     .filter(x => x.id && x.short_code)
