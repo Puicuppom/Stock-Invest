@@ -36,6 +36,7 @@ function normalizePortfolioIndex(raw) {
     return {
         list: clean.filter(p => !deleted.includes(p.id)),
         deleted,
+        fx: raw?.fx === 'mid' ? 'mid' : 'dime',
         updatedAt: Number(raw?.updatedAt) || 0
     };
 }
@@ -844,13 +845,38 @@ async function initCloudSync() {
 }
 
 let usdThbRate = 0;
+let usdThbMid = 0;
+/* เรตแลกเงิน: 'dime' = อัตรากลางหักส่วนต่าง (ใกล้กับเรตขายดอลลาร์ใน Dime) · 'mid' = อัตรากลางตลาด
+ * ใช้ร่วมทุกพอร์ต + ซิงค์ในรายชื่อพอร์ต (หน้าอื่น/ลงทุนแมนใช้ค่าเดียวกัน) */
+const FX_SPREAD = { dime: 0.0018, mid: 0 };
+function fxMode() { return portfolioIndex.fx === 'mid' ? 'mid' : 'dime'; }
+function applyFxMode() {
+    if (usdThbMid > 0) usdThbRate = usdThbMid * (1 - FX_SPREAD[fxMode()]);
+}
+async function setFxMode(mode) {
+    portfolioIndex.fx = mode === 'mid' ? 'mid' : 'dime';
+    portfolioIndex.updatedAt = Date.now();
+    savePortfolioIndexLocal();
+    applyFxMode();
+    renderFxRate();
+    updateFxModeButtons();
+    renderAndCalculate();
+    await savePortfolioIndexToCloud();
+}
+function updateFxModeButtons() {
+    document.querySelectorAll('.fx-seg button').forEach(b => {
+        const on = b.dataset.fx === fxMode();
+        b.classList.toggle('on', on);
+        b.setAttribute('aria-pressed', String(on));
+    });
+}
 /* อัตราแลกเปลี่ยนบนกล่องสรุป: 1 $ = xx.xx ฿ */
 function renderFxRate() {
     const el = document.getElementById('fx-rate');
     if (!el || !(usdThbRate > 0)) return;
     el.hidden = false;
     el.innerHTML = `<b>${usdThbRate.toFixed(2)}</b> ฿/USD`;
-    el.title = `อัตราแลกเปลี่ยน USD/THB · อัปเดต ${new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}`;
+    el.title = `${fxMode() === 'dime' ? `เรตแบบ Dime (อัตรากลาง ${usdThbMid.toFixed(2)} − 0.18%)` : 'อัตรากลางตลาด USD/THB'} · อัปเดต ${new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}`;
 }
 let displayCurrency = (() => {
     try {
@@ -861,7 +887,7 @@ let displayCurrency = (() => {
 
 function updateCurrencyButton() {
     const thb = displayCurrency === 'THB';
-    document.querySelectorAll('.cur-seg button').forEach(b => {
+    document.querySelectorAll('.cur-seg:not(.fx-seg) button').forEach(b => {
         const on = b.dataset.cur === (thb ? 'THB' : 'USD');
         b.classList.toggle('on', on);
         b.setAttribute('aria-pressed', String(on));
@@ -897,7 +923,8 @@ async function loadUsdThbRate() {
         const res = await fetch('/api/stock?symbol=THB%3DX');
         const data = await res.json();
         if (res.ok && data.price > 0) {
-            usdThbRate = data.price;
+            usdThbMid = data.price;
+            applyFxMode();
             renderFxRate();
             if (document.querySelector('.asset-card')) {
                 recalculate();
@@ -2805,6 +2832,7 @@ async function syncPortfolioIndex() {
     const merged = normalizePortfolioIndex({
         list,
         deleted,
+        fx: newer.fx,
         updatedAt: Math.max(cloud.updatedAt, portfolioIndex.updatedAt)
     });
     const changedLocal = JSON.stringify(merged) !== JSON.stringify(portfolioIndex);
@@ -2823,6 +2851,10 @@ async function syncPortfolioIndex() {
         }
         renderPortfolioSwitcher();
         renderPortfolioList();
+        applyFxMode();
+        renderFxRate();
+        updateFxModeButtons();
+        if (usdThbRate > 0) recalculate();
     }
 }
 
@@ -2836,6 +2868,7 @@ document.addEventListener('visibilitychange', () => {
 
 async function bootstrap() {
     updateCurrencyButton();
+    updateFxModeButtons();
     renderPortfolioSwitcher();
     renderAndCalculate();
     fetchPrices(true);

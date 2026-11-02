@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
  * ให้แอปอื่น (เช่น ลงทุนแมน) ดึงไปอัปเดตอัตโนมัติ · ส่งเฉพาะยอดรวม ไม่ส่งรายการหุ้น
  */
 type Asset = { name?: string; kind?: string; group?: string; shares?: number; avgCost?: number };
-type Row = { sync_key: string; data: { portfolio?: Asset[]; list?: { id: string; name: string; cur?: string }[]; deleted?: string[] } | null };
+type Row = { sync_key: string; data: { portfolio?: Asset[]; list?: { id: string; name: string; cur?: string }[]; deleted?: string[]; fx?: string } | null };
 
 const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "GET, OPTIONS", "Cache-Control": "no-store" };
 
@@ -51,7 +51,10 @@ export async function GET() {
     const price = new Map<string, number>();
     for (const q of quotes) price.set(q.symbol.toUpperCase(), q.price);
     fundCodes.forEach((c, i) => { if (navs[i]) price.set(c.toUpperCase(), navs[i]!.nav); });
-    const usdThb = fx?.rate ?? null;
+    // เรตเดียวกับหน้าปรับพอร์ต: แบบ Dime = อัตรากลางหัก 0.18% (ค่าเริ่มต้น)
+    const fxMode = indexRow?.data?.fx === "mid" ? "mid" : "dime";
+    const usdThbMid = fx?.rate ?? null;
+    const usdThb = usdThbMid != null ? usdThbMid * (fxMode === "dime" ? 1 - 0.0018 : 1) : null;
 
     const portfolios = pfs.map(p => {
       let invested = 0, cost = 0, cash = 0;
@@ -70,7 +73,7 @@ export async function GET() {
       return { id: p.id, name: p.name, cur: p.cur, invested, cost, cash, investedThb: thb(invested), costThb: thb(cost), cashThb: thb(cash), missing };
     });
     const sum = (k: "investedThb" | "cashThb" | "costThb") => portfolios.reduce((s, p) => s + (p[k] ?? 0), 0);
-    return NextResponse.json({ at: Date.now(), usdThb, portfolios, total: { investedThb: sum("investedThb"), cashThb: sum("cashThb"), costThb: sum("costThb") } }, { headers: CORS });
+    return NextResponse.json({ at: Date.now(), usdThb, usdThbMid, fxMode, portfolios, total: { investedThb: sum("investedThb"), cashThb: sum("cashThb"), costThb: sum("costThb") } }, { headers: CORS });
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "summary failed" }, { status: 502, headers: CORS });
   }
