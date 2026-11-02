@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fundNav, fundSource, searchFunds } from "@/lib/fund";
+import { fundNav, fundSource, searchFunds, secRaw } from "@/lib/fund";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +10,8 @@ export const dynamic = "force-dynamic";
 export async function GET(request: NextRequest) {
   const sp = request.nextUrl.searchParams;
   try {
+    const raw = sp.get("raw");
+    if (raw) return NextResponse.json(await secRaw(raw), { headers: { "Cache-Control": "no-store" } });
     const q = sp.get("q");
     if (q != null) return NextResponse.json({ funds: await searchFunds(q.slice(0, 40)) });
     const codes = [...new Set((sp.get("codes") ?? "").split(",").map(s => s.trim()).filter(Boolean))].slice(0, 40);

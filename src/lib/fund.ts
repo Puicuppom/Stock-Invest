@@ -52,9 +52,19 @@ const secKey = () => process.env.SEC_API_KEY?.trim() || "";
 
 async function secGet<T>(path: string, revalidate: number): Promise<T[]> {
   const res = await fetch(SEC + path, { headers: { "Ocp-Apim-Subscription-Key": secKey(), Accept: "application/json" }, next: { revalidate }, signal: AbortSignal.timeout(10000) });
+  if (res.status === 204 || res.status === 404) return [];
   if (!res.ok) throw new Error(`SEC API ${res.status}`);
-  const json = await res.json();
-  return Array.isArray(json?.items) ? json.items : [];
+  const text = await res.text();
+  if (!text.trim()) return [];
+  const json = JSON.parse(text);
+  return Array.isArray(json?.items) ? json.items : Array.isArray(json) ? json : [];
+}
+
+/** ดูข้อมูลดิบจาก ก.ล.ต. (ไว้ตรวจรูปแบบข้อมูล) — ไม่ส่งคีย์ออกไป */
+export async function secRaw(path: string): Promise<{ status: number; body: string }> {
+  if (!secKey() || !/^\/v2\/fund\//.test(path)) return { status: 400, body: "" };
+  const res = await fetch(SEC + path, { headers: { "Ocp-Apim-Subscription-Key": secKey(), Accept: "application/json" }, cache: "no-store", signal: AbortSignal.timeout(10000) });
+  return { status: res.status, body: (await res.text()).slice(0, 6000) };
 }
 
 const codeOf = (p: SecProfile) => (p.fund_class_name?.trim() || p.proj_abbr_name?.trim() || "").toUpperCase();
