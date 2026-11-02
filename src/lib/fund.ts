@@ -67,15 +67,19 @@ export async function secRaw(path: string): Promise<{ status: number; body: stri
   return { status: res.status, body: (await res.text()).slice(0, 6000) };
 }
 
-const codeOf = (p: SecProfile) => (p.fund_class_name?.trim() || p.proj_abbr_name?.trim() || "").toUpperCase();
-const active = (p: SecProfile) => !p.cancel_date && (!p.fund_status || p.fund_status === "RG");
+// คลาสเดียว = "main" → ใช้ชื่อย่อโครงการ
+const codeOf = (p: SecProfile) => {
+  const cls = p.fund_class_name?.trim();
+  return (cls && cls.toLowerCase() !== "main" ? cls : p.proj_abbr_name?.trim() || "").toUpperCase();
+};
+const active = (p: SecProfile) => !p.cancel_date && !/expired|cancel|liquidat|dissol/i.test(p.fund_status ?? "");
 
 async function secProfiles(q: string): Promise<SecProfile[]> {
   return secGet<SecProfile>(`/v2/fund/general-info/profiles?project_info=${encodeURIComponent(q)}&page_size=50`, 86400);
 }
 
-/** หา proj_id + ชื่อคลาสของรหัสกอง เช่น K-USA-A(A) → โครงการ K-USA คลาส K-USA-A(A) */
-const secFindMemo = new Map<string, { projId: string; cls: string; name: string } | null>();
+/** หา proj_id ของรหัสกอง เช่น K-USA-A(A) → โครงการ K-USA (คลาสหาจาก NAV ภายหลัง) */
+const secFindMemo = new Map<string, { projId: string; name: string } | null>();
 async function secFind(code: string) {
   const key = norm(code);
   if (secFindMemo.has(key)) return secFindMemo.get(key)!;
@@ -83,10 +87,13 @@ async function secFind(code: string) {
   const tries = [code, code.replace(/\([^)]*\)$/, ""), ...code.split("-").map((_, i, a) => a.slice(0, a.length - i).join("-")).slice(1)]
     .map(s => s.trim()).filter((s, i, a) => s.length >= 2 && a.indexOf(s) === i);
   for (const t of tries) {
-    const rows = (await secProfiles(t)).filter(active);
-    const hit = rows.find(r => norm(codeOf(r)) === key) ?? rows.find(r => norm(r.proj_abbr_name ?? "") === key && !r.fund_class_name);
+    const rows = (await secProfiles(t)).filter(r => active(r) && r.proj_id);
+    const hit = rows.find(r => norm(codeOf(r)) === key)
+      ?? rows.find(r => norm(r.proj_abbr_name ?? "") === key)
+      ?? rows.filter(r => key.startsWith(norm(r.proj_abbr_name ?? "")) && (r.proj_abbr_name ?? "").length >= 2)
+        .sort((x, y) => (y.proj_abbr_name ?? "").length - (x.proj_abbr_name ?? "").length)[0];
     if (hit?.proj_id) {
-      const found = { projId: hit.proj_id, cls: hit.fund_class_name?.trim() || "", name: hit.proj_name_th?.trim() || "" };
+      const found = { projId: hit.proj_id, name: hit.proj_name_th?.trim() || "" };
       secFindMemo.set(key, found);
       return found;
     }
@@ -98,11 +105,15 @@ async function secFind(code: string) {
 async function secNav(code: string): Promise<FundNav | null> {
   const f = await secFind(code);
   if (!f) return null;
+  const key = norm(code);
   const day = (d: number) => new Date(Date.now() + 7 * 3600_000 - d * 86400_000).toISOString().slice(0, 10);
-  const qs = `proj_id=${encodeURIComponent(f.projId)}&start_nav_date=${day(14)}&end_nav_date=${day(0)}&page_size=100${f.cls ? `&fund_class_name=${encodeURIComponent(f.cls)}` : ""}`;
-  const rows = (await secGet<SecNav>(`/v2/fund/daily-info/nav?${qs}`, 3600))
-    .filter(r => Number(r.last_val) > 0 && r.nav_date && (!f.cls || norm(r.fund_class_name ?? "") === norm(f.cls)))
-    .sort((a, b) => String(b.nav_date).localeCompare(String(a.nav_date)));
+  const all = (await secGet<SecNav>(`/v2/fund/daily-info/nav?proj_id=${encodeURIComponent(f.projId)}&start_nav_date=${day(12)}&end_nav_date=${day(0)}&page_size=300`, 3600))
+    .filter(r => Number(r.last_val) > 0 && r.nav_date);
+  const classes = [...new Set(all.map(r => norm(r.fund_class_name ?? "")))];
+  // คลาสที่ตรงรหัส > คลาส main > มีคลาสเดียว
+  const want = classes.includes(key) ? key : classes.includes("MAIN") ? "MAIN" : classes.length === 1 ? classes[0] : null;
+  if (want == null) return null;
+  const rows = all.filter(r => norm(r.fund_class_name ?? "") === want).sort((a, b) => String(b.nav_date).localeCompare(String(a.nav_date)));
   const [last, prev] = rows;
   if (!last) return null;
   const nav = Number(last.last_val);
