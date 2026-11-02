@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fundNav, searchFunds } from "@/lib/fund";
+import { fundNav, fundSource, searchFunds } from "@/lib/fund";
 
 export const dynamic = "force-dynamic";
 
@@ -13,10 +13,11 @@ export async function GET(request: NextRequest) {
     const q = sp.get("q");
     if (q != null) return NextResponse.json({ funds: await searchFunds(q.slice(0, 40)) });
     const codes = [...new Set((sp.get("codes") ?? "").split(",").map(s => s.trim()).filter(Boolean))].slice(0, 40);
-    const rows = await Promise.all(codes.map(c => fundNav(c).catch(() => null)));
+    const errors: string[] = [];
+    const rows = await Promise.all(codes.map(c => fundNav(c).catch(e => { errors.push(`${c}: ${e instanceof Error ? e.message : e}`); return null; })));
     const navs: Record<string, unknown> = {};
     codes.forEach((c, i) => { if (rows[i]) navs[c] = rows[i]; });
-    return NextResponse.json({ navs, at: Date.now() }, { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json({ navs, source: fundSource(), ...(errors.length ? { errors } : {}), at: Date.now() }, { headers: { "Cache-Control": "no-store" } });
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "fund failed" }, { status: 502 });
   }
