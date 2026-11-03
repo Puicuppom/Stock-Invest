@@ -470,7 +470,7 @@ async function fetchLiveQuotes(render = true) {
         for (const s of symbols) {
             const q = quotes?.[`${s}::${/\.BK$/i.test(s) ? 'TH' : 'US'}`];
             if (!q || !(q.price > 0)) continue;
-            priceCache[s] = { ...(priceCache[s] || {}), price: q.price, ext: q.ext || null, at: Date.now(), error: false };
+            priceCache[s] = { ...(priceCache[s] || {}), price: q.price, ext: q.ext || null, changePercent: Number.isFinite(q.changePercent) ? q.changePercent : null, marketState: q.marketState || null, at: Date.now(), error: false };
             n++;
         }
         if (n) lastLiveAt = Date.now();
@@ -1903,7 +1903,23 @@ function crValueHtml(asset) {
 }
 
 function crProfitHtml(asset, cost, profit, profitPct) {
-    return crProfitMain(asset, cost, profit, profitPct) + extLineHtml(asset);
+    return crProfitMain(asset, cost, profit, profitPct) + dayLineHtml(asset) + extLineHtml(asset);
+}
+
+/* เปลี่ยนแปลงของวัน (ราคาปกติ): ตลาดเปิดอยู่ = วันนี้ · ปิดแล้ว = วันทำการล่าสุด
+ * พอร์ตกองทุน = NAV ล่าสุดเทียบวันก่อน */
+function dayLineHtml(asset) {
+    if (isCashAsset(asset)) return '';
+    const pc = priceCache[asset.name];
+    const pct = pc?.changePercent;
+    if (!Number.isFinite(pct)) return '';
+    const up = pct >= 0;
+    const value = asset.value || 0;
+    const amt = value > 0 ? value - value / (1 + pct / 100) : 0;
+    const open = pc.marketState === 'REGULAR';
+    const label = IS_FUND_PF ? 'NAV' : open ? 'วันนี้' : 'ปิดล่าสุด';
+    const title = IS_FUND_PF ? `NAV ล่าสุด${pc.navDate ? ` (${pc.navDate})` : ''} เทียบวันก่อน` : open ? 'เปลี่ยนแปลงวันนี้ (ตลาดเปิดอยู่)' : 'เปลี่ยนแปลงของวันทำการล่าสุด';
+    return `<small class="cr-ext cr-day ${up ? 'gain' : 'loss'}" title="${title}"><span>${label}</span> ${up ? '+' : ''}${fmt(pct, 2)}%${amt ? ` (${up ? '+' : '−'}${fmtUsd(Math.abs(amt))})` : ''}</small>`;
 }
 function crProfitMain(asset, cost, profit, profitPct) {
     const up = profit >= 0;
