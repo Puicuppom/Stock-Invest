@@ -1807,3 +1807,6 @@ html:root { font-size: 16px; }
 .rb2 .dt-sub .gain { color: var(--ui-success, #4ade80); } .rb2 .dt-sub .loss { color: var(--ui-danger, #f87171); }
 /* กองทุนรวม: ไม่มีเป้านักวิเคราะห์/แนวรับต้าน */
 .fund-pf .asset-fv-head, .fund-pf .asset-levels { display: none !important; }
+
+/* ป้ายช่วงเวลา (วันนี้ / ปิดล่าสุด / ก่อนเปิด / หลังปิด) */
+.rb2 .cr-profit .cr-ext span { display: inline-block; padding: 0 6px; border-radius: 999px; font-size: 10.5px; line-height: 16px; color: var(--ui-muted); background: color-mix(in srgb, var(--ui-text) 8%, transparent); }

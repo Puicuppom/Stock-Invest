@@ -1903,7 +1903,8 @@ function crValueHtml(asset) {
 }
 
 function crProfitHtml(asset, cost, profit, profitPct) {
-    return crProfitMain(asset, cost, profit, profitPct) + dayLineHtml(asset) + extLineHtml(asset);
+    // บรรทัดที่ 3 แสดงอย่างเดียว: ช่วงก่อนเปิด/หลังปิด = ราคานอกเวลา · ไม่งั้น = เปลี่ยนแปลงของวัน
+    return crProfitMain(asset, cost, profit, profitPct) + (extLineHtml(asset) || dayLineHtml(asset));
 }
 
 /* เปลี่ยนแปลงของวัน (ราคาปกติ): ตลาดเปิดอยู่ = วันนี้ · ปิดแล้ว = วันทำการล่าสุด
