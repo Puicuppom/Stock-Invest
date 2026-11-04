@@ -2670,7 +2670,90 @@ function renderPortfolioSwitcher() {
     const setName = document.getElementById('set-portfolio-name');
     if (setName) setName.textContent = getActivePortfolioName();
     document.title = `${getActivePortfolioName()} · ReBalance Stock`;
+    renderPortfolioDots();
 }
+
+/* ── ปัดกล่องสรุป (ซ้าย/ขวา) เพื่อสลับพอร์ต + จุดบอกตำแหน่ง ── */
+function renderPortfolioDots() {
+    const hero = document.querySelector('.hero');
+    if (!hero) return;
+    let dots = document.getElementById('pf-dots');
+    const list = portfolioIndex.list;
+    if (list.length < 2) { dots?.remove(); return; }
+    if (!dots) {
+        dots = document.createElement('div');
+        dots.id = 'pf-dots';
+        dots.className = 'pf-dots';
+        dots.setAttribute('role', 'tablist');
+        dots.setAttribute('aria-label', 'สลับพอร์ต');
+        hero.appendChild(dots);
+    }
+    dots.innerHTML = list.map(p => `<button type="button" role="tab" class="${p.id === activePortfolioId ? 'on' : ''}" aria-selected="${p.id === activePortfolioId}" title="${escapePfHtml(p.name)}" aria-label="${escapePfHtml(p.name)}" onclick="switchPortfolio('${p.id}')"></button>`).join('');
+}
+function neighborPortfolio(dir) {
+    const list = portfolioIndex.list;
+    const i = list.findIndex(p => p.id === activePortfolioId);
+    return list[i + dir] || null;
+}
+let heroSwitching = false;
+function heroSwitchTo(dir) {
+    const target = neighborPortfolio(dir);
+    const hero = document.querySelector('.hero');
+    if (!target || heroSwitching) { if (hero) { hero.style.transition = 'transform .25s ease'; hero.style.transform = ''; } return false; }
+    heroSwitching = true;
+    if (hero) {
+        hero.style.transition = 'transform .2s ease, opacity .2s ease';
+        hero.style.transform = `translateX(${dir > 0 ? -40 : 40}%)`;
+        hero.style.opacity = '0';
+    }
+    showToast(`เปิด ${target.name}`);
+    setTimeout(() => switchPortfolio(target.id), 180);
+    return true;
+}
+(function setupHeroSwipe() {
+    const hero = document.querySelector('.hero');
+    if (!hero) return;
+    let st = null;
+    hero.addEventListener('pointerdown', e => {
+        if (portfolioIndex.list.length < 2 || heroSwitching) return;
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        if (e.target.closest('button, a, input, select')) return;
+        st = { x: e.clientX, y: e.clientY, id: e.pointerId, mode: 'idle' };
+    });
+    hero.addEventListener('pointermove', e => {
+        if (!st || e.pointerId !== st.id) return;
+        const dx = e.clientX - st.x, dy = e.clientY - st.y;
+        if (st.mode === 'idle') {
+            if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) { st = null; return; }   // เลื่อนหน้าขึ้นลง
+            if (Math.abs(dx) > 10) { st.mode = 'drag'; try { hero.setPointerCapture(e.pointerId); } catch { /* ignore */ } }
+            else return;
+        }
+        const edge = !neighborPortfolio(dx < 0 ? 1 : -1);
+        hero.style.transition = 'none';
+        hero.style.transform = `translateX(${edge ? dx * 0.25 : dx}px)`;
+    });
+    const end = e => {
+        if (!st || e.pointerId !== st.id) return;
+        const dx = e.clientX - st.x;
+        const dragged = st.mode === 'drag';
+        st = null;
+        if (!dragged) return;
+        if (Math.abs(dx) > 70) heroSwitchTo(dx < 0 ? 1 : -1);
+        else { hero.style.transition = 'transform .25s ease'; hero.style.transform = ''; }
+    };
+    hero.addEventListener('pointerup', end);
+    hero.addEventListener('pointercancel', e => { if (st && e.pointerId === st.id) { st = null; hero.style.transition = 'transform .25s ease'; hero.style.transform = ''; } });
+    // ทัชแพดบนคอม: ปัดสองนิ้วแนวนอน
+    let wheelX = 0, wheelTimer = null;
+    hero.addEventListener('wheel', e => {
+        if (portfolioIndex.list.length < 2 || Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
+        e.preventDefault();
+        wheelX += e.deltaX;
+        clearTimeout(wheelTimer);
+        wheelTimer = setTimeout(() => { wheelX = 0; }, 250);
+        if (Math.abs(wheelX) > 120) { const dir = wheelX > 0 ? 1 : -1; wheelX = 0; heroSwitchTo(dir); }
+    }, { passive: false });
+})();
 
 function renderPortfolioList() {
     const wrap = document.getElementById('portfolio-list');

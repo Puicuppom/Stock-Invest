@@ -1810,3 +1810,11 @@ html:root { font-size: 16px; }
 
 /* ป้ายช่วงเวลา (วันนี้ / ปิดล่าสุด / ก่อนเปิด / หลังปิด) */
 .rb2 .cr-profit .cr-ext span { display: inline-block; padding: 0 6px; border-radius: 999px; font-size: 10.5px; line-height: 16px; color: var(--ui-muted); background: color-mix(in srgb, var(--ui-text) 8%, transparent); }
+
+/* ปัดกล่องสรุปเพื่อสลับพอร์ต */
+.rb2 .hero { touch-action: pan-y; user-select: none; -webkit-user-select: none; will-change: transform; }
+.pf-dots { grid-column: 1 / -1; display: flex; justify-content: center; gap: 6px; margin-top: 12px; }
+.pf-dots button { width: 6px; height: 6px; padding: 0; border: 0; border-radius: 999px; background: color-mix(in srgb, var(--ui-text) 22%, transparent); cursor: pointer; transition: width .2s ease, background .2s ease; }
+.pf-dots button.on { width: 18px; background: var(--ui-accent); }
+.rb2 .hero .pf-dots button { flex: none; min-height: 0; min-width: 0; height: 6px; line-height: 0; box-shadow: none; }
+.rb2 .hero .pf-dots { align-items: center; height: 10px; }
