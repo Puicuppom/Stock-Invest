@@ -1853,3 +1853,25 @@ html:root { font-size: 16px; }
   .rb2 .cr-name .cr-ext.gain .cr-chg { color: var(--ui-success, #4ade80); }
 }
 .cr-ext i.cr-chg { font-style: normal; }
+
+/* คอลัมน์ราคา: แสดงเฉพาะบนคอม */
+.rb2 .cr-price, .rb2 .list-head .lh-price { display: none; }
+@media (min-width: 640px) {
+  .rb2 .list-head, .rb2 .cr-row { grid-template-columns: 40px minmax(0, 1.3fr) minmax(110px, 1fr) minmax(120px, 1fr) minmax(110px, 1fr) !important; gap: 14px; }
+  .rb2 .list-head { padding: 0 14px 8px; }
+  .rb2 .list-head span:first-child { grid-column: 2; }
+  .rb2 .list-head .lh-price { display: block; }
+  .rb2 .list-head span:not(:first-child) { text-align: right; }
+  .rb2 .cr-price { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .rb2 .cr-price b { font-size: 15px; font-weight: 600; }
+  .rb2 .cr-pchg { font-size: 12px; display: inline-flex; align-items: center; gap: 5px; }
+  .rb2 .cr-pchg.gain { color: var(--ui-success, #4ade80); } .rb2 .cr-pchg.loss { color: var(--ui-danger, #f87171); }
+  .rb2 .cr-pchg span { padding: 0 6px; border-radius: 999px; font-size: 10.5px; line-height: 16px; color: var(--ui-muted); background: color-mix(in srgb, var(--ui-text) 8%, transparent); }
+  .rb2 .cr-profit .cr-ext { display: none !important; }
+  .rb2 .cr-row > .cr-value, .rb2 .cr-row > .cr-profit, .rb2 .cr-row > .cr-price { align-self: center; padding-top: 0; }
+  .rb2 .cr-value { gap: 3px; }
+  /* ชื่อ: บรรทัดบน = ตัวย่อ · บรรทัดล่าง = สัดส่วน + ปุ่ม */
+  .rb2 .cr-name { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; column-gap: 8px; row-gap: 4px; }
+  .rb2 .cr-name > b { flex-basis: 100%; }
+  .rb2 .cr-name .cr-acts { display: inline-flex !important; gap: 6px; }
+}

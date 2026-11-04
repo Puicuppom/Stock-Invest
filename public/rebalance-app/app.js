@@ -1552,6 +1552,8 @@ function recalculate() {
         if (crPct) crPct.innerHTML = crPctHtml(asset, curPct);
         const crTime = card.querySelector('.cr-time');
         if (crTime) crTime.innerHTML = timeLineHtml(asset);
+        const crPrice = card.querySelector('.cr-price');
+        if (crPrice) crPrice.innerHTML = crPriceHtml(asset);
         const crAlloc = card.querySelector('.cr-alloc');
         if (crAlloc) crAlloc.innerHTML = crAllocHtml(asset, curPct);
         const crValue = card.querySelector('.cr-value');
@@ -1911,6 +1913,18 @@ function crProfitHtml(asset, cost, profit, profitPct) {
     // บรรทัดที่ 3 แสดงอย่างเดียว: ช่วงก่อนเปิด/หลังปิด = ราคานอกเวลา · ไม่งั้น = เปลี่ยนแปลงของวัน
     return crProfitMain(asset, cost, profit, profitPct) + timeLineHtml(asset);
 }
+/* คอลัมน์ราคา (คอม): ราคา + ป้ายช่วงเวลา และ % (หลังปิด/ก่อนเปิด ถ้ามี ไม่งั้นของวัน) */
+function crPriceHtml(asset) {
+    if (isCashAsset(asset)) return '';
+    const pc = priceCache[asset.name] || {};
+    const e = pc.ext && pc.ext.price > 0 && Number.isFinite(pc.ext.changePercent) ? pc.ext : null;
+    const price = e ? e.price : getPrice(asset.name);
+    const pct = e ? e.changePercent : pc.changePercent;
+    const label = e ? (e.session === 'pre' ? 'ก่อนเปิด' : 'หลังปิด') : IS_FUND_PF ? 'NAV' : pc.marketState === 'REGULAR' ? 'วันนี้' : 'ปิดล่าสุด';
+    const pxText = price > 0 ? (IS_FUND_PF ? '฿' + fmt(price, 4) : fmtTrade(price)) : (pc.error ? 'ไม่พบ' : '…');
+    const chg = Number.isFinite(pct) ? `<small class="cr-pchg ${pct >= 0 ? 'gain' : 'loss'}"><span>${label}</span>${pct >= 0 ? '+' : ''}${fmt(pct, 2)}%</small>` : '';
+    return `<b>${pxText}</b>${chg}`;
+}
 function timeLineHtml(asset) {
     return extLineHtml(asset) || dayLineHtml(asset);
 }
@@ -1968,6 +1982,7 @@ function appendAssetCard(list, payload) {
                 ${act}
             </div>
             <div class="cr-alloc">${crAllocHtml(asset, curPct)}</div>
+            <div class="cr-price">${crPriceHtml(asset)}</div>
             <div class="cr-value">${crValueHtml(asset)}</div>
             <div class="cr-profit">${profitHtml}</div>
         </div>
