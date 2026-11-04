@@ -1890,7 +1890,10 @@ function extLineHtml(asset) {
     const e = priceCache[asset.name]?.ext;
     if (!e || !(e.price > 0) || !Number.isFinite(e.changePercent)) return '';
     const up = e.changePercent >= 0;
-    return `<small class="cr-ext ${up ? 'gain' : 'loss'}" title="${e.session === 'pre' ? 'ราคาก่อนตลาดเปิด' : 'ราคาหลังตลาดปิด'}"><span>${e.session === 'pre' ? 'ก่อนเปิด' : 'หลังปิด'}</span> ${fmtTrade(e.price)} ${up ? '+' : ''}${fmt(e.changePercent, 2)}%</small>`;
+    // มูลค่าที่เปลี่ยนจากราคาปิดปกติ ตามจำนวนหุ้นที่ถือ
+    const extValue = (asset.shares || 0) * e.price;
+    const amt = extValue > 0 ? extValue - extValue / (1 + e.changePercent / 100) : 0;
+    return `<small class="cr-ext ${up ? 'gain' : 'loss'}" title="${e.session === 'pre' ? 'ราคาก่อนตลาดเปิด' : 'ราคาหลังตลาดปิด'}"><span>${e.session === 'pre' ? 'ก่อนเปิด' : 'หลังปิด'}</span> ${fmtTrade(e.price)} ${up ? '+' : ''}${fmt(e.changePercent, 2)}%${amt ? ` (${up ? '+' : '−'}${fmtUsd(Math.abs(amt))})` : ''}</small>`;
 }
 
 function crValueHtml(asset) {
@@ -1920,7 +1923,9 @@ function dayLineHtml(asset) {
     const open = pc.marketState === 'REGULAR';
     const label = IS_FUND_PF ? 'NAV' : open ? 'วันนี้' : 'ปิดล่าสุด';
     const title = IS_FUND_PF ? `NAV ล่าสุด${pc.navDate ? ` (${pc.navDate})` : ''} เทียบวันก่อน` : open ? 'เปลี่ยนแปลงวันนี้ (ตลาดเปิดอยู่)' : 'เปลี่ยนแปลงของวันทำการล่าสุด';
-    return `<small class="cr-ext cr-day ${up ? 'gain' : 'loss'}" title="${title}"><span>${label}</span> ${up ? '+' : ''}${fmt(pct, 2)}%${amt ? ` (${up ? '+' : '−'}${fmtUsd(Math.abs(amt))})` : ''}</small>`;
+    const px = getPrice(asset.name);
+    const pxText = px > 0 ? `${IS_FUND_PF ? '฿' + fmt(px, 4) : fmtTrade(px)} ` : '';
+    return `<small class="cr-ext cr-day ${up ? 'gain' : 'loss'}" title="${title}"><span>${label}</span> ${pxText}${up ? '+' : ''}${fmt(pct, 2)}%${amt ? ` (${up ? '+' : '−'}${fmtUsd(Math.abs(amt))})` : ''}</small>`;
 }
 function crProfitMain(asset, cost, profit, profitPct) {
     const up = profit >= 0;
