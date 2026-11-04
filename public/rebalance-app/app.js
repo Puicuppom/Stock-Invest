@@ -1550,6 +1550,8 @@ function recalculate() {
         paintBucket(card, asset);
         const crPct = card.querySelector('.cr-pct');
         if (crPct) crPct.innerHTML = crPctHtml(asset, curPct);
+        const crTime = card.querySelector('.cr-time');
+        if (crTime) crTime.innerHTML = timeLineHtml(asset);
         const crAlloc = card.querySelector('.cr-alloc');
         if (crAlloc) crAlloc.innerHTML = crAllocHtml(asset, curPct);
         const crValue = card.querySelector('.cr-value');
@@ -1893,7 +1895,7 @@ function extLineHtml(asset) {
     // มูลค่าที่เปลี่ยนจากราคาปิดปกติ ตามจำนวนหุ้นที่ถือ
     const extValue = (asset.shares || 0) * e.price;
     const amt = extValue > 0 ? extValue - extValue / (1 + e.changePercent / 100) : 0;
-    return `<small class="cr-ext ${up ? 'gain' : 'loss'}" title="${e.session === 'pre' ? 'ราคาก่อนตลาดเปิด' : 'ราคาหลังตลาดปิด'}"><span>${e.session === 'pre' ? 'ก่อนเปิด' : 'หลังปิด'}</span> ${fmtTrade(e.price)} ${up ? '+' : ''}${fmt(e.changePercent, 2)}%${amt ? ` (${up ? '+' : '−'}${fmtUsd(Math.abs(amt))})` : ''}</small>`;
+    return `<small class="cr-ext ${up ? 'gain' : 'loss'}" title="${e.session === 'pre' ? 'ราคาก่อนตลาดเปิด' : 'ราคาหลังตลาดปิด'}"><span>${e.session === 'pre' ? 'ก่อนเปิด' : 'หลังปิด'}</span> ${fmtTrade(e.price)} <i class="cr-chg">${up ? '+' : ''}${fmt(e.changePercent, 2)}%</i>${amt ? `<em class="cr-amt"> (${up ? '+' : '−'}${fmtUsd(Math.abs(amt))})</em>` : ''}</small>`;
 }
 
 function crValueHtml(asset) {
@@ -1907,7 +1909,10 @@ function crValueHtml(asset) {
 
 function crProfitHtml(asset, cost, profit, profitPct) {
     // บรรทัดที่ 3 แสดงอย่างเดียว: ช่วงก่อนเปิด/หลังปิด = ราคานอกเวลา · ไม่งั้น = เปลี่ยนแปลงของวัน
-    return crProfitMain(asset, cost, profit, profitPct) + (extLineHtml(asset) || dayLineHtml(asset));
+    return crProfitMain(asset, cost, profit, profitPct) + timeLineHtml(asset);
+}
+function timeLineHtml(asset) {
+    return extLineHtml(asset) || dayLineHtml(asset);
 }
 
 /* เปลี่ยนแปลงของวัน (ราคาปกติ): ตลาดเปิดอยู่ = วันนี้ · ปิดแล้ว = วันทำการล่าสุด
@@ -1925,12 +1930,12 @@ function dayLineHtml(asset) {
     const title = IS_FUND_PF ? `NAV ล่าสุด${pc.navDate ? ` (${pc.navDate})` : ''} เทียบวันก่อน` : open ? 'เปลี่ยนแปลงวันนี้ (ตลาดเปิดอยู่)' : 'เปลี่ยนแปลงของวันทำการล่าสุด';
     const px = getPrice(asset.name);
     const pxText = px > 0 ? `${IS_FUND_PF ? '฿' + fmt(px, 4) : fmtTrade(px)} ` : '';
-    return `<small class="cr-ext cr-day ${up ? 'gain' : 'loss'}" title="${title}"><span>${label}</span> ${pxText}${up ? '+' : ''}${fmt(pct, 2)}%${amt ? ` (${up ? '+' : '−'}${fmtUsd(Math.abs(amt))})` : ''}</small>`;
+    return `<small class="cr-ext cr-day ${up ? 'gain' : 'loss'}" title="${title}"><span>${label}</span> ${pxText}<i class="cr-chg">${up ? '+' : ''}${fmt(pct, 2)}%</i>${amt ? `<em class="cr-amt"> (${up ? '+' : '−'}${fmtUsd(Math.abs(amt))})</em>` : ''}</small>`;
 }
 function crProfitMain(asset, cost, profit, profitPct) {
     const up = profit >= 0;
     return cost > 0 && !isCashAsset(asset)
-        ? `<b class="${up ? 'gain' : 'loss'}">${up ? '+' : '−'}${fmtPct(Math.abs(profitPct))}</b>
+        ? `<b class="cr-plpill ${up ? 'gain' : 'loss'}">${up ? '+' : '−'}${fmtPct(Math.abs(profitPct))}</b>
            <small class="${up ? 'gain' : 'loss'}">(${up ? '+' : '−'}${fmtUsd(Math.abs(profit))})</small>`
         : `<b class="muted">—</b><small class="muted">${isCashAsset(asset) ? 'เงินสด' : 'ยังไม่ใส่ทุน'}</small>`;
 }
@@ -1959,6 +1964,7 @@ function appendAssetCard(list, payload) {
             <div class="cr-name">
                 <b>${asset.name}</b>
                 <small class="cr-pct">${crPctHtml(asset, curPct)}</small>
+                <span class="cr-time">${timeLineHtml(asset)}</span>
                 ${act}
             </div>
             <div class="cr-alloc">${crAllocHtml(asset, curPct)}</div>

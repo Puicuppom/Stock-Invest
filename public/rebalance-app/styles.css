@@ -1818,3 +1818,38 @@ html:root { font-size: 16px; }
 .pf-dots button.on { width: 18px; background: var(--ui-accent); }
 .rb2 .hero .pf-dots button { flex: none; min-height: 0; min-width: 0; height: 6px; line-height: 0; box-shadow: none; }
 .rb2 .hero .pf-dots { align-items: center; height: 10px; }
+
+/* % กำไร/ขาดทุน: ป้ายมีกรอบ แบบเดียวกับหน้าวิเคราะห์หุ้น */
+.rb2 .cr-profit b.cr-plpill { display: inline-block; min-width: 72px; padding: 3px 8px; border-radius: 8px; text-align: center; font-size: 14px; font-weight: 600; line-height: 1.35; }
+.rb2 .cr-profit b.cr-plpill.gain { color: var(--ui-success, #4ade80); background: color-mix(in srgb, var(--ui-success, #4ade80) 14%, transparent); }
+.rb2 .cr-profit b.cr-plpill.loss { color: var(--ui-danger, #f87171); background: color-mix(in srgb, var(--ui-danger, #f87171) 14%, transparent); }
+.rb2 .cr-profit small { margin-top: 3px; }
+.rb2 .cr-name .cr-time { display: none; }
+
+/* มือถือ: ซ้าย = ชื่อ+สัดส่วน / ราคาวันนี้ / ปุ่ม · ขวา = มูลค่า / % กำไร / จำนวนเงิน */
+@media (max-width: 639px) {
+  .rb2 .cr-name { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 8px; row-gap: 3px; align-items: baseline; }
+  .rb2 .cr-name > b { grid-column: 1; }
+  .rb2 .cr-name > .cr-pct { grid-column: 2; min-width: 0; white-space: nowrap; overflow: hidden; }
+  .rb2 .cr-name > .cr-time, .rb2 .cr-name > .cr-acts { grid-column: 1 / -1; }
+  .rb2 .cr-name > .cr-time { display: block; min-width: 0; }
+  .rb2 .cr-name .cr-time .cr-ext { display: block; width: auto; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+  .rb2 .cr-profit .cr-ext { display: none !important; }
+  .rb2 .cr-value small { display: none; }
+  .rb2 .cr-row { grid-template-columns: 40px minmax(0, 1fr) auto; grid-template-rows: auto auto; row-gap: 2px; }
+  .rb2 .cr-row > .asset-badge { grid-column: 1; grid-row: 1 / 3; align-self: center; }
+  .rb2 .cr-row > .cr-name { grid-column: 2; grid-row: 1 / 3; }
+  .rb2 .cr-row > .cr-value { grid-column: 3; grid-row: 1; align-self: end; padding-top: 0; }
+  .rb2 .cr-row > .cr-profit { grid-column: 3; grid-row: 2; align-self: start; padding-top: 0; min-width: 0; }
+}
+
+.cr-ext em.cr-amt { font-style: normal; }
+@media (max-width: 639px) {
+  .rb2 .cr-name .cr-ext em.cr-amt { display: none; }
+  .rb2 .cr-name .cr-ext { color: var(--ui-text); font-variant-numeric: tabular-nums; }
+  .rb2 .cr-name .cr-ext.gain .cr-chg { color: var(--ui-success, #4ade80); }
+  .rb2 .cr-name .cr-ext span { display: inline-block; padding: 0 6px; margin-right: 4px; border-radius: 999px; font-size: 10.5px; line-height: 16px; color: var(--ui-muted); background: color-mix(in srgb, var(--ui-text) 8%, transparent); }
+  .rb2 .cr-name .cr-ext .cr-chg { color: var(--ui-danger, #f87171); }
+  .rb2 .cr-name .cr-ext.gain .cr-chg { color: var(--ui-success, #4ade80); }
+}
+.cr-ext i.cr-chg { font-style: normal; }
