@@ -1484,7 +1484,39 @@ function computeProfitSummary() {
     return { cost, value, profit, pct, pending, noCost };
 }
 
+/* เปลี่ยนแปลงจากวันก่อนทั้งพอร์ต: รวมมูลค่าที่ขึ้น/ลงของแต่ละตัว ÷ มูลค่าเมื่อวาน (รวมเงินสด) */
+function computeDayChange() {
+    let now = 0, change = 0, known = 0, open = false;
+    myPortfolio.forEach(a => {
+        const v = a.value || 0;
+        if (!(v > 0)) return;
+        now += v;
+        if (isCashAsset(a)) return;
+        const pc = priceCache[a.name];
+        const pct = pc?.changePercent;
+        if (!Number.isFinite(pct)) return;
+        change += v - v / (1 + pct / 100);
+        known += v;
+        if (pc.marketState === 'REGULAR') open = true;
+    });
+    const prev = now - change;
+    return { change, pct: prev > 0 ? (change / prev) * 100 : 0, known, open };
+}
+function updateDayChange() {
+    const el = document.getElementById('hero-day');
+    if (!el) return;
+    const { change, pct, known, open } = computeDayChange();
+    if (!(known > 0)) { el.hidden = true; return; }
+    const up = change >= 0;
+    const label = IS_FUND_PF ? 'NAV ล่าสุด' : open ? 'วันนี้' : 'ปิดล่าสุด';
+    el.hidden = false;
+    el.className = `hero-day ${up ? 'gain' : 'loss'}`;
+    el.title = IS_FUND_PF ? 'เทียบ NAV ล่าสุดกับวันก่อน ทั้งพอร์ต' : open ? 'เปลี่ยนแปลงจากราคาปิดเมื่อวาน ทั้งพอร์ต (ตลาดเปิดอยู่)' : 'เปลี่ยนแปลงของวันทำการล่าสุด ทั้งพอร์ต';
+    el.innerHTML = `<span class="hd-tag">${label}</span><b>${up ? '+' : '−'}${fmt(Math.abs(pct), 2)}%</b> <span class="hd-amt">${up ? '+' : '−'}${fmtUsd(Math.abs(change))}</span>`;
+}
+
 function updateProfitSummary() {
+    updateDayChange();
     const box = document.getElementById('pl-box');
     const pctEl = document.getElementById('pl-pct');
     const amountEl = document.getElementById('pl-amount');

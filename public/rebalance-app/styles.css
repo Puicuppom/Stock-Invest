@@ -1875,3 +1875,11 @@ html:root { font-size: 16px; }
   .rb2 .cr-name > b { flex-basis: 100%; }
   .rb2 .cr-name .cr-acts { display: inline-flex !important; gap: 6px; }
 }
+
+/* เปลี่ยนแปลงจากวันก่อน (ทั้งพอร์ต) */
+.rb2 .hero-day { flex-basis: 100%; display: flex; align-items: center; gap: 6px; margin-top: 2px; font-size: 13px; font-variant-numeric: tabular-nums; }
+.rb2 .hero-day[hidden] { display: none; }
+.rb2 .hero-day b { font-weight: 600; }
+.rb2 .hero-day.gain b, .rb2 .hero-day.gain .hd-amt { color: var(--rb-gain); }
+.rb2 .hero-day.loss b, .rb2 .hero-day.loss .hd-amt { color: var(--rb-loss); }
+.rb2 .hero-day .hd-tag { padding: 0 7px; border-radius: 999px; font-size: 11px; line-height: 18px; color: var(--ui-muted); background: color-mix(in srgb, var(--ui-text) 8%, transparent); }
