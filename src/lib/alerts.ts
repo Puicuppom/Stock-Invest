@@ -76,8 +76,8 @@ export async function runAlerts(opts: { dryRun?: boolean } = {}) {
       title: `${pct > 0 ? "🚀" : "⚠️"} ${it.symbol} ${pct > 0 ? "+" : ""}${pct.toFixed(2)}%`, body: `${pct > 0 ? "ขึ้น" : "ลง"}แรงในวันทำการล่าสุด · ราคา ${money(data.lastClose, it.market)}${isHeld ? " · หุ้นในพอร์ต" : ""}` });
     const hits = findSrHits(data.pivot, data.zones, data.lastClose, "swing", SR_TOL).filter(h => h.kind === "support");
     const h = hits[0];
-    if (h) alerts.push({ kind: "sr", held: isHeld, key: `s:${id}:${h.price.toFixed(2)}:${day}`, url, tag: `s-${id}`,
-      title: `🎯 ${it.symbol} ใกล้แนวรับ ${money(h.price, it.market)}`, body: `ราคา ${money(data.lastClose, it.market)} ห่าง ${Math.abs(h.distancePercent).toFixed(1)}% · จุดน่าทยอยซื้อ ดูสัญญาณก่อนตัดสินใจ` });
+    if (h) alerts.push({ kind: "sr", held: isHeld, key: `s:${id}:${h.level.price.toFixed(2)}:${day}`, url, tag: `s-${id}`,
+      title: `🎯 ${it.symbol} ใกล้แนวรับ ${money(h.level.price, it.market)}`, body: `ราคา ${money(data.lastClose, it.market)} ห่าง ${Math.abs(h.distancePercent).toFixed(1)}% · จุดน่าทยอยซื้อ ดูสัญญาณก่อนตัดสินใจ` });
   });
 
   const fresh = alerts.filter(a => !state.sent[a.key]).sort((a, b) => Number(b.held) - Number(a.held));
