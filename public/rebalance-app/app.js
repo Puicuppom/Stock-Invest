@@ -1726,7 +1726,7 @@ function renderAssetSheetBody({ index, asset, cost, profit, profitPct, tradeSign
         <div class="asset-sheet-grid">
             <div class="asset-sheet-field">
                 <label>จำนวนเงิน ($)</label>
-                <input type="text" inputmode="decimal" value="${asset.shares ? formatInputVal(asset.shares) : ''}" placeholder="0.00" autocomplete="off"
+                <input type="text" inputmode="decimal" value="${asset.shares ? formatSharesInput(asset.shares) : ''}" placeholder="0.00" autocomplete="off"
                     oninput="updateAsset(${index}, 'shares', this.value)">
             </div>
             <div class="asset-sheet-field">
@@ -1750,7 +1750,7 @@ function renderAssetSheetBody({ index, asset, cost, profit, profitPct, tradeSign
         <div class="asset-sheet-grid">
             <div class="asset-sheet-field">
                 <label>จำนวน${UNIT}</label>
-                <input type="text" inputmode="decimal" value="${asset.shares ? formatInputVal(asset.shares) : ''}" placeholder="0.00" autocomplete="off"
+                <input type="text" inputmode="decimal" value="${asset.shares ? formatSharesInput(asset.shares) : ''}" placeholder="0.00" autocomplete="off"
                     oninput="updateAsset(${index}, 'shares', this.value)">
             </div>
             <div class="asset-sheet-field">
@@ -1773,8 +1773,12 @@ function renderAssetSheetBody({ index, asset, cost, profit, profitPct, tradeSign
         <button class="btn-settings-done" type="button" onclick="closeAssetSheet()">เสร็จสิ้น</button>`;
 }
 
+/* หุ้นเศษ (Dime ให้ทศนิยม 7 ตำแหน่ง) → แสดงครบ ไม่ปัดเหลือ 2 ตำแหน่ง */
 function fmtShares(n) {
-    return (n || 0).toLocaleString('en-US', { maximumFractionDigits: 4 });
+    return (n || 0).toLocaleString('en-US', { maximumFractionDigits: 7 });
+}
+function formatSharesInput(n) {
+    return Number(n).toFixed(7).replace(/\.?0+$/, '');
 }
 
 function formatSharesLabel(asset) {
@@ -3282,14 +3286,14 @@ function tradeAsset(index, side) {
             return;
         }
         asset.avgCost = (shares * avg + amount) / (shares + q);
-        asset.shares = shares + q;
+        asset.shares = Math.round((shares + q) * 1e7) / 1e7;
         if (cash) cash.shares = Math.round(((cash.shares || 0) - amount) * 100) / 100;
         afterTrade(asset.name, `ซื้อ ${asset.name} ${fmtShares(q)} ${UNIT} @ ${fmtTrade(p)}${cash ? ` · ตัดเงินสด ${fmtTrade(amount)}` : ''}`);
     } else {
         if (q > shares + 1e-9) { showToast(`มีแค่ ${fmtShares(shares)} ${UNIT}`, 'error'); return; }
         const realized = avg > 0 ? (p - avg) * q : null;
         const cash = useCash ? cashAssetUsd(true) : null;
-        asset.shares = Math.max(0, Math.round((shares - q) * 1e6) / 1e6);
+        asset.shares = Math.max(0, Math.round((shares - q) * 1e7) / 1e7);
         if (asset.shares === 0) asset.peakValue = 0;
         if (cash) cash.shares = Math.round(((cash.shares || 0) + amount) * 100) / 100;
         const pl = realized == null ? '' : ` · ${realized >= 0 ? 'กำไร' : 'ขาดทุน'} ${fmtTrade(Math.abs(realized))}`;
