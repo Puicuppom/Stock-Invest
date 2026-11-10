@@ -15,7 +15,7 @@ const MAX_SINGLE = 5;        // ส่งแยกไม่เกิน 5 อั
 async function watchlistItems(): Promise<Item[]> {
   const c = cloudConfig();
   if (!c) return [];
-  const res = await fetch(`${c.url}/rest/v1/watchlists?sync_key=eq.${encodeURIComponent(c.sync)}&select=items&limit=1`, { headers: c.headers, cache: "no-store", signal: AbortSignal.timeout(10000) });
+  const res = await fetch(`${c.url}/rest/v1/watchlists?sync_key=eq.${encodeURIComponent(c.sync)}&select=items&limit=1`, { headers: { ...c.headers, "x-watchlist-key": c.sync }, cache: "no-store", signal: AbortSignal.timeout(10000) });
   if (!res.ok) return [];
   const rows = await res.json();
   const items = rows?.[0]?.items;
@@ -73,7 +73,7 @@ export async function runAlerts(opts: { dryRun?: boolean } = {}) {
     const day = data.candles?.[data.candles.length - 1]?.date ?? "";
     const pct = data.changePercent;
     if (Number.isFinite(pct) && Math.abs(pct) >= MOVE_PCT) alerts.push({ kind: "move", held: isHeld, key: `m:${id}:${day}:${pct > 0 ? "u" : "d"}`, url, tag: `m-${id}`,
-      title: `${pct > 0 ? "🚀" : "⚠️"} ${it.symbol} ${pct > 0 ? "+" : ""}${pct.toFixed(2)}% วันนี้`, body: `ราคา ${money(data.lastClose, it.market)}${isHeld ? " · หุ้นในพอร์ต" : ""}` });
+      title: `${pct > 0 ? "🚀" : "⚠️"} ${it.symbol} ${pct > 0 ? "+" : ""}${pct.toFixed(2)}%`, body: `${pct > 0 ? "ขึ้น" : "ลง"}แรงในวันทำการล่าสุด · ราคา ${money(data.lastClose, it.market)}${isHeld ? " · หุ้นในพอร์ต" : ""}` });
     const hits = findSrHits(data.pivot, data.zones, data.lastClose, "swing", SR_TOL).filter(h => h.kind === "support");
     const h = hits[0];
     if (h) alerts.push({ kind: "sr", held: isHeld, key: `s:${id}:${h.price.toFixed(2)}:${day}`, url, tag: `s-${id}`,
