@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "../../public/design-system.css";
 import "./globals.css";
+import RegisterSW from "@/components/RegisterSW";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,6 +18,7 @@ export const metadata: Metadata = {
   title: "InvestPui.com",
   description: "วิเคราะห์แนวรับแนวต้านหุ้น SET และ US",
   manifest: "/manifest.json",
+  icons: { icon: "/icon.svg", apple: "/icon-192.png" },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -41,6 +43,7 @@ export default function RootLayout({
     <html lang="th">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased ui2`}>
         {children}
+        <RegisterSW />
       </body>
     </html>
   );

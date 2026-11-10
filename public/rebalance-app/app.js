@@ -3528,3 +3528,189 @@ function renderProfileSheet() {
         </div>`).join('');
     renderProfileSum();
 }
+
+/* ── แจ้งเตือนมือถือ (Web Push) ── */
+const PUSH_PREFS_DEFAULT = { earnings: true, xd: true, sr: true, move: true };
+function pushSupported() {
+    return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+}
+function isIOS() { return /iPhone|iPad|iPod/.test(navigator.userAgent); }
+function isStandalone() {
+    try { return window.top.matchMedia('(display-mode: standalone)').matches || window.top.navigator.standalone === true; } catch { return navigator.standalone === true; }
+}
+function b64ToBytes(b64) {
+    const s = atob((b64 + '='.repeat((4 - b64.length % 4) % 4)).replace(/-/g, '+').replace(/_/g, '/'));
+    return Uint8Array.from(s, c => c.charCodeAt(0));
+}
+async function pushRegistration() {
+    const reg = await navigator.serviceWorker.register('/sw.js');
+    await navigator.serviceWorker.ready;
+    return reg;
+}
+function readPushPrefs() {
+    const prefs = { ...PUSH_PREFS_DEFAULT };
+    document.querySelectorAll('#push-opts input[data-pref]').forEach(i => { prefs[i.dataset.pref] = i.checked; });
+    return prefs;
+}
+function renderPush(state) {
+    const btn = document.getElementById('push-btn');
+    const opts = document.getElementById('push-opts');
+    const hint = document.getElementById('push-hint');
+    if (!btn) return;
+    if (!pushSupported()) {
+        btn.disabled = true; btn.textContent = 'ไม่รองรับ';
+        hint.textContent = isIOS() ? 'iPhone: กดแชร์ › "เพิ่มไปยังหน้าจอโฮม" แล้วเปิดจากไอคอน' : 'เบราว์เซอร์นี้ไม่รองรับแจ้งเตือน';
+        return;
+    }
+    if (isIOS() && !isStandalone()) {
+        hint.textContent = 'iPhone: กดแชร์ › "เพิ่มไปยังหน้าจอโฮม" แล้วเปิดจากไอคอนก่อน';
+    }
+    const on = !!state?.subscribed;
+    btn.textContent = on ? 'ปิด' : 'เปิด';
+    btn.classList.toggle('on', on);
+    btn.disabled = false;
+    opts.hidden = !on;
+    if (state?.prefs) document.querySelectorAll('#push-opts input[data-pref]').forEach(i => { i.checked = state.prefs[i.dataset.pref] !== false; });
+    if (Notification.permission === 'denied') hint.textContent = 'ถูกบล็อกไว้ · เปิดสิทธิ์แจ้งเตือนของเว็บนี้ในตั้งค่าเบราว์เซอร์';
+}
+async function refreshPushState() {
+    if (!pushSupported()) return renderPush(null);
+    try {
+        const reg = await navigator.serviceWorker.getRegistration('/');
+        const sub = reg && await reg.pushManager.getSubscription();
+        if (!sub) return renderPush({ subscribed: false });
+        const res = await fetch('/api/push/subscribe?check=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ endpoint: sub.endpoint }) });
+        renderPush(res.ok ? await res.json() : { subscribed: false });
+    } catch { renderPush({ subscribed: false }); }
+}
+async function togglePush() {
+    const btn = document.getElementById('push-btn');
+    if (!pushSupported() || !btn) return;
+    btn.disabled = true;
+    try {
+        const reg = await pushRegistration();
+        const existing = await reg.pushManager.getSubscription();
+        if (btn.classList.contains('on') && existing) {
+            await fetch('/api/push/subscribe', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ endpoint: existing.endpoint }) });
+            await existing.unsubscribe();
+            showToast('ปิดแจ้งเตือนแล้ว');
+            return renderPush({ subscribed: false });
+        }
+        const perm = await Notification.requestPermission();
+        if (perm !== 'granted') { showToast('ยังไม่ได้อนุญาตแจ้งเตือน', 'error'); return renderPush({ subscribed: false }); }
+        const { publicKey } = await (await fetch('/api/push/key')).json();
+        if (!publicKey) throw new Error('no key');
+        const sub = existing || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(publicKey) });
+        const res = await fetch('/api/push/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscription: sub.toJSON(), prefs: readPushPrefs() }) });
+        if (!res.ok) throw new Error('save');
+        showToast('เปิดแจ้งเตือนแล้ว · ลองกด "ส่งทดสอบ"');
+        renderPush({ subscribed: true, prefs: readPushPrefs() });
+    } catch {
+        showToast('เปิดแจ้งเตือนไม่สำเร็จ', 'error');
+        renderPush({ subscribed: false });
+    } finally { btn.disabled = false; }
+}
+async function savePushPrefs() {
+    try {
+        const reg = await navigator.serviceWorker.getRegistration('/');
+        const sub = reg && await reg.pushManager.getSubscription();
+        if (!sub) return;
+        await fetch('/api/push/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscription: sub.toJSON(), prefs: readPushPrefs() }) });
+    } catch { /* ignore */ }
+}
+async function testPush() {
+    try {
+        const res = await fetch('/api/push/test', { method: 'POST' });
+        const j = await res.json();
+        showToast(res.ok ? (j.sent ? 'ส่งแล้ว · ดูแจ้งเตือนบนเครื่อง' : 'ไม่มีเครื่องที่รับได้') : (j.error || 'ส่งไม่สำเร็จ'), res.ok && j.sent ? 'success' : 'error');
+    } catch { showToast('ส่งไม่สำเร็จ', 'error'); }
+}
+refreshPushState();
+
+/* ── ผลตอบแทนพอร์ตเทียบ S&P 500 / SET (จากยอดที่บันทึกทุกวัน) ── */
+let perfHistory = null;
+let perfRange = (() => { try { return localStorage.getItem('rbPerfRange') || 'all'; } catch { return 'all'; } })();
+async function loadPerfHistory() {
+    try {
+        const res = await fetch('/api/history', { cache: 'no-store' });
+        if (!res.ok) return;
+        perfHistory = (await res.json()).days || [];
+        renderPerfCard();
+    } catch { /* ignore */ }
+}
+/* ผลตอบแทนแบบถ่วงเวลา: หักเงินเข้า-ออก (ต้นทุน + เงินสดที่เปลี่ยน) ออกก่อนเทียบวันต่อวัน */
+function perfSeries(days, pfId) {
+    const rows = days.filter(d => d.pf && d.pf[pfId]);
+    const out = [];
+    let idx = 1, base = null;
+    rows.forEach((d, i) => {
+        const p = d.pf[pfId];
+        const total = (p.v || 0) + (p.cash || 0);
+        if (i > 0) {
+            const q = rows[i - 1].pf[pfId];
+            const prevTotal = (q.v || 0) + (q.cash || 0);
+            const flow = ((p.c || 0) - (q.c || 0)) + ((p.cash || 0) - (q.cash || 0));
+            if (prevTotal > 0) idx *= (total - flow) / prevTotal;
+        }
+        if (base == null) base = { spy: d.spy, set: d.set };
+        out.push({ d: d.d, pf: (idx - 1) * 100, spy: base.spy && d.spy ? (d.spy / base.spy - 1) * 100 : null, set: base.set && d.set ? (d.set / base.set - 1) * 100 : null });
+    });
+    return out;
+}
+function setPerfRange(r) {
+    perfRange = r;
+    try { localStorage.setItem('rbPerfRange', r); } catch { /* ignore */ }
+    renderPerfCard(true);
+}
+function renderPerfCard(keepOpen) {
+    const el = document.getElementById('perf-card');
+    if (!el || !perfHistory) return;
+    const wasOpen = el.open || keepOpen === true;
+    const all = perfHistory.filter(d => d.pf && d.pf[activePortfolioId]);
+    el.hidden = false;
+    const cutDays = { '1m': 31, '3m': 92, '1y': 366 }[perfRange];
+    const from = cutDays ? new Date(Date.now() - cutDays * 86400000).toISOString().slice(0, 10) : '';
+    const days = from ? all.filter(d => d.d >= from) : all;
+    const s = perfSeries(days, activePortfolioId);
+    const last = s[s.length - 1];
+    const pct = v => v == null ? '—' : `${v >= 0 ? '+' : '−'}${fmt(Math.abs(v), 2)}%`;
+    const cls = v => v == null ? '' : v >= 0 ? 'gain' : 'loss';
+    const bm = IS_FUND_PF ? ['set', 'SET'] : ['spy', 'S&P 500'];
+    const other = IS_FUND_PF ? ['spy', 'S&P 500'] : ['set', 'SET'];
+    const head = `<summary class="perf-head"><span class="perf-title">เทียบตลาด</span>
+        ${s.length >= 2 ? `<span class="perf-sum"><b class="${cls(last.pf)}">${pct(last.pf)}</b><small>${bm[1]} ${pct(last[bm[0]])}</small></span>` : `<span class="perf-sum"><small>เริ่มบันทึก ${all[0] ? new Date(all[0].d).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }) : 'คืนนี้'}</small></span>`}
+        <span class="pc-chev" aria-hidden="true"></span></summary>`;
+    if (s.length < 2) {
+        el.innerHTML = head + `<p class="perf-empty">ระบบบันทึกยอดพอร์ตทุกวันหลังตลาดสหรัฐปิด (ประมาณ 05:30 น.) · กราฟจะเริ่มขึ้นเมื่อมีข้อมูลตั้งแต่ 2 วัน</p>`;
+        el.open = wasOpen;
+        return;
+    }
+    el.innerHTML = head + `
+        <div class="perf-range" role="group" aria-label="ช่วงเวลา">${[['1m', '1 เดือน'], ['3m', '3 เดือน'], ['1y', '1 ปี'], ['all', 'ทั้งหมด']].map(([k, t]) => `<button type="button" class="${perfRange === k ? 'on' : ''}" onclick="setPerfRange('${k}')">${t}</button>`).join('')}</div>
+        ${perfChartSvg(s, bm[0], other[0])}
+        <div class="perf-legend">
+            <span><i style="background:var(--ui-accent)"></i>พอร์ตนี้ <b class="${cls(last.pf)}">${pct(last.pf)}</b></span>
+            <span><i style="background:#f59e0b"></i>${bm[1]} <b class="${cls(last[bm[0]])}">${pct(last[bm[0]])}</b></span>
+            <span><i style="background:#a78bfa"></i>${other[1]} <b class="${cls(last[other[0]])}">${pct(last[other[0]])}</b></span>
+        </div>
+        <p class="perf-note">${last.pf != null && last[bm[0]] != null ? (last.pf >= last[bm[0]] ? `ชนะ ${bm[1]} ${fmt(last.pf - last[bm[0]], 2)}%` : `แพ้ ${bm[1]} ${fmt(last[bm[0]] - last.pf, 2)}%`) : ''} · หักเงินที่ใส่เพิ่ม/ถอนออกแล้ว</p>`;
+    el.open = wasOpen;
+}
+function perfChartSvg(s, k1, k2) {
+    const W = 600, H = 170, P = 6;
+    const vals = s.flatMap(r => [r.pf, r[k1], r[k2]]).filter(v => v != null);
+    let lo = Math.min(0, ...vals), hi = Math.max(0, ...vals);
+    if (hi - lo < 1) { hi += 0.5; lo -= 0.5; }
+    const x = i => P + (i / (s.length - 1)) * (W - 2 * P);
+    const y = v => P + (1 - (v - lo) / (hi - lo)) * (H - 2 * P);
+    const line = (key, color, w) => {
+        const pts = s.map((r, i) => r[key] == null ? null : `${x(i).toFixed(1)},${y(r[key]).toFixed(1)}`).filter(Boolean);
+        return pts.length > 1 ? `<polyline points="${pts.join(' ')}" fill="none" stroke="${color}" stroke-width="${w}" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>` : '';
+    };
+    const fmtD = d => new Date(d).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+    return `<div class="perf-chart"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="กราฟผลตอบแทนเทียบดัชนี">
+        <line x1="0" x2="${W}" y1="${y(0).toFixed(1)}" y2="${y(0).toFixed(1)}" stroke="currentColor" stroke-opacity=".18" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"/>
+        ${line(k2, '#a78bfa', 1.5)}${line(k1, '#f59e0b', 1.75)}${line('pf', 'var(--ui-accent)', 2.5)}
+    </svg><div class="perf-axis"><span>${fmtD(s[0].d)}</span><span>${fmtD(s[s.length - 1].d)}</span></div></div>`;
+}
+loadPerfHistory();
