@@ -65,7 +65,10 @@ export async function fetchYahooCandles(
   });
 
   if (!res.ok) {
-    throw new Error(`Yahoo API error: ${res.status}`);
+    // ข้อความที่ผู้ใช้เห็น: ภาษาไทย บอกสาเหตุที่น่าจะเป็น
+    if (res.status === 404) throw new Error("ไม่พบหุ้นตัวนี้ · ตรวจตัวย่อ และเลือกตลาด US/ไทย ให้ถูก");
+    if (res.status === 429) throw new Error("แหล่งข้อมูลราคาขอให้รอสักครู่ · ลองใหม่อีกครั้ง");
+    throw new Error(`ดึงข้อมูลราคาไม่สำเร็จ (${res.status}) · ลองใหม่อีกครั้ง`);
   }
 
   const json = (await res.json()) as YahooChartResponse;
