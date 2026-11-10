@@ -1773,12 +1773,11 @@ function renderAssetSheetBody({ index, asset, cost, profit, profitPct, tradeSign
         <button class="btn-settings-done" type="button" onclick="closeAssetSheet()">เสร็จสิ้น</button>`;
 }
 
-/* หุ้นเศษ (Dime ให้ทศนิยม 7 ตำแหน่ง) → แสดงครบ ไม่ปัดเหลือ 2 ตำแหน่ง */
 function fmtShares(n) {
-    return (n || 0).toLocaleString('en-US', { maximumFractionDigits: 7 });
+    return (n || 0).toLocaleString('en-US', { maximumFractionDigits: 2 });
 }
 function formatSharesInput(n) {
-    return Number(n).toFixed(7).replace(/\.?0+$/, '');
+    return Number(n).toFixed(2);
 }
 
 function formatSharesLabel(asset) {
@@ -3718,3 +3717,83 @@ function perfChartSvg(s, k1, k2) {
     </svg><div class="perf-axis"><span>${fmtD(s[0].d)}</span><span>${fmtD(s[s.length - 1].d)}</span></div></div>`;
 }
 loadPerfHistory();
+
+
+/* ── ตรวจยอดกับ Dime: แก้จำนวนหุ้น/ต้นทุนทุกตัวในหน้าเดียว (ทศนิยม 2 ตำแหน่ง) ── */
+const r2 = n => Math.round((Number(n) || 0) * 100) / 100;
+function openReconcileSheet() {
+    const rows = myPortfolio.map((a, i) => ({ a, i })).sort((x, y) => Number(isCashAsset(x.a)) - Number(isCashAsset(y.a)));
+    document.getElementById('rc-sub').textContent = `${getActivePortfolioName()} · เปิด Dime คู่กัน แล้วแก้ช่องที่ไม่ตรง`;
+    document.getElementById('rc-head-shares').textContent = `จำนวน${UNIT}คงเหลือ`;
+    document.getElementById('rc-head-cost').textContent = `ต้นทุนต่อ${UNIT} (${CUR_SIGN})`;
+    document.getElementById('rc-rows').innerHTML = rows.map(({ a, i }) => {
+        const cash = isCashAsset(a);
+        const px = getPrice(a.name);
+        return `<div class="rc-row" data-i="${i}">
+            <div class="rc-sym"><b>${escapePfHtml(a.name)}</b><small>${cash ? 'เงินสด' : px > 0 ? (IS_FUND_PF ? '฿' + fmt(px, 4) : fmtTrade(px)) : ''}</small></div>
+            <label class="rc-cell"><input type="text" inputmode="decimal" data-f="shares" data-was="${r2(a.shares)}" value="${r2(a.shares).toFixed(2)}" oninput="reconcileInput(this)" aria-label="จำนวน ${escapePfHtml(a.name)}"><span class="rc-was"></span></label>
+            ${cash ? '<span class="rc-dash">—</span>' : `<label class="rc-cell"><input type="text" inputmode="decimal" data-f="avgCost" data-was="${r2(a.avgCost)}" value="${r2(a.avgCost).toFixed(2)}" oninput="reconcileInput(this)" aria-label="ต้นทุนต่อหุ้น ${escapePfHtml(a.name)}"><span class="rc-was"></span></label>`}
+        </div>`;
+    }).join('');
+    reconcileSummary();
+    document.getElementById('reconcile-overlay').classList.add('open');
+}
+function closeReconcileSheet(e) {
+    if (e && e.target !== document.getElementById('reconcile-overlay')) return;
+    document.getElementById('reconcile-overlay').classList.remove('open');
+}
+function rcValue(inp) {
+    const v = parseFloat(String(inp.value).replace(/,/g, '').trim());
+    return Number.isFinite(v) && v >= 0 ? r2(v) : null;
+}
+function reconcileInput(inp) {
+    const v = rcValue(inp);
+    const was = Number(inp.dataset.was);
+    const changed = v != null && v !== was;
+    const cell = inp.closest('.rc-cell');
+    cell.classList.toggle('chg', changed);
+    cell.classList.toggle('bad', v == null);
+    cell.querySelector('.rc-was').textContent = v == null ? 'ตัวเลขไม่ถูกต้อง' : changed ? `เดิม ${fmt(was, 2)}` : '';
+    reconcileSummary();
+}
+function reconcileChanges() {
+    const out = [];
+    document.querySelectorAll('#rc-rows .rc-row').forEach(row => {
+        const i = Number(row.dataset.i);
+        row.querySelectorAll('input[data-f]').forEach(inp => {
+            const v = rcValue(inp);
+            if (v != null && v !== Number(inp.dataset.was)) out.push({ i, f: inp.dataset.f, v });
+        });
+    });
+    return out;
+}
+function reconcileSummary() {
+    const ch = reconcileChanges();
+    const assets = new Set(ch.map(c => c.i));
+    const bad = document.querySelectorAll('#rc-rows .rc-cell.bad').length;
+    // ต้นทุนรวมหลังแก้ (ไม่รวมเงินสด)
+    let before = 0, after = 0;
+    myPortfolio.forEach((a, i) => {
+        if (isCashAsset(a)) return;
+        before += (a.shares || 0) * (a.avgCost || 0);
+        const sh = ch.find(c => c.i === i && c.f === 'shares')?.v ?? a.shares ?? 0;
+        const ac = ch.find(c => c.i === i && c.f === 'avgCost')?.v ?? a.avgCost ?? 0;
+        after += sh * ac;
+    });
+    const diff = after - before;
+    document.getElementById('rc-sum').innerHTML = `<span>${assets.size ? `แก้ไข <b>${assets.size}</b> ตัว · ` : ''}ต้นทุนรวม</span><span><b>${CUR_SIGN}${fmt(after, 2)}</b>${Math.abs(diff) >= 0.005 ? ` <em>(${diff > 0 ? '+' : '−'}${CUR_SIGN}${fmt(Math.abs(diff), 2)})</em>` : ''}</span>`;
+    const btn = document.getElementById('rc-save');
+    btn.disabled = !assets.size || bad > 0;
+    btn.textContent = assets.size ? `บันทึก ${assets.size} รายการ` : 'บันทึก';
+}
+function saveReconcile() {
+    const ch = reconcileChanges();
+    if (!ch.length) return closeReconcileSheet();
+    ch.forEach(({ i, f, v }) => { if (myPortfolio[i]) myPortfolio[i][f] = v; });
+    syncAssetValues();
+    persistPortfolio();
+    flushCloudSave();
+    renderAndCalculate();
+    closeReconcileSheet();
+    showToast(`อัปเดต ${new Set(ch.map(c => c.i)).size} รายการแล้ว`, 'success');
+}

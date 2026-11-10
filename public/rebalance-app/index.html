@@ -107,6 +107,10 @@
                     <span class="set-label">พอร์ต<small>สลับ เพิ่ม หรือเปลี่ยนชื่อพอร์ต</small></span>
                     <span class="set-value" id="set-portfolio-name">พอร์ตหลัก</span><span class="set-chev" aria-hidden="true"></span>
                 </button>
+                <button type="button" class="set-row" onclick="closeSettingsSheet();openReconcileSheet()">
+                    <span class="set-label">ตรวจยอดกับ Dime<small>แก้จำนวนหุ้นและต้นทุนทุกตัวในหน้าเดียว</small></span>
+                    <span class="set-chev" aria-hidden="true"></span>
+                </button>
                 <button type="button" class="set-row" onclick="closeSettingsSheet();openProfileSheet('growth')">
                     <span class="set-label">สัดส่วนของแต่ละสไตล์<small>มั่นคง สมดุล เติบโต ประกอบด้วยอะไร</small></span>
                     <span class="set-chev" aria-hidden="true"></span>
@@ -243,6 +247,23 @@
         </div>
         <p class="pc-note">ใส่ 0 เพื่อไม่ใช้กลุ่มนั้น · ใช้ร่วมกับหน้า คัดหุ้น › จัดพอร์ต</p>
         <button class="btn-settings-done" type="button" onclick="closeProfileSheet()">เสร็จสิ้น</button>
+    </div>
+</div>
+
+<div class="overlay" id="reconcile-overlay" onclick="closeReconcileSheet(event)">
+    <div class="sheet rc-sheet" onclick="event.stopPropagation()">
+        <div class="sheet-head">
+            <h3>ตรวจยอดกับ Dime</h3>
+            <button class="btn-sheet-close" type="button" aria-label="ปิด" onclick="closeReconcileSheet()">×</button>
+        </div>
+        <p class="rc-subline" id="rc-sub"></p>
+        <div class="rc-head"><span>หุ้น</span><span id="rc-head-shares">จำนวนหุ้นคงเหลือ</span><span id="rc-head-cost">ต้นทุนต่อหุ้น ($)</span></div>
+        <div class="rc-rows" id="rc-rows"></div>
+        <div class="rc-sum" id="rc-sum"></div>
+        <div class="rc-btns">
+            <button type="button" onclick="closeReconcileSheet()">ยกเลิก</button>
+            <button type="button" class="pri" id="rc-save" onclick="saveReconcile()" disabled>บันทึก</button>
+        </div>
     </div>
 </div>
 

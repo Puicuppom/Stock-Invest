@@ -1914,3 +1914,33 @@ html:root { font-size: 16px; }
 .rb2 .perf-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 8px; font-size: 12.5px; color: var(--ui-muted); font-variant-numeric: tabular-nums; }
 .rb2 .perf-legend i { display: inline-block; width: 10px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
 .perf-card[open] .pc-chev { transform: rotate(-135deg) translateY(-1px); }
+
+/* ตรวจยอดกับ Dime */
+.rc-sheet { display: flex; flex-direction: column; max-height: 88dvh; }
+.rc-subline { margin: -4px 0 10px; font-size: 12.5px; color: var(--ui-muted); }
+.rc-head, .rc-row { display: grid; grid-template-columns: 72px minmax(0, 1fr) minmax(0, 1fr); gap: 8px; align-items: start; }
+.rc-head { font-size: 11.5px; color: var(--ui-muted); padding: 0 2px 6px; }
+.rc-rows { overflow-y: auto; min-height: 0; flex: 1; }
+.rc-row { padding: 8px 2px; border-top: 1px solid var(--ui-border); }
+.rc-sym { padding-top: 6px; min-width: 0; }
+.rc-sym b { display: block; font-size: 14px; overflow: hidden; text-overflow: ellipsis; }
+.rc-sym small { font-size: 11px; color: var(--ui-muted); }
+.rc-cell { display: block; min-width: 0; }
+.rc-cell input { width: 100%; box-sizing: border-box; padding: 8px 9px; border-radius: 9px; border: 1px solid var(--ui-border); background: color-mix(in srgb, var(--ui-bg, #060b16) 70%, transparent); color: var(--ui-text); font: inherit; font-size: 14px; font-variant-numeric: tabular-nums; }
+.rc-cell.chg input { border-color: var(--ui-warning, #fbbf24); background: color-mix(in srgb, var(--ui-warning, #fbbf24) 8%, transparent); }
+.rc-cell.bad input { border-color: var(--ui-danger, #f87171); }
+.rc-was { display: block; min-height: 0; font-size: 11px; margin-top: 2px; color: var(--ui-warning, #fbbf24); font-variant-numeric: tabular-nums; }
+.rc-was:empty { display: none; }
+.rc-cell.bad .rc-was { color: var(--ui-danger, #f87171); }
+.rc-dash { padding: 8px 4px; color: var(--ui-muted); }
+.rc-sum { display: flex; justify-content: space-between; gap: 8px; margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, var(--ui-text) 5%, transparent); font-size: 12.5px; color: var(--ui-muted); font-variant-numeric: tabular-nums; }
+.rc-sum b { color: var(--ui-text); } .rc-sum em { font-style: normal; }
+.rc-btns { display: flex; gap: 8px; margin-top: 10px; }
+.rc-btns button { flex: 1; padding: 11px; border-radius: 12px; border: 1px solid var(--ui-border); background: transparent; color: var(--ui-text); font: inherit; font-weight: 600; cursor: pointer; }
+.rc-btns .pri { background: var(--ui-accent); color: #04121d; border: 0; }
+.rc-btns .pri:disabled { opacity: .45; cursor: default; }
+.rb2 .rc-sheet .rc-cell input { margin: 0; height: auto; border: 1px solid var(--ui-border); background: color-mix(in srgb, var(--ui-bg, #060b16) 70%, transparent); }
+.rb2 .rc-sheet .rc-cell.chg input { border-color: var(--ui-warning, #fbbf24); background: color-mix(in srgb, var(--ui-warning, #fbbf24) 8%, transparent); }
+.rb2 .rc-sheet .rc-cell.bad input { border-color: var(--ui-danger, #f87171); }
+.rb2 .rc-sheet .rc-was { margin: 3px 0 0; padding: 0; line-height: 1.3; }
+.rb2 .rc-sheet .rc-row { padding: 7px 2px; }
