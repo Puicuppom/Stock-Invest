@@ -3560,8 +3560,10 @@ function renderPush(state) {
     const opts = document.getElementById('push-opts');
     const hint = document.getElementById('push-hint');
     if (!btn) return;
+    const testRow = document.getElementById('push-test-row');
+    const logRow = document.getElementById('push-log-row');
     if (!pushSupported()) {
-        btn.disabled = true; btn.textContent = 'ไม่รองรับ';
+        btn.disabled = true;
         hint.textContent = isIOS() ? 'iPhone: กดแชร์ › "เพิ่มไปยังหน้าจอโฮม" แล้วเปิดจากไอคอน' : 'เบราว์เซอร์นี้ไม่รองรับแจ้งเตือน';
         return;
     }
@@ -3569,10 +3571,13 @@ function renderPush(state) {
         hint.textContent = 'iPhone: กดแชร์ › "เพิ่มไปยังหน้าจอโฮม" แล้วเปิดจากไอคอนก่อน';
     }
     const on = !!state?.subscribed;
-    btn.textContent = on ? 'ปิด' : 'เปิด';
     btn.classList.toggle('on', on);
+    btn.setAttribute('aria-checked', String(on));
     btn.disabled = false;
     opts.hidden = !on;
+    if (testRow) testRow.hidden = !on;
+    if (logRow) logRow.hidden = !on;
+    if (!(isIOS() && !isStandalone()) && Notification.permission !== 'denied') hint.textContent = on ? 'เปิดอยู่บนเครื่องนี้' : 'ปิดอยู่ · แตะสวิตช์เพื่อเปิด';
     if (state?.prefs) document.querySelectorAll('#push-opts input[data-pref]').forEach(i => { i.checked = state.prefs[i.dataset.pref] !== false; });
     if (Notification.permission === 'denied') hint.textContent = 'ถูกบล็อกไว้ · เปิดสิทธิ์แจ้งเตือนของเว็บนี้ในตั้งค่าเบราว์เซอร์';
 }

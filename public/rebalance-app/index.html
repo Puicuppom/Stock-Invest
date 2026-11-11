@@ -102,47 +102,74 @@
             <button class="btn-sheet-close" type="button" aria-label="ปิด" onclick="closeSettingsSheet()">×</button>
         </div>
         <div class="settings-body">
+            <div class="set-group-title">พอร์ต</div>
             <div class="set-list">
                 <button type="button" class="set-row" onclick="closeSettingsSheet();openPortfolioSheet()">
-                    <span class="set-label">พอร์ต<small>สลับ เพิ่ม หรือเปลี่ยนชื่อพอร์ต</small></span>
+                    <span class="set-ico" aria-hidden="true">📁</span>
+                    <span class="set-label">พอร์ตที่เปิดอยู่<small>สลับ เพิ่ม หรือเปลี่ยนชื่อ</small></span>
                     <span class="set-value" id="set-portfolio-name">พอร์ตหลัก</span><span class="set-chev" aria-hidden="true"></span>
                 </button>
                 <button type="button" class="set-row" onclick="closeSettingsSheet();openReconcileSheet()">
-                    <span class="set-label">ตรวจยอดกับ Dime<small>แก้จำนวนหุ้นและต้นทุนทุกตัวในหน้าเดียว</small></span>
+                    <span class="set-ico" aria-hidden="true">🧾</span>
+                    <span class="set-label">ตรวจยอดกับ Dime<small>แก้จำนวนหุ้นและต้นทุนในหน้าเดียว</small></span>
                     <span class="set-chev" aria-hidden="true"></span>
                 </button>
                 <button type="button" class="set-row" onclick="closeSettingsSheet();openProfileSheet('growth')">
-                    <span class="set-label">สัดส่วนของแต่ละสไตล์<small>มั่นคง สมดุล เติบโต ประกอบด้วยอะไร</small></span>
+                    <span class="set-ico" aria-hidden="true">🥧</span>
+                    <span class="set-label">สัดส่วนแต่ละแผน<small>มั่นคง · สมดุล · เติบโต</small></span>
                     <span class="set-chev" aria-hidden="true"></span>
                 </button>
+            </div>
+
+            <div class="set-group-title">แจ้งเตือนมือถือ</div>
+            <div class="set-list">
+                <div class="set-row set-push">
+                    <span class="set-ico" aria-hidden="true">🔔</span>
+                    <span class="set-label">รับแจ้งเตือน<small id="push-hint">ปิดอยู่ · แตะสวิตช์เพื่อเปิด</small></span>
+                    <button type="button" class="switch" id="push-btn" role="switch" aria-checked="false" aria-label="รับแจ้งเตือน" onclick="togglePush()"><span></span></button>
+                </div>
+                <div class="push-opts" id="push-opts" hidden>
+                    <span class="push-opts-label">เตือนเมื่อ</span>
+                    <div class="push-types">
+                        <label class="chip-check"><input type="checkbox" data-pref="earnings" onchange="savePushPrefs()"><span>📊 ใกล้ประกาศงบ</span></label>
+                        <label class="chip-check"><input type="checkbox" data-pref="xd" onchange="savePushPrefs()"><span>💰 ใกล้วัน XD</span></label>
+                        <label class="chip-check"><input type="checkbox" data-pref="sr" onchange="savePushPrefs()"><span>🎯 ใกล้แนวรับ</span></label>
+                        <label class="chip-check"><input type="checkbox" data-pref="move" onchange="savePushPrefs()"><span>🚀 ขึ้นลงแรง ≥5%</span></label>
+                    </div>
+                </div>
+                <button type="button" class="set-row" id="push-log-row" onclick="closeSettingsSheet();openPushLog()" hidden>
+                    <span class="set-ico" aria-hidden="true">🕘</span>
+                    <span class="set-label">แจ้งเตือนย้อนหลัง<small>ดู 7 วันล่าสุด · กดส่งซ้ำได้</small></span>
+                    <span class="set-chev" aria-hidden="true"></span>
+                </button>
+                <button type="button" class="set-row" id="push-test-row" onclick="testPush()" hidden>
+                    <span class="set-ico" aria-hidden="true">📨</span>
+                    <span class="set-label">ส่งแจ้งเตือนทดสอบ<small>เช็กว่ามือถือรับได้</small></span>
+                    <span class="set-chev" aria-hidden="true"></span>
+                </button>
+            </div>
+
+            <div class="set-group-title">การแสดงผล</div>
+            <div class="set-list">
                 <div class="set-row">
-                    <span class="set-label">สกุลเงินที่แสดง<small>ราคาต่อหุ้นและยอดซื้อขายเป็นดอลลาร์เสมอ</small></span>
+                    <span class="set-ico" aria-hidden="true">💱</span>
+                    <span class="set-label">สกุลเงิน<small>ราคาต่อหุ้นเป็น $ เสมอ</small></span>
                     <span class="cur-seg" role="group" aria-label="สกุลเงินที่แสดง">
                         <button type="button" data-cur="USD" onclick="setCurrency('USD')">USD</button>
                         <button type="button" data-cur="THB" onclick="setCurrency('THB')">THB</button>
                     </span>
                 </div>
                 <div class="set-row">
-                    <span class="set-label">เรตแลกเงิน<small>แบบ Dime = อัตรากลางหักส่วนต่าง 0.18% · ใช้กับทุกพอร์ต</small></span>
+                    <span class="set-ico" aria-hidden="true">🏦</span>
+                    <span class="set-label">เรตแลกเงิน<small>Dime = หักส่วนต่าง 0.18%</small></span>
                     <span class="cur-seg fx-seg" role="group" aria-label="เรตแลกเงิน">
                         <button type="button" data-fx="dime" onclick="setFxMode('dime')">Dime</button>
                         <button type="button" data-fx="mid" onclick="setFxMode('mid')">ตลาด</button>
                     </span>
                 </div>
-                <div class="set-row set-push">
-                    <span class="set-label">แจ้งเตือนมือถือ<small id="push-hint">ใกล้ประกาศงบ · วัน XD · ใกล้แนวรับ · ขึ้นลงแรง ≥5%</small></span>
-                    <button type="button" class="push-btn" id="push-btn" onclick="togglePush()">เปิด</button>
-                </div>
-                <div class="push-opts" id="push-opts" hidden>
-                    <label><input type="checkbox" data-pref="earnings" onchange="savePushPrefs()"> ประกาศงบ</label>
-                    <label><input type="checkbox" data-pref="xd" onchange="savePushPrefs()"> วัน XD</label>
-                    <label><input type="checkbox" data-pref="sr" onchange="savePushPrefs()"> ใกล้แนวรับ</label>
-                    <label><input type="checkbox" data-pref="move" onchange="savePushPrefs()"> ขึ้นลงแรง</label>
-                    <button type="button" class="push-test" onclick="testPush()">ส่งทดสอบ</button>
-                    <button type="button" class="push-test" onclick="closeSettingsSheet();openPushLog()">ย้อนหลัง</button>
-                </div>
                 <div class="set-row">
-                    <span class="set-label">ซิงค์ข้ามอุปกรณ์<small>บันทึกอัตโนมัติ ไม่ต้องล็อกอิน</small></span>
+                    <span class="set-ico" aria-hidden="true">☁️</span>
+                    <span class="set-label">ซิงค์ข้ามอุปกรณ์<small>บันทึกอัตโนมัติ</small></span>
                     <span class="set-value" id="set-sync">—</span>
                 </div>
             </div>
