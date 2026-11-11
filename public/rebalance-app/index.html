@@ -139,6 +139,7 @@
                     <label><input type="checkbox" data-pref="sr" onchange="savePushPrefs()"> ใกล้แนวรับ</label>
                     <label><input type="checkbox" data-pref="move" onchange="savePushPrefs()"> ขึ้นลงแรง</label>
                     <button type="button" class="push-test" onclick="testPush()">ส่งทดสอบ</button>
+                    <button type="button" class="push-test" onclick="closeSettingsSheet();openPushLog()">ย้อนหลัง</button>
                 </div>
                 <div class="set-row">
                     <span class="set-label">ซิงค์ข้ามอุปกรณ์<small>บันทึกอัตโนมัติ ไม่ต้องล็อกอิน</small></span>
@@ -247,6 +248,18 @@
         </div>
         <p class="pc-note">ใส่ 0 เพื่อไม่ใช้กลุ่มนั้น · ใช้ร่วมกับหน้า คัดหุ้น › จัดพอร์ต</p>
         <button class="btn-settings-done" type="button" onclick="closeProfileSheet()">เสร็จสิ้น</button>
+    </div>
+</div>
+
+<div class="overlay" id="pushlog-overlay" onclick="closePushLog(event)">
+    <div class="sheet pl-sheet" onclick="event.stopPropagation()">
+        <div class="sheet-head">
+            <h3>แจ้งเตือนย้อนหลัง</h3>
+            <button class="btn-sheet-close" type="button" aria-label="ปิด" onclick="closePushLog()">×</button>
+        </div>
+        <p class="rc-subline">7 วันล่าสุด · แตะเพื่อเปิดหุ้น · กด ↻ เพื่อส่งเข้ามือถืออีกครั้ง</p>
+        <div class="pl-list" id="pushlog-list"><p class="pl-empty">กำลังโหลด…</p></div>
+        <div class="rc-btns"><button type="button" class="pri" id="pushlog-all" onclick="resendPush()">ส่งซ้ำทั้งหมด 24 ชม.ล่าสุด</button></div>
     </div>
 </div>
 

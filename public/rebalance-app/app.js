@@ -3797,3 +3797,45 @@ function saveReconcile() {
     closeReconcileSheet();
     showToast(`อัปเดต ${new Set(ch.map(c => c.i)).size} รายการแล้ว`, 'success');
 }
+
+/* ── แจ้งเตือนย้อนหลัง + ส่งซ้ำ ── */
+async function openPushLog() {
+    document.getElementById('pushlog-overlay').classList.add('open');
+    const box = document.getElementById('pushlog-list');
+    box.innerHTML = '<p class="pl-empty">กำลังโหลด…</p>';
+    try {
+        const res = await fetch('/api/push/log', { cache: 'no-store' });
+        const { log = [] } = res.ok ? await res.json() : {};
+        const dayAgo = Date.now() - 86400000;
+        document.getElementById('pushlog-all').disabled = !log.some(x => x.t > dayAgo);
+        if (!log.length) { box.innerHTML = '<p class="pl-empty">ยังไม่มีแจ้งเตือนใน 7 วันล่าสุด</p>'; return; }
+        box.innerHTML = log.map(x => {
+            const d = new Date(x.t);
+            const when = d.toDateString() === new Date().toDateString()
+                ? d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })
+                : d.toLocaleString('th-TH', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+            return `<div class="pl-item">
+                <button type="button" class="pl-open" onclick="openPushUrl('${escapePfHtml(x.url || '/')}')">
+                    <b>${escapePfHtml(x.title)}</b><small>${escapePfHtml(x.body)}</small><em>${when}</em>
+                </button>
+                <button type="button" class="pl-resend" title="ส่งเข้ามือถืออีกครั้ง" aria-label="ส่งอีกครั้ง" onclick="resendPush(${x.t}, this)">↻</button>
+            </div>`;
+        }).join('');
+    } catch { box.innerHTML = '<p class="pl-empty">โหลดไม่สำเร็จ</p>'; }
+}
+function closePushLog(e) {
+    if (e && e.target !== document.getElementById('pushlog-overlay')) return;
+    document.getElementById('pushlog-overlay').classList.remove('open');
+}
+function openPushUrl(url) {
+    try { window.top.location.href = url; } catch { location.href = url; }
+}
+async function resendPush(t, btn) {
+    if (btn) btn.disabled = true;
+    try {
+        const res = await fetch('/api/push/log', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(t ? { t } : {}) });
+        const j = await res.json();
+        showToast(res.ok && j.sent ? 'ส่งแล้ว · ดูแจ้งเตือนบนมือถือ' : (j.error || 'ไม่มีเครื่องที่รับได้'), res.ok && j.sent ? 'success' : 'error');
+    } catch { showToast('ส่งไม่สำเร็จ', 'error'); }
+    finally { if (btn) setTimeout(() => { btn.disabled = false; }, 20000); }
+}

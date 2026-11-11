@@ -3,7 +3,7 @@ import { fetchCalendarEvents, daysUntil, thaiShortDate } from "./events";
 import { findSrHits } from "./sr-levels";
 import { cloudConfig } from "./cloud-store";
 import { loadPortfolios, isCash } from "./portfolio-summary";
-import { loadPushState, savePushState, sendToAll, type AlertPrefs, type Note } from "./push";
+import { loadPushState, logNote, savePushState, sendToAll, type AlertPrefs, type Note } from "./push";
 
 type Item = { symbol: string; market: "US" | "TH" };
 type Alert = Note & { key: string; kind: keyof AlertPrefs; held: boolean };
@@ -85,6 +85,8 @@ export async function runAlerts(opts: { dryRun?: boolean } = {}) {
 
   let sent = 0;
   for (const a of fresh.slice(0, MAX_SINGLE)) { sent += await sendToAll(state, a, a.kind); state.sent[a.key] = Date.now(); }
+  // เก็บทุกเรื่องลงประวัติ (รวมที่ถูกรวมเป็นสรุป) ให้เปิดดูในแอปได้
+  for (const a of fresh) logNote(state, a, a.kind);
   const rest = fresh.slice(MAX_SINGLE);
   if (rest.length) {
     sent += await sendToAll(state, { title: `🔔 อีก ${rest.length} รายการ`, body: rest.map(a => a.title.replace(/^\S+\s/, "")).join(" · ").slice(0, 180), url: "/", tag: "more" });
