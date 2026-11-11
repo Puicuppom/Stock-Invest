@@ -1,7 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
-  <rect width="512" height="512" rx="96" fill="#0f172a"/>
-  <path d="M128 352 L192 256 L256 288 L320 160 L384 224" stroke="#38bdf8" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M128 384 H384" stroke="#334155" stroke-width="16" stroke-linecap="round"/>
-  <circle cx="256" cy="160" r="20" fill="#f87171"/>
-  <circle cx="192" cy="256" r="20" fill="#4ade80"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><circle cx="256" cy="256" r="256" fill="#0b1220"/><g transform="translate(51 46) scale(0.8)">
+  <line x1="96" y1="196" x2="416" y2="196" stroke="#f87171" stroke-width="16" stroke-linecap="round" stroke-dasharray="2 34"/>
+  <line x1="96" y1="356" x2="416" y2="356" stroke="#4ade80" stroke-width="22" stroke-linecap="round"/>
+  <path d="M96 290 L160 350 L220 250 L270 350 L330 208 L410 104" fill="none" stroke="#38bdf8" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="160" cy="350" r="26" fill="#0b1220" stroke="#4ade80" stroke-width="14"/>
+  <circle cx="270" cy="350" r="26" fill="#0b1220" stroke="#4ade80" stroke-width="14"/></g></svg>

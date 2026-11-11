@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   title: "InvestPui.com",
   description: "วิเคราะห์แนวรับแนวต้านหุ้น SET และ US",
   manifest: "/manifest.json",
-  icons: { icon: "/icon.svg", apple: "/icon-192.png" },
+  icons: { icon: "/icon.svg", apple: "/icon-180.png" },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
