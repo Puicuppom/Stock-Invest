@@ -1,11 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><clipPath id="c"><circle cx="256" cy="256" r="256"/></clipPath></defs>
 <circle cx="256" cy="256" r="256" fill="#0b1220"/>
 <g clip-path="url(#c)">
-<line x1="0" y1="216" x2="512" y2="216" stroke="#f87171" stroke-width="10" stroke-linecap="round" stroke-dasharray="1 22"/>
-<line x1="0" y1="330" x2="512" y2="330" stroke="#4ade80" stroke-width="12" opacity=".9"/>
-<path d="M40 286 L92 236 L140 276 L196 196 L250 262 L300 232 L373 392 L407 202 L439 128" fill="none" stroke="#38bdf8" stroke-width="34" stroke-linecap="round" stroke-linejoin="round" opacity="1"/>
-<path d="M373 392 L407 202 L439 128" fill="none" stroke="#38bdf8" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="0" y1="214" x2="512" y2="214" stroke="#f87171" stroke-width="10" stroke-linecap="round" stroke-dasharray="1 22"/>
+<line x1="0" y1="330" x2="512" y2="330" stroke="#4ade80" stroke-width="12"/>
+<path d="M36 290 L90 238 L140 278 L196 196 L250 262 L300 226 L352 388 L400 208 L440 118" fill="none" stroke="#0ea5e9" stroke-width="36" stroke-linecap="round" stroke-linejoin="round" opacity="1"/>
 </g>
-
-<circle cx="439" cy="128" r="22" fill="#4ade80" stroke="#0b1220" stroke-width="8"/>
-</svg>
+<circle cx="440" cy="118" r="22" fill="#4ade80" stroke="#0b1220" stroke-width="8"/></svg>
