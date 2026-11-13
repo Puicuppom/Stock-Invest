@@ -1,0 +1,161 @@
+﻿2026-11-13T05:51:53.6174495Z Current runner version: '2.338.2'
+2026-11-13T05:51:53.6196760Z ##[group]Runner Image Provisioner
+2026-11-13T05:51:53.6198005Z Hosted Compute Agent
+2026-11-13T05:51:53.6198567Z Version: 20261103.629
+2026-11-13T05:51:53.6199206Z Commit: 15dbd9ccb5dbf34fae002b6ed1a2670f52df37bc
+2026-11-13T05:51:53.6199963Z Build Date: 2026-11-03T17:26:59Z
+2026-11-13T05:51:53.6200606Z Worker ID: {a8b525f6-64e2-47cb-9647-427048d05c1a}
+2026-11-13T05:51:53.6201419Z Region: centralus
+2026-11-13T05:51:53.6201971Z Cloud: Azure
+2026-11-13T05:51:53.6202513Z ##[endgroup]
+2026-11-13T05:51:53.6203671Z ##[group]Operating System
+2026-11-13T05:51:53.6204261Z Ubuntu
+2026-11-13T05:51:53.6204758Z 26.04.1
+2026-11-13T05:51:53.6205476Z LTS
+2026-11-13T05:51:53.6206008Z ##[endgroup]
+2026-11-13T05:51:53.6206539Z ##[group]Runner Image
+2026-11-13T05:51:53.6207118Z Image: ubuntu-26.04
+2026-11-13T05:51:53.6207661Z Version: 20261111.196.1
+2026-11-13T05:51:53.6208911Z Included Software: https://github.com/actions/runner-images/blob/ubuntu26/20261111.196/images/ubuntu/Ubuntu2604-Readme.md
+2026-11-13T05:51:53.6210468Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu26%2F20261111.196
+2026-11-13T05:51:53.6211453Z ##[endgroup]
+2026-11-13T05:51:53.6212591Z ##[group]GITHUB_TOKEN Permissions
+2026-11-13T05:51:53.6214651Z Contents: read
+2026-11-13T05:51:53.6215310Z Metadata: read
+2026-11-13T05:51:53.6215882Z Packages: read
+2026-11-13T05:51:53.6216363Z ##[endgroup]
+2026-11-13T05:51:53.6219128Z Secret source: Actions
+2026-11-13T05:51:53.6219912Z Cache mode: write
+2026-11-13T05:51:53.6220852Z Prepare workflow directory
+2026-11-13T05:51:53.6457013Z Prepare all required actions
+2026-11-13T05:51:53.6489804Z Getting action download info
+2026-11-13T05:51:53.8887486Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-11-13T05:51:53.9921447Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+2026-11-13T05:51:54.1512977Z Complete job name: run
+2026-11-13T05:51:54.2061182Z ##[group]Run actions/checkout@v4
+2026-11-13T05:51:54.2061633Z with:
+2026-11-13T05:51:54.2061910Z   repository: Puicuppom/Stock-Invest
+2026-11-13T05:51:54.2064047Z   token: ***
+2026-11-13T05:51:54.2064305Z   ssh-strict: true
+2026-11-13T05:51:54.2064572Z   ssh-user: git
+2026-11-13T05:51:54.2065022Z   persist-credentials: true
+2026-11-13T05:51:54.2065403Z   clean: true
+2026-11-13T05:51:54.2065679Z   sparse-checkout-cone-mode: true
+2026-11-13T05:51:54.2065987Z   fetch-depth: 1
+2026-11-13T05:51:54.2066250Z   fetch-tags: false
+2026-11-13T05:51:54.2066523Z   show-progress: true
+2026-11-13T05:51:54.2066791Z   lfs: false
+2026-11-13T05:51:54.2067055Z   submodules: false
+2026-11-13T05:51:54.2067329Z   set-safe-directory: true
+2026-11-13T05:51:54.2067638Z   allow-unsafe-pr-checkout: false
+2026-11-13T05:51:54.2068061Z ##[endgroup]
+2026-11-13T05:51:54.4304991Z Syncing repository: Puicuppom/Stock-Invest
+2026-11-13T05:51:54.4307000Z ##[group]Getting Git version info
+2026-11-13T05:51:54.4307843Z Working directory is '/home/runner/work/Stock-Invest/Stock-Invest'
+2026-11-13T05:51:54.4308911Z [command]/usr/bin/git version
+2026-11-13T05:51:54.4319650Z git version 2.56.1
+2026-11-13T05:51:54.4333425Z ##[endgroup]
+2026-11-13T05:51:54.4343141Z Temporarily overriding HOME='/home/runner/work/_temp/34b4a7f8-e06a-4af7-bc69-0f4d175bc618' before making global git config changes
+2026-11-13T05:51:54.4344051Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-13T05:51:54.4347825Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Stock-Invest/Stock-Invest
+2026-11-13T05:51:54.4405542Z Deleting the contents of '/home/runner/work/Stock-Invest/Stock-Invest'
+2026-11-13T05:51:54.4409177Z ##[group]Initializing the repository
+2026-11-13T05:51:54.4410062Z [command]/usr/bin/git init /home/runner/work/Stock-Invest/Stock-Invest
+2026-11-13T05:51:54.4494611Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-11-13T05:51:54.4495918Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-11-13T05:51:54.4497289Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-11-13T05:51:54.4498204Z hint: call:
+2026-11-13T05:51:54.4498724Z hint:
+2026-11-13T05:51:54.4499358Z hint: 	git config --global init.defaultBranch <name>
+2026-11-13T05:51:54.4500099Z hint:
+2026-11-13T05:51:54.4500803Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-11-13T05:51:54.4501857Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-11-13T05:51:54.4502736Z hint:
+2026-11-13T05:51:54.4503283Z hint: 	git branch -m <name>
+2026-11-13T05:51:54.4503956Z hint:
+2026-11-13T05:51:54.4504725Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-11-13T05:51:54.4506780Z Initialized empty Git repository in /home/runner/work/Stock-Invest/Stock-Invest/.git/
+2026-11-13T05:51:54.4514139Z [command]/usr/bin/git remote add origin https://github.com/Puicuppom/Stock-Invest
+2026-11-13T05:51:54.4634083Z ##[endgroup]
+2026-11-13T05:51:54.4634602Z ##[group]Disabling automatic garbage collection
+2026-11-13T05:51:54.4637621Z [command]/usr/bin/git config --local gc.auto 0
+2026-11-13T05:51:54.4666500Z ##[endgroup]
+2026-11-13T05:51:54.4667229Z ##[group]Setting up auth
+2026-11-13T05:51:54.4671666Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-13T05:51:54.4701937Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-13T05:51:54.5095105Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-13T05:51:54.5122611Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-13T05:51:54.5339707Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-13T05:51:54.5367348Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-13T05:51:54.5590310Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-11-13T05:51:54.5624066Z ##[endgroup]
+2026-11-13T05:51:54.5624750Z ##[group]Fetching the repository
+2026-11-13T05:51:54.5630005Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +73736c8e4398557dbeff06b0adc1711f8ed92a37:refs/remotes/origin/probe-screener-tmp
+2026-11-13T05:51:54.9890102Z From https://github.com/Puicuppom/Stock-Invest
+2026-11-13T05:51:54.9891064Z  * [new ref]         73736c8e4398557dbeff06b0adc1711f8ed92a37 -> origin/probe-screener-tmp
+2026-11-13T05:51:54.9895277Z ##[endgroup]
+2026-11-13T05:51:54.9896042Z ##[group]Determining the checkout info
+2026-11-13T05:51:54.9897328Z ##[endgroup]
+2026-11-13T05:51:54.9902011Z [command]/usr/bin/git sparse-checkout disable
+2026-11-13T05:51:54.9947623Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-11-13T05:51:55.0009898Z ##[group]Checking out the ref
+2026-11-13T05:51:55.0012935Z [command]/usr/bin/git checkout --progress --force -B probe-screener-tmp refs/remotes/origin/probe-screener-tmp
+2026-11-13T05:51:55.0158227Z Switched to a new branch 'probe-screener-tmp'
+2026-11-13T05:51:55.0163445Z branch 'probe-screener-tmp' set up to track 'origin/probe-screener-tmp'.
+2026-11-13T05:51:55.0167543Z ##[endgroup]
+2026-11-13T05:51:55.0203181Z [command]/usr/bin/git log -1 --format=%H
+2026-11-13T05:51:55.0222236Z 73736c8e4398557dbeff06b0adc1711f8ed92a37
+2026-11-13T05:51:55.0428573Z ##[group]Run actions/setup-node@v4
+2026-11-13T05:51:55.0428906Z with:
+2026-11-13T05:51:55.0429156Z   node-version: 22
+2026-11-13T05:51:55.0429426Z   always-auth: false
+2026-11-13T05:51:55.0429706Z   check-latest: false
+2026-11-13T05:51:55.0431860Z   token: ***
+2026-11-13T05:51:55.0432114Z ##[endgroup]
+2026-11-13T05:51:55.1305420Z Found in cache @ /opt/hostedtoolcache/node/22.23.4/x64
+2026-11-13T05:51:55.1308147Z (node:2174) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-13T05:51:55.1309371Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-13T05:51:55.1310604Z ##[group]Environment details
+2026-11-13T05:51:55.4342233Z node: v22.23.4
+2026-11-13T05:51:55.4343152Z npm: 10.9.9
+2026-11-13T05:51:55.4343915Z yarn: 1.22.22
+2026-11-13T05:51:55.4346615Z ##[endgroup]
+2026-11-13T05:51:55.4512740Z ##[group]Run node probe/run.mjs
+2026-11-13T05:51:55.4513560Z [36;1mnode probe/run.mjs[0m
+2026-11-13T05:51:55.4567421Z shell: /usr/bin/bash -e {0}
+2026-11-13T05:51:55.4568147Z ##[endgroup]
+2026-11-13T05:51:56.1463295Z 
+2026-11-13T05:51:56.1467038Z == dip US discover 200 656ms symbols 100 total 1067 next 100
+2026-11-13T05:51:56.1469004Z ALNY CDLR TTD BSX LEU PODD FIS MNDY APTV TME MNSO HUBS INTU SE BILI FUTU PEGA TLK RDDT NFLX DOX TCOM NRG PDD ORCL SLM CRK NOW LIF LVS
+2026-11-13T05:51:57.3117525Z load 10 in 1165ms -> ALNY:200:463ms CDLR:200:459ms TTD:200:1048ms BSX:200:1124ms LEU:200:1162ms PODD:200:1109ms FIS:200:558ms MNDY:200:460ms APTV:200:1103ms TME:200:567ms
+2026-11-13T05:51:57.5062226Z 
+2026-11-13T05:51:57.5062706Z == momentum US discover 200 195ms symbols 43 total 373 next 100
+2026-11-13T05:51:57.5063627Z CDNA PACS VSXY FIGS SN KNSA BTSG AAMI CON MRX MPC GCT VCTR CXW TXN PSX MEOH NUE FIVE NMM VIRT KNTK CPAY DHT SLDE AMG WST STLD COP ANET
+2026-11-13T05:51:58.4915111Z load 10 in 985ms -> CDNA:200:220ms PACS:200:342ms VSXY:200:304ms FIGS:200:183ms SN:200:985ms KNSA:200:971ms BTSG:200:405ms AAMI:200:182ms CON:200:255ms MRX:200:146ms
+2026-11-13T05:51:58.6954709Z 
+2026-11-13T05:51:58.6955233Z == dip TH discover 200 204ms symbols 8 total 230 next 100
+2026-11-13T05:51:58.9749484Z PSGC SISB KAMART MTC DELTA BCPG CMR UVAN
+2026-11-13T05:51:58.9750108Z load 10 in 279ms -> PSGC:200:219ms SISB:200:207ms KAMART:200:214ms MTC:200:206ms DELTA:200:216ms BCPG:200:207ms CMR:200:216ms UVAN:200:279ms
+2026-11-13T05:51:59.1730202Z 
+2026-11-13T05:51:59.1730550Z == momentum TH discover 200 198ms symbols 20 total 108 next 100
+2026-11-13T05:51:59.1731295Z GUNKUL KKP CRC SCAP COM7 ALUCON KLINIQ KCG CREDIT CPN KTC PROSPECT LHSC MBK MOSHI ILM VIH ITC AURA VIBHA
+2026-11-13T05:51:59.5985170Z load 10 in 426ms -> GUNKUL:200:191ms KKP:200:194ms CRC:200:334ms SCAP:200:185ms COM7:200:191ms ALUCON:200:181ms KLINIQ:200:425ms KCG:200:160ms CREDIT:200:186ms CPN:200:193ms
+2026-11-13T05:51:59.6141366Z Post job cleanup.
+2026-11-13T05:51:59.6984971Z (node:2221) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-13T05:51:59.6985613Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-13T05:51:59.7148960Z Post job cleanup.
+2026-11-13T05:51:59.7758144Z [command]/usr/bin/git version
+2026-11-13T05:51:59.7796003Z git version 2.56.1
+2026-11-13T05:51:59.7822310Z Temporarily overriding HOME='/home/runner/work/_temp/51c1a8b3-4263-4b00-a85e-767ae5945f28' before making global git config changes
+2026-11-13T05:51:59.7823015Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-13T05:51:59.7826231Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Stock-Invest/Stock-Invest
+2026-11-13T05:51:59.7861624Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-13T05:51:59.7906160Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-13T05:51:59.8197828Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-13T05:51:59.8223029Z http.https://github.com/.extraheader
+2026-11-13T05:51:59.8232988Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-11-13T05:51:59.8269625Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-13T05:51:59.8523537Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-13T05:51:59.8553587Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-13T05:51:59.8911748Z Cleaning up orphan processes
+2026-11-13T05:51:59.9196253Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-node@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
