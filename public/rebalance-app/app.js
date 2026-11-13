@@ -1662,6 +1662,7 @@ function refreshAssetSheet() {
     const item = assets.find(a => a.index === assetSheetIndex);
     if (!item) return;
     document.getElementById('asset-sheet-body').innerHTML = renderAssetSheetBody(item);
+    updateAvgCalc();
 }
 
 function updateAssetSheetLive({ cost, profit, profitPct, tradeSignal, asset, action }) {
@@ -1726,7 +1727,7 @@ function updateAssetGroup(index, newGroup) {
 function renderAssetSheetBody({ index, asset, cost, profit, profitPct, tradeSignal, action }) {
     const doneBtn = `<button class="btn-settings-done" type="button" onclick="closeAssetSheet()">เสร็จสิ้น</button>`;
     if (assetSheetMode === 'trade') {
-        return (isCashAsset(asset) ? renderCashBox(index, asset) : renderTradeBox(index, asset)) + doneBtn;
+        return (isCashAsset(asset) ? renderCashBox(index, asset) : renderTradeBox(index, asset) + renderAvgCalc(asset)) + doneBtn;
     }
     if (isCashAsset(asset)) {
         const adviceText = action ? action.text : '—';
@@ -3265,6 +3266,81 @@ function updateTradeTotal() {
     const q = parseTradeNum('trade-qty'), p = parseTradeNum('trade-price');
     const el = document.getElementById('trade-total');
     if (el) el.textContent = q && p ? `รวม ${fmtTrade(q * p)}` : 'รวม —';
+    updateAvgCalc();
+}
+
+/* ── คำนวณถัวเฉลี่ย: เติมเงินเท่านี้ที่ราคานี้ ต้นทุนเหลือเท่าไหร่ / อยากให้ทุนเหลือเท่านี้ ต้องเติมเท่าไหร่ ── */
+let avgCalcMode = 'amount';
+const avgCalcInput = { amount: '100', target: '' };
+function renderAvgCalc(asset) {
+    if (!(asset.shares > 0) || !(asset.avgCost > 0)) return '';
+    const sign = CUR_SIGN;
+    return `
+        <div class="trade-box avg-box">
+            <div class="avg-top">
+                <span class="avg-title">คำนวณถัวเฉลี่ย</span>
+                <div class="avg-mode" role="group" aria-label="วิธีคำนวณ">
+                    <button type="button" data-m="amount" class="${avgCalcMode === 'amount' ? 'on' : ''}" onclick="setAvgCalcMode('amount')">เติมเงิน</button>
+                    <button type="button" data-m="target" class="${avgCalcMode === 'target' ? 'on' : ''}" onclick="setAvgCalcMode('target')">ทุนเป้าหมาย</button>
+                </div>
+            </div>
+            <div class="asset-sheet-field">
+                <label id="avg-in-label">${avgCalcMode === 'amount' ? `เติมเงิน (${sign})` : `อยากให้ทุนเหลือ (${sign}/${UNIT})`}</label>
+                <input type="text" inputmode="decimal" id="avg-in" value="${avgCalcInput[avgCalcMode]}" placeholder="${avgCalcMode === 'amount' ? '100' : formatInputVal(asset.avgCost * 0.95, IS_FUND_PF ? 4 : 2)}" autocomplete="off" oninput="avgCalcInput[avgCalcMode]=this.value;updateAvgCalc()">
+            </div>
+            <div class="avg-out" id="avg-out" aria-live="polite"></div>
+            <p class="avg-hint">ใช้ราคาในช่องด้านบน · เปลี่ยนราคาเพื่อลองราคาอื่น</p>
+        </div>`;
+}
+function setAvgCalcMode(m) {
+    avgCalcMode = m;
+    const asset = myPortfolio[assetSheetIndex];
+    const box = document.querySelector('.avg-box');
+    if (!asset || !box) return;
+    box.outerHTML = renderAvgCalc(asset);
+    updateAvgCalc();
+}
+function updateAvgCalc() {
+    const out = document.getElementById('avg-out');
+    const asset = myPortfolio[assetSheetIndex];
+    if (!out || !asset) return;
+    const S = Number(asset.shares) || 0, A = Number(asset.avgCost) || 0;
+    const p = parseTradeNum('trade-price') || getPrice(asset.name);
+    const v = parseTradeNum('avg-in');
+    const dec = IS_FUND_PF ? 4 : 2;
+    const money = n => `${CUR_SIGN}${fmt(n, dec)}`;
+    if (!(p > 0) || !(S > 0) || !(A > 0)) { out.innerHTML = ''; return; }
+    const warn = p >= A ? `<p class="avg-warn">ราคา ${money(p)} ไม่ต่ำกว่าทุน ${money(A)} · ซื้อเพิ่มตอนนี้ทุนเฉลี่ยจะไม่ลดลง</p>` : '';
+    let M, q;
+    if (avgCalcMode === 'amount') {
+        if (!v) { out.innerHTML = warn; return; }
+        M = v; q = M / p;
+    } else {
+        if (warn) { out.innerHTML = warn; return; }
+        if (!v) { out.innerHTML = ''; return; }
+        if (v >= A) { out.innerHTML = `<p class="avg-warn">ทุนเป้าหมายต้องต่ำกว่าทุนตอนนี้ ${money(A)}</p>`; return; }
+        if (v <= p) { out.innerHTML = `<p class="avg-warn">ทุนต่ำกว่าราคา ${money(p)} ไม่ได้ ไม่ว่าซื้อเพิ่มเท่าไหร่</p>`; return; }
+        // (S·A + M) / (S + M/p) = T  →  M = S(A − T) / (1 − T/p) · ติดลบเมื่อ T > p → ใช้สูตรเดียวกันกลับเครื่องหมาย
+        q = S * (A - v) / (v - p); M = q * p;
+    }
+    const newAvg = (S * A + M) / (S + q);
+    const dropPct = (newAvg / A - 1) * 100;
+    const needOld = (A / p - 1) * 100, needNew = (newAvg / p - 1) * 100;
+    out.innerHTML = warn + `
+        <div class="avg-grid">
+            <div><small>${avgCalcMode === 'amount' ? `ได้เพิ่ม` : 'ต้องเติม'}</small><b>${avgCalcMode === 'amount' ? `${fmtShares(q)} ${UNIT}` : money(M)}</b>${avgCalcMode === 'target' ? `<em>${fmtShares(q)} ${UNIT}</em>` : ''}</div>
+            <div><small>ทุนเฉลี่ยใหม่</small><b>${money(newAvg)}</b><em class="${dropPct <= 0 ? 'gain' : 'loss'}">${dropPct <= 0 ? '−' : '+'}${fmt(Math.abs(dropPct), 2)}% จาก ${money(A)}</em></div>
+            <div><small>ราคาต้องขึ้นอีกเพื่อคุ้มทุน</small><b>${needNew > 0 ? `+${fmt(needNew, 2)}%` : 'กำไรแล้ว'}</b><em>เดิม ${needOld > 0 ? `+${fmt(needOld, 2)}%` : 'กำไรอยู่'}</em></div>
+            <div><small>ถือรวม</small><b>${fmtShares(S + q)} ${UNIT}</b><em>ทุนรวม ${money(S * A + M)}</em></div>
+        </div>
+        <button type="button" class="avg-use" onclick="useAvgCalc(${q})">ใส่จำนวน ${fmtShares(q)} ${UNIT} ในช่องซื้อ</button>`;
+}
+function useAvgCalc(q) {
+    const el = document.getElementById('trade-qty');
+    if (!el) return;
+    el.value = formatSharesInput ? formatSharesInput(q) : String(Math.round(q * 100) / 100);
+    updateTradeTotal();
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 function afterTrade(name, msg, kind) {

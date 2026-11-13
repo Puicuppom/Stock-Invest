@@ -10,6 +10,7 @@ import type { TradePlan } from "@/lib/trade-plan";
 import { analyzeVolume, VOLUME_METHOD } from "@/lib/volume";
 import { eventBadges } from "@/lib/events";
 import { analyzeDip, DIP_METHOD, type DipCheck } from "@/lib/dip";
+import { atrSeries, RATING_METHOD, technicalRating, type RatingItem } from "@/lib/indicators";
 import type { SrMode, StockData } from "@/lib/types";
 
 interface Props {
@@ -31,6 +32,7 @@ export default function SignalSummary(props: Props) {
   const { data, trend, tradePlan, srMode, onModeChange } = props;
   const [openSignal, setOpenSignal] = useState<string | null>(null);
   const [openDip, setOpenDip] = useState<string | null>(null);
+  const [openRating, setOpenRating] = useState(false);
   const price = data.lastClose;
   // กลับตัวขึ้น (ลงแล้วขึ้น) หรือกลับตัวลง (ขึ้นแล้วลง): หุ้นขาขึ้นหรือมีสัญญาณขึ้นแล้วลงชัด → ดูฝั่งกลับตัวลง
   const revTag = reversalTag(data);
@@ -64,8 +66,13 @@ export default function SignalSummary(props: Props) {
     : pivotAbove ? { price: pivotAbove[1], note: `* ไม่มีแนวต้าน${srMode === "swing" ? "ถือยาว" : ""}เหนือราคา (ทำจุดสูงใหม่) จึงใช้ Pivot ${pivotAbove[0]} แทน`, fallback: true }
     : high52 != null && high52 > price ? { price: high52, note: "* ไม่มีแนวต้านเหนือราคา จึงใช้จุดสูงสุด 52 สัปดาห์แทน", fallback: true }
     : null;
+  const doneCandles = completedCandles(data);
+  const atrRaw = atrSeries(doneCandles).at(-1);
+  const atr = atrRaw != null && Number.isFinite(atrRaw) ? atrRaw : null;
+  const rating = technicalRating(doneCandles);
   const stop: PlanItem = tradePlan.stopLoss != null
-    ? { price: tradePlan.stopLoss, note: "ใต้แนวรับ", fallback: false }
+    ? { price: tradePlan.stopLoss, note: atr != null ? `ใต้แนวรับ 1 ATR (ความผันผวนเฉลี่ยต่อวัน ${p2(atr)})` : "ใต้แนวรับ", fallback: false }
+    : buy && atr != null ? { price: buy.price - atr, note: `* ใต้ราคาซื้อสำรอง 1 ATR (${p2(atr)})`, fallback: true }
     : buy ? { price: buy.price * (1 - (Math.max(props.tolerancePercent, 1) / 100) * 1.5), note: "* คำนวณใต้ราคาซื้อสำรอง", fallback: true }
     : null;
   const plan = { buy, sell, stop };
@@ -102,6 +109,33 @@ export default function SignalSummary(props: Props) {
         <h3 className="section-title">สรุปสัญญาณ</h3>
       </div>
 
+      {rating && (
+        <div className="ss-row ss-row-top" id="ss-rating" title={RATING_METHOD}>
+          <span className="ss-label">ภาพรวม</span>
+          <div className="ss-body">
+            <button type="button" className="tr-head" aria-expanded={openRating} onClick={() => setOpenRating(!openRating)}>
+              <span className={`tr-verdict tr-${rating.kind}`}>{rating.label}</span>
+              <span className="tr-meter" aria-hidden="true"><i style={{ left: `${((rating.score + 1) / 2) * 100}%` }} /></span>
+              <span className="tr-counts"><b className="ss-good">ซื้อ {rating.counts.buy}</b> · กลาง {rating.counts.neutral} · <b className="ss-bad">ขาย {rating.counts.sell}</b></span>
+              <span className="tr-tf">กราฟรายวัน</span>
+            </button>
+            {openRating && (
+              <div className="tr-detail">
+                {([["เส้นเฉลี่ย", rating.ma], ["โมเมนตัม", rating.osc]] as const).map(([name, g]) => (
+                  <div key={name} className="tr-group">
+                    <p className="tr-group-head">{name} <span className={g.score > 0.1 ? "ss-good" : g.score < -0.1 ? "ss-bad" : ""}>{g.score > 0.5 ? "ซื้อแรง" : g.score > 0.1 ? "ซื้อ" : g.score >= -0.1 ? "กลาง" : g.score >= -0.5 ? "ขาย" : "ขายแรง"}</span></p>
+                    <ul>{g.items.map((it: RatingItem) => (
+                      <li key={it.name}><span>{it.name}</span><span className="tr-val">{it.value}</span><span className={`tr-act tr-act-${it.action}`}>{it.action === "buy" ? "ซื้อ" : it.action === "sell" ? "ขาย" : "กลาง"}</span></li>
+                    ))}</ul>
+                  </div>
+                ))}
+                <p className="tr-note">สูตรเดียวกับ TradingView · ดูจากราคาอย่างเดียว ไม่ใช่คำแนะนำการลงทุน</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="ss-row" id="ss-plan">
         <span className="ss-label">แผน</span>
         <div className="ss-body ss-plan">
@@ -124,6 +158,8 @@ export default function SignalSummary(props: Props) {
           <span className="ss-label">แนวโน้ม</span>
           <div className="ss-body ss-inline">
             <span className={`trend-badge trend-${trend.kind}${trend.strong ? " trend-strong" : ""}`}>{trendIcon(trend.kind, trend.label)} {trend.label}</span>
+            {trend.adx != null && <span className="ss-adx" title="ADX 14 วัน: ต่ำกว่า 20 ไม่มีแนวโน้ม · 20–25 เริ่มมี · เกิน 25 แนวโน้มชัด">ADX {trend.adx.toFixed(0)}</span>}
+            {trend.cross && <span className={`ss-cross ${trend.cross === "golden" ? "ss-good" : "ss-bad"}`}>{trend.cross === "golden" ? "Golden Cross" : "Death Cross"}</span>}
             <span className="ss-range">{p2(trend.rangeLow)}–{p2(trend.rangeHigh)}</span>
           </div>
         </div>

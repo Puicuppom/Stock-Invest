@@ -1994,3 +1994,19 @@ html:root { font-size: 16px; }
 .rb2 .perf-chip.on i { opacity: 1; }
 .rb2 .perf-chip.on b.gain { color: var(--rb-gain); } .rb2 .perf-chip.on b.loss { color: var(--rb-loss); }
 .rb2 .perf-card .perf-chip:not(.on) b { color: var(--ui-muted); }
+
+/* คำนวณถัวเฉลี่ย */
+.avg-box .avg-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.avg-box .avg-title { font-weight: 600; font-size: 14px; }
+.avg-box .avg-mode { display: inline-flex; padding: 2px; border-radius: 999px; background: color-mix(in srgb, var(--ui-text, #fff) 6%, transparent); }
+.avg-box .avg-mode button { border: 0; background: transparent; color: var(--ui-muted, var(--muted)); font: inherit; font-size: 12.5px; padding: 5px 11px; border-radius: 999px; cursor: pointer; }
+.avg-box .avg-mode button.on { background: var(--ui-surface, var(--surface)); color: var(--ui-text, var(--text)); box-shadow: 0 1px 2px rgba(0,0,0,.25); }
+.avg-box .avg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.avg-box .avg-grid > div { display: flex; flex-direction: column; gap: 2px; padding: 9px 10px; border-radius: 12px; background: color-mix(in srgb, var(--ui-text, #fff) 4%, transparent); font-variant-numeric: tabular-nums; }
+.avg-box .avg-grid small { font-size: 11.5px; color: var(--ui-muted, var(--muted)); }
+.avg-box .avg-grid b { font-size: 16px; }
+.avg-box .avg-grid em { font-style: normal; font-size: 11.5px; color: var(--ui-muted, var(--muted)); }
+.avg-box .avg-grid em.gain { color: var(--rb-gain, #4ade80); } .avg-box .avg-grid em.loss { color: var(--rb-loss, #f87171); }
+.avg-box .avg-warn { margin: 8px 0 0; font-size: 12.5px; color: var(--rb-loss, #f87171); }
+.avg-box .avg-hint { margin: 8px 2px 0; font-size: 11.5px; color: var(--ui-muted, var(--muted)); }
+.avg-box .avg-use { width: 100%; margin-top: 10px; padding: 9px; border-radius: 12px; border: 1px dashed var(--ui-border, var(--border)); background: transparent; color: var(--ui-accent, var(--accent)); font: inherit; font-size: 13px; cursor: pointer; }

@@ -1894,3 +1894,27 @@ body.ui2 .fab { position: fixed; right: max(12px, calc((100vw - 720px) / 2 + 16p
 .ps-tag { flex: none; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; }
 .ps-tag.pass { color: var(--success); background: color-mix(in srgb, var(--success) 14%, transparent); }
 .ps-tag.near { color: var(--warning); background: color-mix(in srgb, var(--warning) 14%, transparent); }
+
+/* ── ภาพรวมทางเทคนิค (Technical Rating แบบ TradingView) ── */
+.tr-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; width: 100%; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.tr-verdict { padding: 3px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: 700; background: var(--surface-2); color: var(--muted); }
+.tr-strong-buy { background: color-mix(in srgb, var(--success) 26%, transparent); color: var(--success); }
+.tr-buy { background: color-mix(in srgb, var(--success) 14%, transparent); color: var(--success); }
+.tr-sell { background: color-mix(in srgb, var(--danger) 14%, transparent); color: var(--danger); }
+.tr-strong-sell { background: color-mix(in srgb, var(--danger) 26%, transparent); color: var(--danger); }
+.tr-meter { position: relative; flex: 1 1 90px; min-width: 80px; height: 6px; border-radius: 999px; background: linear-gradient(90deg, var(--danger), var(--surface-2) 40%, var(--surface-2) 60%, var(--success)); }
+.tr-meter i { position: absolute; top: 50%; width: 12px; height: 12px; border-radius: 50%; background: var(--text, #e2e8f0); border: 2px solid var(--surface); transform: translate(-50%, -50%); }
+.tr-counts { font-size: 0.75rem; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tr-tf { font-size: 0.7rem; color: var(--muted); border: 1px solid var(--border); border-radius: 6px; padding: 1px 6px; }
+.tr-detail { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-top: 8px; }
+.tr-group { background: var(--surface-2); border-radius: 10px; padding: 8px 10px; }
+.tr-group-head { margin: 0 0 4px; font-size: 0.78rem; font-weight: 700; display: flex; justify-content: space-between; }
+.tr-group ul { list-style: none; margin: 0; padding: 0; }
+.tr-group li { display: grid; grid-template-columns: 1fr auto 40px; gap: 8px; font-size: 0.74rem; padding: 3px 0; border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent); color: var(--muted); }
+.tr-group li:first-child { border-top: 0; }
+.tr-val { font-variant-numeric: tabular-nums; }
+.tr-act { text-align: right; font-weight: 700; }
+.tr-act-buy { color: var(--success); } .tr-act-sell { color: var(--danger); }
+.tr-note { grid-column: 1 / -1; margin: 0; font-size: 0.7rem; color: var(--muted); }
+.ss-adx { font-size: 0.75rem; color: var(--muted); }
+.ss-cross { font-size: 0.75rem; font-weight: 700; }

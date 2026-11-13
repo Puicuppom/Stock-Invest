@@ -25,7 +25,10 @@ export interface TradePlan {
   detail: string;
 }
 
-function stopBelowSupport(supportPrice: number, tolerancePercent: number): number {
+/** จุดตัดขาดทุนมาตรฐาน: ใต้แนวรับ 1 เท่าของ ATR(14) (ความผันผวนเฉลี่ยต่อวันของหุ้นตัวนั้น)
+ *  ถ้าไม่มี ATR ใช้ระยะ % แบบเดิม */
+function stopBelowSupport(supportPrice: number, tolerancePercent: number, atr?: number | null): number {
+  if (atr != null && Number.isFinite(atr) && atr > 0) return Math.max(supportPrice - atr, supportPrice * 0.5);
   const buffer = Math.max(tolerancePercent, 1) / 100;
   return supportPrice * (1 - buffer * 1.5);
 }
@@ -37,7 +40,8 @@ export function computeTradePlan(
   mode: SrMode,
   tolerancePercent: number,
   fairValue: FairValueResult | null,
-  includeFairValueTarget: boolean
+  includeFairValueTarget: boolean,
+  atr?: number | null
 ): TradePlan {
   const levels = buildSrLevels(pivot, zones, mode);
   const { nearestResistance, nearestSupport } = nearestSrLevels(
@@ -86,7 +90,7 @@ export function computeTradePlan(
   const buyLabel = nearestSupport?.label ?? "แนวรับ";
   const sellLabel = nearestResistance?.label ?? "แนวต้าน";
   const stopLoss = nearestSupport
-    ? stopBelowSupport(nearestSupport.price, tolerancePercent)
+    ? stopBelowSupport(nearestSupport.price, tolerancePercent, atr)
     : null;
 
   const entry = nearSupport ? currentPrice : buyPrice;

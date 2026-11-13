@@ -20,6 +20,8 @@ import { useSrMode } from "@/hooks/useSrMode";
 import { findSrHits } from "@/lib/sr-levels";
 import { computeTradePlan } from "@/lib/trade-plan";
 import { analyzeTrend } from "@/lib/trend";
+import { atrSeries } from "@/lib/indicators";
+import { completedCandles } from "@/lib/screener";
 import { displaySymbol, normalizeInput } from "@/lib/symbol";
 import { marketLabel, stockDataMatchesItem, watchlistId } from "@/lib/watchlist-id";
 import type { StockData, WatchlistItem } from "@/lib/types";
@@ -127,7 +129,8 @@ export default function StockApp() {
       srMode,
       tagSettings.tolerancePercent,
       selectedData.fairValue,
-      false // ไม่ใช้ราคายุติธรรมเป็นเป้าแล้ว
+      false, // ไม่ใช้ราคายุติธรรมเป็นเป้าแล้ว
+      atrSeries(completedCandles(selectedData)).at(-1) ?? null
     );
   }, [selectedData, srMode, tagSettings.tolerancePercent]);
 
