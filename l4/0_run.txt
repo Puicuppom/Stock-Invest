@@ -1,0 +1,238 @@
+﻿2026-11-13T08:39:48.3228405Z Current runner version: '2.338.2'
+2026-11-13T08:39:48.3247795Z ##[group]Runner Image Provisioner
+2026-11-13T08:39:48.3248315Z Hosted Compute Agent
+2026-11-13T08:39:48.3248714Z Version: 20261103.629
+2026-11-13T08:39:48.3249086Z Commit: 15dbd9ccb5dbf34fae002b6ed1a2670f52df37bc
+2026-11-13T08:39:48.3249526Z Build Date: 2026-11-03T17:26:59Z
+2026-11-13T08:39:48.3249972Z Worker ID: {22d080e3-386a-4939-a879-746af9287061}
+2026-11-13T08:39:48.3250385Z Region: centralus
+2026-11-13T08:39:48.3250749Z Cloud: Azure
+2026-11-13T08:39:48.3251067Z ##[endgroup]
+2026-11-13T08:39:48.3251863Z ##[group]Operating System
+2026-11-13T08:39:48.3252512Z Ubuntu
+2026-11-13T08:39:48.3252814Z 26.04.1
+2026-11-13T08:39:48.3253147Z LTS
+2026-11-13T08:39:48.3253446Z ##[endgroup]
+2026-11-13T08:39:48.3253751Z ##[group]Runner Image
+2026-11-13T08:39:48.3254160Z Image: ubuntu-26.04
+2026-11-13T08:39:48.3254511Z Version: 20261111.196.1
+2026-11-13T08:39:48.3255259Z Included Software: https://github.com/actions/runner-images/blob/ubuntu26/20261111.196/images/ubuntu/Ubuntu2604-Readme.md
+2026-11-13T08:39:48.3256095Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu26%2F20261111.196
+2026-11-13T08:39:48.3256700Z ##[endgroup]
+2026-11-13T08:39:48.3257387Z ##[group]GITHUB_TOKEN Permissions
+2026-11-13T08:39:48.3258842Z Contents: read
+2026-11-13T08:39:48.3259173Z Metadata: read
+2026-11-13T08:39:48.3259576Z Packages: read
+2026-11-13T08:39:48.3259901Z ##[endgroup]
+2026-11-13T08:39:48.3261582Z Secret source: Actions
+2026-11-13T08:39:48.3262246Z Cache mode: write
+2026-11-13T08:39:48.3262732Z Prepare workflow directory
+2026-11-13T08:39:48.3493970Z Prepare all required actions
+2026-11-13T08:39:48.3526345Z Getting action download info
+2026-11-13T08:39:48.5633956Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-11-13T08:39:48.6696080Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+2026-11-13T08:39:48.8187093Z Complete job name: run
+2026-11-13T08:39:48.8691507Z ##[group]Run actions/checkout@v4
+2026-11-13T08:39:48.8691932Z with:
+2026-11-13T08:39:48.8692320Z   repository: Puicuppom/Stock-Invest
+2026-11-13T08:39:48.8694525Z   token: ***
+2026-11-13T08:39:48.8694770Z   ssh-strict: true
+2026-11-13T08:39:48.8695014Z   ssh-user: git
+2026-11-13T08:39:48.8695261Z   persist-credentials: true
+2026-11-13T08:39:48.8695532Z   clean: true
+2026-11-13T08:39:48.8695785Z   sparse-checkout-cone-mode: true
+2026-11-13T08:39:48.8696070Z   fetch-depth: 1
+2026-11-13T08:39:48.8696312Z   fetch-tags: false
+2026-11-13T08:39:48.8696556Z   show-progress: true
+2026-11-13T08:39:48.8696807Z   lfs: false
+2026-11-13T08:39:48.8697036Z   submodules: false
+2026-11-13T08:39:48.8697286Z   set-safe-directory: true
+2026-11-13T08:39:48.8697566Z   allow-unsafe-pr-checkout: false
+2026-11-13T08:39:48.8697923Z ##[endgroup]
+2026-11-13T08:39:49.0909790Z Syncing repository: Puicuppom/Stock-Invest
+2026-11-13T08:39:49.0910890Z ##[group]Getting Git version info
+2026-11-13T08:39:49.0911375Z Working directory is '/home/runner/work/Stock-Invest/Stock-Invest'
+2026-11-13T08:39:49.0911930Z [command]/usr/bin/git version
+2026-11-13T08:39:49.0933247Z git version 2.56.1
+2026-11-13T08:39:49.0967897Z ##[endgroup]
+2026-11-13T08:39:49.1011226Z Temporarily overriding HOME='/home/runner/work/_temp/1844a581-d11d-46a2-920b-b2c6170bd2e7' before making global git config changes
+2026-11-13T08:39:49.1014391Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-13T08:39:49.1020810Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Stock-Invest/Stock-Invest
+2026-11-13T08:39:49.1151430Z Deleting the contents of '/home/runner/work/Stock-Invest/Stock-Invest'
+2026-11-13T08:39:49.1154186Z ##[group]Initializing the repository
+2026-11-13T08:39:49.1157929Z [command]/usr/bin/git init /home/runner/work/Stock-Invest/Stock-Invest
+2026-11-13T08:39:49.1465409Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-11-13T08:39:49.1467979Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-11-13T08:39:49.1470160Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-11-13T08:39:49.1471781Z hint: call:
+2026-11-13T08:39:49.1473867Z hint:
+2026-11-13T08:39:49.1474317Z hint: 	git config --global init.defaultBranch <name>
+2026-11-13T08:39:49.1474761Z hint:
+2026-11-13T08:39:49.1476577Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-11-13T08:39:49.1477073Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-11-13T08:39:49.1477464Z hint:
+2026-11-13T08:39:49.1479218Z hint: 	git branch -m <name>
+2026-11-13T08:39:49.1479541Z hint:
+2026-11-13T08:39:49.1480035Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-11-13T08:39:49.1484919Z Initialized empty Git repository in /home/runner/work/Stock-Invest/Stock-Invest/.git/
+2026-11-13T08:39:49.1511281Z [command]/usr/bin/git remote add origin https://github.com/Puicuppom/Stock-Invest
+2026-11-13T08:39:49.1655565Z ##[endgroup]
+2026-11-13T08:39:49.1656268Z ##[group]Disabling automatic garbage collection
+2026-11-13T08:39:49.1669885Z [command]/usr/bin/git config --local gc.auto 0
+2026-11-13T08:39:49.1725084Z ##[endgroup]
+2026-11-13T08:39:49.1730457Z ##[group]Setting up auth
+2026-11-13T08:39:49.1731074Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-13T08:39:49.1785238Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-13T08:39:49.2166059Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-13T08:39:49.2194886Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-13T08:39:49.2409911Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-13T08:39:49.2439257Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-13T08:39:49.2650987Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-11-13T08:39:49.2685452Z ##[endgroup]
+2026-11-13T08:39:49.2685995Z ##[group]Fetching the repository
+2026-11-13T08:39:49.2693172Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +170b30547d4285c2221b7555d406122f5e4dfb69:refs/remotes/origin/probe-screener-tmp
+2026-11-13T08:39:49.6929949Z From https://github.com/Puicuppom/Stock-Invest
+2026-11-13T08:39:49.6930878Z  * [new ref]         170b30547d4285c2221b7555d406122f5e4dfb69 -> origin/probe-screener-tmp
+2026-11-13T08:39:49.6933403Z ##[endgroup]
+2026-11-13T08:39:49.6934093Z ##[group]Determining the checkout info
+2026-11-13T08:39:49.6935541Z ##[endgroup]
+2026-11-13T08:39:49.6940323Z [command]/usr/bin/git sparse-checkout disable
+2026-11-13T08:39:49.6987302Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-11-13T08:39:49.7011353Z ##[group]Checking out the ref
+2026-11-13T08:39:49.7014371Z [command]/usr/bin/git checkout --progress --force -B probe-screener-tmp refs/remotes/origin/probe-screener-tmp
+2026-11-13T08:39:49.7159705Z Switched to a new branch 'probe-screener-tmp'
+2026-11-13T08:39:49.7163976Z branch 'probe-screener-tmp' set up to track 'origin/probe-screener-tmp'.
+2026-11-13T08:39:49.7169116Z ##[endgroup]
+2026-11-13T08:39:49.7210343Z [command]/usr/bin/git log -1 --format=%H
+2026-11-13T08:39:49.7232655Z 170b30547d4285c2221b7555d406122f5e4dfb69
+2026-11-13T08:39:49.7445714Z ##[group]Run actions/setup-node@v4
+2026-11-13T08:39:49.7446037Z with:
+2026-11-13T08:39:49.7446270Z   node-version: 22
+2026-11-13T08:39:49.7446519Z   always-auth: false
+2026-11-13T08:39:49.7446774Z   check-latest: false
+2026-11-13T08:39:49.7448978Z   token: ***
+2026-11-13T08:39:49.7449210Z ##[endgroup]
+2026-11-13T08:39:49.8386053Z Found in cache @ /opt/hostedtoolcache/node/22.23.4/x64
+2026-11-13T08:39:49.8387152Z (node:2266) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-13T08:39:49.8388203Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-13T08:39:49.8389128Z ##[group]Environment details
+2026-11-13T08:39:50.1402477Z node: v22.23.4
+2026-11-13T08:39:50.1403325Z npm: 10.9.9
+2026-11-13T08:39:50.1403786Z yarn: 1.22.22
+2026-11-13T08:39:50.1404974Z ##[endgroup]
+2026-11-13T08:39:50.1541393Z ##[group]Run node probe/run.mjs
+2026-11-13T08:39:50.1542491Z [36;1mnode probe/run.mjs[0m
+2026-11-13T08:39:50.1592960Z shell: /usr/bin/bash -e {0}
+2026-11-13T08:39:50.1593649Z ##[endgroup]
+2026-11-13T08:39:50.6585888Z 
+2026-11-13T08:39:50.6594266Z == trending US {"finance":{"result":[{"count":25,"quotes":[{"symbol":"MSFT"},{"symbol":"BTC-USD"},{"symbol":"CBRS"},{"symbol":"CSCO"},{"symbol":"AMAT"},{"symbol":"SLS"},{"symbol":"SMCI"},{"symbol":"MOD"},{"symbol":"TSLA"},{"symbol":"NU"},{"symbol":"NBIS"},{"symbol":"COIN"},{"symbol":"IBIT"},{"symbol":"ETH-USD"},{"symbol":"XLAB"},{"symbol":"^HSI"},{"symbol":"CADL"},{"symbol":"HOOD"},{"symbol":"MRLN"},{"symbol":"^TNX"},{"symbol":"ENVX"},{"symbol":"BMNR"},{"symbol":"QTEX"},{"symbol":"XRP-USD"},{"symbol":"ANET"}],"jobTimestamp":1794557216596,"startInterval":202611130700,"keyVersion":"v3"}],"error":null}}
+2026-11-13T08:39:50.7924737Z 
+2026-11-13T08:39:50.7925844Z == trending TH {"finance":{"result":[{"count":1,"quotes":[{"symbol":"NVDA"}],"jobTimestamp":0,"startInterval":0,"keyVersion":"v3"}],"error":null}}
+2026-11-13T08:39:50.9387217Z 
+2026-11-13T08:39:50.9388074Z == day_gainers (25)
+2026-11-13T08:39:50.9388686Z PLBL | Polibeli Group Ltd | 28.8 | 3B | NGM | EQUITY
+2026-11-13T08:39:50.9389167Z MBGL | Mobility Global Inc. | 16.1 | 7B | NYQ | EQUITY
+2026-11-13T08:39:50.9389643Z CHA | Chagee Holdings Limi | 9.6 | 3B | NMS | EQUITY
+2026-11-13T08:39:50.9390225Z BLTE | Belite Bio, Inc | 9.0 | 7B | NMS | EQUITY
+2026-11-13T08:39:50.9390641Z DPC | DPC Holdings PLC | 8.4 | 5B | NYQ | EQUITY
+2026-11-13T08:39:50.9391029Z LUNR | Intuitive Machines,  | 7.0 | 2B | NGM | EQUITY
+2026-11-13T08:39:50.9391452Z IBP | Installed Building P | 6.8 | 6B | NYQ | EQUITY
+2026-11-13T08:39:50.9391874Z HUBS | HubSpot, Inc. | 6.4 | 11B | NYQ | EQUITY
+2026-11-13T08:39:50.9392435Z FIGR | Figure Technology So | 6.1 | 6B | NMS | EQUITY
+2026-11-13T08:39:50.9392854Z AMD | Advanced Micro Devic | 5.9 | 960B | NMS | EQUITY
+2026-11-13T08:39:50.9393173Z LMND | Lemonade, Inc. | 5.7 | 3B | NYQ | EQUITY
+2026-11-13T08:39:50.9393409Z AVGO | Broadcom Inc. | 5.5 | 1739B | NMS | EQUITY
+2026-11-13T08:39:50.9393679Z IRTC | iRhythm Holdings, In | 5.5 | 3B | NMS | EQUITY
+2026-11-13T08:39:50.9393935Z CDLR | Cadeler plc | 5.3 | 2B | NYQ | EQUITY
+2026-11-13T08:39:50.9394178Z LQDA | Liquidia Corporation | 5.3 | 5B | NCM | EQUITY
+2026-11-13T08:39:51.0840764Z 
+2026-11-13T08:39:51.0841517Z == day_losers (25)
+2026-11-13T08:39:51.0842196Z BZ | KANZHUN LIMITED - Am | -25.3 | 5B | NMS | EQUITY
+2026-11-13T08:39:51.0842677Z CTVA | Corteva, Inc. | -24.3 | 6B | NYQ | EQUITY
+2026-11-13T08:39:51.0843097Z NBIS | Nebius Group N.V. | -16.8 | 35B | NMS | EQUITY
+2026-11-13T08:39:51.0843564Z CLBT | Cellebrite DI Ltd. | -14.3 | 3B | NMS | EQUITY
+2026-11-13T08:39:51.0843987Z MANE | Veradermics, Incorpo | -13.6 | 6B | NYQ | EQUITY
+2026-11-13T08:39:51.0844405Z DGII | Digi International I | -12.7 | 2B | NMS | EQUITY
+2026-11-13T08:39:51.0844839Z GPN | Global Payments Inc. | -12.0 | 23B | NYQ | EQUITY
+2026-11-13T08:39:51.0845312Z GDS | GDS Holdings Limited | -11.4 | 4B | NGM | EQUITY
+2026-11-13T08:39:51.0845701Z WRBY | Warby Parker Inc. | -11.3 | 3B | NYQ | EQUITY
+2026-11-13T08:39:51.0846102Z SMCI | Super Micro Computer | -11.3 | 18B | NMS | EQUITY
+2026-11-13T08:39:51.0846570Z LIFE | Ethos Technologies I | -10.9 | 2B | NMS | EQUITY
+2026-11-13T08:39:51.0846984Z YETI | YETI Holdings, Inc. | -10.5 | 3B | NYQ | EQUITY
+2026-11-13T08:39:51.0848305Z HWC | Hancock Whitney Corp | -10.2 | 5B | NMS | EQUITY
+2026-11-13T08:39:51.0848710Z FRVO | Fervo Energy Company | -10.0 | 3B | NMS | EQUITY
+2026-11-13T08:39:51.0849210Z FPS | Forgent Power Soluti | -9.8 | 7B | NYQ | EQUITY
+2026-11-13T08:39:51.2241947Z 
+2026-11-13T08:39:51.2242874Z == most_actives (25)
+2026-11-13T08:39:51.2243409Z NVDA | NVIDIA Corporation | -4.3 | 4013B | NMS | EQUITY
+2026-11-13T08:39:51.2243851Z SMCI | Super Micro Computer | -11.3 | 18B | NMS | EQUITY
+2026-11-13T08:39:51.2244247Z CRWV | CoreWeave, Inc. | -6.9 | 31B | NMS | EQUITY
+2026-11-13T08:39:51.2245264Z GRAB | Grab Holdings Limite | -2.7 | 13B | NMS | EQUITY
+2026-11-13T08:39:51.2245719Z SPCX | Space Exploration Te | 0.1 | 1901B | NMS | EQUITY
+2026-11-13T08:39:51.2246009Z INTC | Intel Corporation | -2.0 | 325B | NMS | EQUITY
+2026-11-13T08:39:51.2246250Z ONDS | Ondas Inc | -7.2 | 3B | NCM | EQUITY
+2026-11-13T08:39:51.2246477Z IREN | IREN LIMITED | -6.5 | 8B | NMS | EQUITY
+2026-11-13T08:39:51.2246715Z NBIS | Nebius Group N.V. | -16.8 | 35B | NMS | EQUITY
+2026-11-13T08:39:51.2246970Z CTVA | Corteva, Inc. | -24.3 | 6B | NYQ | EQUITY
+2026-11-13T08:39:51.2247220Z NOK | Nokia Corporation Sp | -1.9 | 47B | NYQ | EQUITY
+2026-11-13T08:39:51.2247473Z AMD | Advanced Micro Devic | 5.9 | 960B | NMS | EQUITY
+2026-11-13T08:39:51.2247722Z AAL | American Airlines Gr | -5.6 | 9B | NMS | EQUITY
+2026-11-13T08:39:51.2247947Z NIO | NIO Inc. | -5.9 | 8B | NYQ | EQUITY
+2026-11-13T08:39:51.2248175Z NU | Nu Holdings Ltd. | -4.0 | 57B | NYQ | EQUITY
+2026-11-13T08:39:51.3335970Z 
+2026-11-13T08:39:51.3336685Z == undervalued_large_caps (25)
+2026-11-13T08:39:51.3337168Z SMCI | Super Micro Computer | -11.3 | 18B | NMS | EQUITY
+2026-11-13T08:39:51.3337580Z NU | Nu Holdings Ltd. | -4.0 | 57B | NYQ | EQUITY
+2026-11-13T08:39:51.3337970Z BBD | Banco Bradesco Sa | -2.3 | 28B | NYQ | EQUITY
+2026-11-13T08:39:51.3338358Z CDE | Coeur Mining, Inc. | -4.9 | 15B | NYQ | EQUITY
+2026-11-13T08:39:51.3338744Z ITUB | Itau Unibanco Banco  | -2.4 | 81B | NYQ | EQUITY
+2026-11-13T08:39:51.3339166Z OXY | Occidental Petroleum | 2.0 | 58B | NYQ | EQUITY
+2026-11-13T08:39:51.3339586Z CCL | Carnival Corporation | -4.4 | 39B | NYQ | EQUITY
+2026-11-13T08:39:51.3339985Z LYG | Lloyds Banking Group | -0.8 | 74B | NYQ | EQUITY
+2026-11-13T08:39:51.3340405Z BKR | Baker Hughes Company | -1.1 | 49B | NMS | EQUITY
+2026-11-13T08:39:51.3340783Z FIS | Fidelity National In | -6.1 | 15B | NYQ | EQUITY
+2026-11-13T08:39:51.3341176Z UMC | United Microelectron | -2.0 | 40B | NYQ | EQUITY
+2026-11-13T08:39:51.3341581Z PR | Permian Resources Co | 2.0 | 19B | NYQ | EQUITY
+2026-11-13T08:39:51.3342215Z NLY | Annaly Capital Manag | -4.1 | 14B | NYQ | EQUITY
+2026-11-13T08:39:51.3342700Z KGC | Kinross Gold Corpora | -3.5 | 24B | NYQ | EQUITY
+2026-11-13T08:39:51.3343074Z SYF | Synchrony Financial | -0.5 | 22B | NYQ | EQUITY
+2026-11-13T08:39:51.4579110Z 
+2026-11-13T08:39:51.4579798Z == growth_technology_stocks (25)
+2026-11-13T08:39:51.4580253Z NVDA | NVIDIA Corporation | -4.3 | 4013B | NMS | EQUITY
+2026-11-13T08:39:51.4580694Z SMCI | Super Micro Computer | -11.3 | 18B | NMS | EQUITY
+2026-11-13T08:39:51.4581077Z CRWV | CoreWeave, Inc. | -6.9 | 31B | NMS | EQUITY
+2026-11-13T08:39:51.4581437Z GRAB | Grab Holdings Limite | -2.7 | 13B | NMS | EQUITY
+2026-11-13T08:39:51.4581825Z AMD | Advanced Micro Devic | 5.9 | 960B | NMS | EQUITY
+2026-11-13T08:39:51.4582302Z AVGO | Broadcom Inc. | 5.5 | 1739B | NMS | EQUITY
+2026-11-13T08:39:51.4582667Z MU | Micron Technology, I | -1.6 | 903B | NMS | EQUITY
+2026-11-13T08:39:51.4583023Z APLD | Applied Digital Corp | -5.4 | 5B | NMS | EQUITY
+2026-11-13T08:39:51.4583400Z ORCL | Oracle Corporation | -1.0 | 396B | NYQ | EQUITY
+2026-11-13T08:39:51.4583745Z ASTS | AST SpaceMobile, Inc | -5.8 | 13B | NMS | EQUITY
+2026-11-13T08:39:51.4584226Z APH | Amphenol Corporation | 0.4 | 197B | NYQ | EQUITY
+2026-11-13T08:39:51.4584998Z PLTR | Palantir Technologie | -0.5 | 413B | NMS | EQUITY
+2026-11-13T08:39:51.4587970Z SKHY | SK hynix Inc. | -3.2 | 971B | NMS | EQUITY
+2026-11-13T08:39:51.4588826Z TSM | Taiwan Semiconductor | -1.9 | 2103B | NYQ | EQUITY
+2026-11-13T08:39:51.4589195Z FIS | Fidelity National In | -6.1 | 15B | NYQ | EQUITY
+2026-11-13T08:39:51.5715570Z 
+2026-11-13T08:39:51.5719620Z == news NVDA 114ms [{"t":"Huang's exit, AI bubble and financial crisis fears in focus on Web Summit's last day","p":"Euronews","time":1794558379,"link":"https://finance.yahoo.com/technology/ai/articles/huangs-exit-ai-bubble-financial","rel":["NVDA"]},{"t":"Asian markets turn negative as early rally fades after Huang downfall","p":"AFP","time":1794558177,"link":"https://finance.yahoo.com/markets/stocks/articles/tech-firms-extend-rally-asia-0","rel":["NVDA"]},{"t":"European shares fall as Nvidia CEO’s exit raises doubts over AI boom","p":"Euronews","time":1794558067,"link":"https://finance.yahoo.com/technology/ai/articles/european-shares-fall-nvidia-ceo","rel":["NVDA","^DJI","^IXIC","^GSPC","AMD","^FTSE"]}]
+2026-11-13T08:39:51.6810926Z 
+2026-11-13T08:39:51.6811544Z == news PTT.BK []
+2026-11-13T08:39:51.6953984Z Post job cleanup.
+2026-11-13T08:39:51.7722485Z (node:2311) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-13T08:39:51.7722997Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-13T08:39:51.7887097Z Post job cleanup.
+2026-11-13T08:39:51.8466882Z [command]/usr/bin/git version
+2026-11-13T08:39:51.8504776Z git version 2.56.1
+2026-11-13T08:39:51.8530990Z Temporarily overriding HOME='/home/runner/work/_temp/4b973898-19ad-4a45-a167-7a83194d4896' before making global git config changes
+2026-11-13T08:39:51.8531665Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-13T08:39:51.8536931Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Stock-Invest/Stock-Invest
+2026-11-13T08:39:51.8576244Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-13T08:39:51.8613887Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-13T08:39:51.8880315Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-13T08:39:51.8896667Z http.https://github.com/.extraheader
+2026-11-13T08:39:51.8906086Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-11-13T08:39:51.8944570Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-13T08:39:51.9172347Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-13T08:39:51.9203247Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-13T08:39:51.9562695Z Cleaning up orphan processes
+2026-11-13T08:39:51.9828864Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-node@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

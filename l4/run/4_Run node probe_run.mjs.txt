@@ -1,0 +1,97 @@
+﻿2026-11-13T08:39:50.1541370Z ##[group]Run node probe/run.mjs
+2026-11-13T08:39:50.1542486Z [36;1mnode probe/run.mjs[0m
+2026-11-13T08:39:50.1592942Z shell: /usr/bin/bash -e {0}
+2026-11-13T08:39:50.1593647Z ##[endgroup]
+2026-11-13T08:39:50.6585775Z 
+2026-11-13T08:39:50.6594244Z == trending US {"finance":{"result":[{"count":25,"quotes":[{"symbol":"MSFT"},{"symbol":"BTC-USD"},{"symbol":"CBRS"},{"symbol":"CSCO"},{"symbol":"AMAT"},{"symbol":"SLS"},{"symbol":"SMCI"},{"symbol":"MOD"},{"symbol":"TSLA"},{"symbol":"NU"},{"symbol":"NBIS"},{"symbol":"COIN"},{"symbol":"IBIT"},{"symbol":"ETH-USD"},{"symbol":"XLAB"},{"symbol":"^HSI"},{"symbol":"CADL"},{"symbol":"HOOD"},{"symbol":"MRLN"},{"symbol":"^TNX"},{"symbol":"ENVX"},{"symbol":"BMNR"},{"symbol":"QTEX"},{"symbol":"XRP-USD"},{"symbol":"ANET"}],"jobTimestamp":1794557216596,"startInterval":202611130700,"keyVersion":"v3"}],"error":null}}
+2026-11-13T08:39:50.7924600Z 
+2026-11-13T08:39:50.7925724Z == trending TH {"finance":{"result":[{"count":1,"quotes":[{"symbol":"NVDA"}],"jobTimestamp":0,"startInterval":0,"keyVersion":"v3"}],"error":null}}
+2026-11-13T08:39:50.9387120Z 
+2026-11-13T08:39:50.9388060Z == day_gainers (25)
+2026-11-13T08:39:50.9388663Z PLBL | Polibeli Group Ltd | 28.8 | 3B | NGM | EQUITY
+2026-11-13T08:39:50.9389160Z MBGL | Mobility Global Inc. | 16.1 | 7B | NYQ | EQUITY
+2026-11-13T08:39:50.9389639Z CHA | Chagee Holdings Limi | 9.6 | 3B | NMS | EQUITY
+2026-11-13T08:39:50.9390209Z BLTE | Belite Bio, Inc | 9.0 | 7B | NMS | EQUITY
+2026-11-13T08:39:50.9390638Z DPC | DPC Holdings PLC | 8.4 | 5B | NYQ | EQUITY
+2026-11-13T08:39:50.9391025Z LUNR | Intuitive Machines,  | 7.0 | 2B | NGM | EQUITY
+2026-11-13T08:39:50.9391440Z IBP | Installed Building P | 6.8 | 6B | NYQ | EQUITY
+2026-11-13T08:39:50.9391871Z HUBS | HubSpot, Inc. | 6.4 | 11B | NYQ | EQUITY
+2026-11-13T08:39:50.9392431Z FIGR | Figure Technology So | 6.1 | 6B | NMS | EQUITY
+2026-11-13T08:39:50.9392847Z AMD | Advanced Micro Devic | 5.9 | 960B | NMS | EQUITY
+2026-11-13T08:39:50.9393157Z LMND | Lemonade, Inc. | 5.7 | 3B | NYQ | EQUITY
+2026-11-13T08:39:50.9393407Z AVGO | Broadcom Inc. | 5.5 | 1739B | NMS | EQUITY
+2026-11-13T08:39:50.9393677Z IRTC | iRhythm Holdings, In | 5.5 | 3B | NMS | EQUITY
+2026-11-13T08:39:50.9393933Z CDLR | Cadeler plc | 5.3 | 2B | NYQ | EQUITY
+2026-11-13T08:39:50.9394176Z LQDA | Liquidia Corporation | 5.3 | 5B | NCM | EQUITY
+2026-11-13T08:39:51.0840669Z 
+2026-11-13T08:39:51.0841511Z == day_losers (25)
+2026-11-13T08:39:51.0842029Z BZ | KANZHUN LIMITED - Am | -25.3 | 5B | NMS | EQUITY
+2026-11-13T08:39:51.0842674Z CTVA | Corteva, Inc. | -24.3 | 6B | NYQ | EQUITY
+2026-11-13T08:39:51.0843093Z NBIS | Nebius Group N.V. | -16.8 | 35B | NMS | EQUITY
+2026-11-13T08:39:51.0843551Z CLBT | Cellebrite DI Ltd. | -14.3 | 3B | NMS | EQUITY
+2026-11-13T08:39:51.0843982Z MANE | Veradermics, Incorpo | -13.6 | 6B | NYQ | EQUITY
+2026-11-13T08:39:51.0844402Z DGII | Digi International I | -12.7 | 2B | NMS | EQUITY
+2026-11-13T08:39:51.0844836Z GPN | Global Payments Inc. | -12.0 | 23B | NYQ | EQUITY
+2026-11-13T08:39:51.0845256Z GDS | GDS Holdings Limited | -11.4 | 4B | NGM | EQUITY
+2026-11-13T08:39:51.0845698Z WRBY | Warby Parker Inc. | -11.3 | 3B | NYQ | EQUITY
+2026-11-13T08:39:51.0846099Z SMCI | Super Micro Computer | -11.3 | 18B | NMS | EQUITY
+2026-11-13T08:39:51.0846567Z LIFE | Ethos Technologies I | -10.9 | 2B | NMS | EQUITY
+2026-11-13T08:39:51.0846982Z YETI | YETI Holdings, Inc. | -10.5 | 3B | NYQ | EQUITY
+2026-11-13T08:39:51.0848301Z HWC | Hancock Whitney Corp | -10.2 | 5B | NMS | EQUITY
+2026-11-13T08:39:51.0848708Z FRVO | Fervo Energy Company | -10.0 | 3B | NMS | EQUITY
+2026-11-13T08:39:51.0849207Z FPS | Forgent Power Soluti | -9.8 | 7B | NYQ | EQUITY
+2026-11-13T08:39:51.2241849Z 
+2026-11-13T08:39:51.2242868Z == most_actives (25)
+2026-11-13T08:39:51.2243404Z NVDA | NVIDIA Corporation | -4.3 | 4013B | NMS | EQUITY
+2026-11-13T08:39:51.2243846Z SMCI | Super Micro Computer | -11.3 | 18B | NMS | EQUITY
+2026-11-13T08:39:51.2244243Z CRWV | CoreWeave, Inc. | -6.9 | 31B | NMS | EQUITY
+2026-11-13T08:39:51.2244642Z GRAB | Grab Holdings Limite | -2.7 | 13B | NMS | EQUITY
+2026-11-13T08:39:51.2245715Z SPCX | Space Exploration Te | 0.1 | 1901B | NMS | EQUITY
+2026-11-13T08:39:51.2246007Z INTC | Intel Corporation | -2.0 | 325B | NMS | EQUITY
+2026-11-13T08:39:51.2246248Z ONDS | Ondas Inc | -7.2 | 3B | NCM | EQUITY
+2026-11-13T08:39:51.2246474Z IREN | IREN LIMITED | -6.5 | 8B | NMS | EQUITY
+2026-11-13T08:39:51.2246713Z NBIS | Nebius Group N.V. | -16.8 | 35B | NMS | EQUITY
+2026-11-13T08:39:51.2246968Z CTVA | Corteva, Inc. | -24.3 | 6B | NYQ | EQUITY
+2026-11-13T08:39:51.2247218Z NOK | Nokia Corporation Sp | -1.9 | 47B | NYQ | EQUITY
+2026-11-13T08:39:51.2247472Z AMD | Advanced Micro Devic | 5.9 | 960B | NMS | EQUITY
+2026-11-13T08:39:51.2247721Z AAL | American Airlines Gr | -5.6 | 9B | NMS | EQUITY
+2026-11-13T08:39:51.2247945Z NIO | NIO Inc. | -5.9 | 8B | NYQ | EQUITY
+2026-11-13T08:39:51.2248173Z NU | Nu Holdings Ltd. | -4.0 | 57B | NYQ | EQUITY
+2026-11-13T08:39:51.3335923Z 
+2026-11-13T08:39:51.3336678Z == undervalued_large_caps (25)
+2026-11-13T08:39:51.3337135Z SMCI | Super Micro Computer | -11.3 | 18B | NMS | EQUITY
+2026-11-13T08:39:51.3337577Z NU | Nu Holdings Ltd. | -4.0 | 57B | NYQ | EQUITY
+2026-11-13T08:39:51.3337967Z BBD | Banco Bradesco Sa | -2.3 | 28B | NYQ | EQUITY
+2026-11-13T08:39:51.3338354Z CDE | Coeur Mining, Inc. | -4.9 | 15B | NYQ | EQUITY
+2026-11-13T08:39:51.3338741Z ITUB | Itau Unibanco Banco  | -2.4 | 81B | NYQ | EQUITY
+2026-11-13T08:39:51.3339163Z OXY | Occidental Petroleum | 2.0 | 58B | NYQ | EQUITY
+2026-11-13T08:39:51.3339582Z CCL | Carnival Corporation | -4.4 | 39B | NYQ | EQUITY
+2026-11-13T08:39:51.3339982Z LYG | Lloyds Banking Group | -0.8 | 74B | NYQ | EQUITY
+2026-11-13T08:39:51.3340402Z BKR | Baker Hughes Company | -1.1 | 49B | NMS | EQUITY
+2026-11-13T08:39:51.3340780Z FIS | Fidelity National In | -6.1 | 15B | NYQ | EQUITY
+2026-11-13T08:39:51.3341173Z UMC | United Microelectron | -2.0 | 40B | NYQ | EQUITY
+2026-11-13T08:39:51.3341570Z PR | Permian Resources Co | 2.0 | 19B | NYQ | EQUITY
+2026-11-13T08:39:51.3342022Z NLY | Annaly Capital Manag | -4.1 | 14B | NYQ | EQUITY
+2026-11-13T08:39:51.3342696Z KGC | Kinross Gold Corpora | -3.5 | 24B | NYQ | EQUITY
+2026-11-13T08:39:51.3343071Z SYF | Synchrony Financial | -0.5 | 22B | NYQ | EQUITY
+2026-11-13T08:39:51.4579054Z 
+2026-11-13T08:39:51.4579793Z == growth_technology_stocks (25)
+2026-11-13T08:39:51.4580249Z NVDA | NVIDIA Corporation | -4.3 | 4013B | NMS | EQUITY
+2026-11-13T08:39:51.4580691Z SMCI | Super Micro Computer | -11.3 | 18B | NMS | EQUITY
+2026-11-13T08:39:51.4581075Z CRWV | CoreWeave, Inc. | -6.9 | 31B | NMS | EQUITY
+2026-11-13T08:39:51.4581434Z GRAB | Grab Holdings Limite | -2.7 | 13B | NMS | EQUITY
+2026-11-13T08:39:51.4581822Z AMD | Advanced Micro Devic | 5.9 | 960B | NMS | EQUITY
+2026-11-13T08:39:51.4582299Z AVGO | Broadcom Inc. | 5.5 | 1739B | NMS | EQUITY
+2026-11-13T08:39:51.4582662Z MU | Micron Technology, I | -1.6 | 903B | NMS | EQUITY
+2026-11-13T08:39:51.4583021Z APLD | Applied Digital Corp | -5.4 | 5B | NMS | EQUITY
+2026-11-13T08:39:51.4583383Z ORCL | Oracle Corporation | -1.0 | 396B | NYQ | EQUITY
+2026-11-13T08:39:51.4583743Z ASTS | AST SpaceMobile, Inc | -5.8 | 13B | NMS | EQUITY
+2026-11-13T08:39:51.4584224Z APH | Amphenol Corporation | 0.4 | 197B | NYQ | EQUITY
+2026-11-13T08:39:51.4584995Z PLTR | Palantir Technologie | -0.5 | 413B | NMS | EQUITY
+2026-11-13T08:39:51.4587966Z SKHY | SK hynix Inc. | -3.2 | 971B | NMS | EQUITY
+2026-11-13T08:39:51.4588824Z TSM | Taiwan Semiconductor | -1.9 | 2103B | NYQ | EQUITY
+2026-11-13T08:39:51.4589194Z FIS | Fidelity National In | -6.1 | 15B | NYQ | EQUITY
+2026-11-13T08:39:51.5715533Z 
+2026-11-13T08:39:51.5719300Z == news NVDA 114ms [{"t":"Huang's exit, AI bubble and financial crisis fears in focus on Web Summit's last day","p":"Euronews","time":1794558379,"link":"https://finance.yahoo.com/technology/ai/articles/huangs-exit-ai-bubble-financial","rel":["NVDA"]},{"t":"Asian markets turn negative as early rally fades after Huang downfall","p":"AFP","time":1794558177,"link":"https://finance.yahoo.com/markets/stocks/articles/tech-firms-extend-rally-asia-0","rel":["NVDA"]},{"t":"European shares fall as Nvidia CEO’s exit raises doubts over AI boom","p":"Euronews","time":1794558067,"link":"https://finance.yahoo.com/technology/ai/articles/european-shares-fall-nvidia-ceo","rel":["NVDA","^DJI","^IXIC","^GSPC","AMD","^FTSE"]}]
+2026-11-13T08:39:51.6810877Z 
+2026-11-13T08:39:51.6811540Z == news PTT.BK []
