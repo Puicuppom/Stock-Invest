@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { estimateHolderCost } from "@/lib/holder-cost";
 import type React from "react";
 import SrLadder from "./SrLadder";
 import { analyzeReversal, analyzeTopReversal, reversalTag, rsiSeries, type ReversalSignal } from "@/lib/reversal";
@@ -34,6 +35,15 @@ export default function SignalSummary(props: Props) {
   const [openDip, setOpenDip] = useState<string | null>(null);
   const [openRating, setOpenRating] = useState(false);
   const [openSignalTag, setOpenSignalTag] = useState<string | null>(null);
+  // ต้นทุนของเราจากหน้าปรับพอร์ต (ถ้ามีหุ้นตัวนี้)
+  const [myCost, setMyCost] = useState<number | null>(null);
+  useEffect(() => {
+    let alive = true;
+    setMyCost(null);
+    fetch(`/api/my-cost?symbol=${encodeURIComponent(data.symbol)}`, { cache: "no-store" })
+      .then(r => (r.ok ? r.json() : null)).then(j => { if (alive && j?.avgCost > 0) setMyCost(j.avgCost); }).catch(() => {});
+    return () => { alive = false; };
+  }, [data.symbol]);
   const price = data.lastClose;
   // กลับตัวขึ้น (ลงแล้วขึ้น) หรือกลับตัวลง (ขึ้นแล้วลง): หุ้นขาขึ้นหรือมีสัญญาณขึ้นแล้วลงชัด → ดูฝั่งกลับตัวลง
   const revTag = reversalTag(data);
@@ -68,6 +78,8 @@ export default function SignalSummary(props: Props) {
     : high52 != null && high52 > price ? { price: high52, note: "* ไม่มีแนวต้านเหนือราคา จึงใช้จุดสูงสุด 52 สัปดาห์แทน", fallback: true }
     : null;
   const doneCandles = completedCandles(data);
+  const sharesOut = data.fairValue.marketCap && data.lastClose > 0 ? data.fairValue.marketCap / data.lastClose : null;
+  const holder = data.assetKind === "gold-spot" ? null : estimateHolderCost(doneCandles, price, sharesOut);
   const atrRaw = atrSeries(doneCandles).at(-1);
   const atr = atrRaw != null && Number.isFinite(atrRaw) ? atrRaw : null;
   const rating = technicalRating(doneCandles);
@@ -214,6 +226,33 @@ export default function SignalSummary(props: Props) {
         </div>
       )}
       {openTag && <div className="sx-explain">{openTag.body}</div>}
+
+      {holder && (() => {
+        const vsMkt = (price / holder.avg - 1) * 100;
+        const mine = myCost != null ? (myCost / holder.avg - 1) * 100 : null;
+        const pts = [holder.rangeLow, holder.rangeHigh, holder.avg, price, ...(myCost != null ? [myCost] : [])];
+        const a = Math.min(...pts) * 0.97, b = Math.max(...pts) * 1.03;
+        const pos = (v: number) => `${((v - a) / (b - a)) * 100}%`;
+        return (
+          <div className="hc" title="ประมาณจากราคาและปริมาณซื้อขายย้อนหลัง 2 ปี: หุ้นที่เปลี่ยนมือแต่ละวันจะย้ายต้นทุนไปอยู่ที่ราคาวันนั้น (วิธีเดียวกับ Chip Distribution) · ไม่ใช่ข้อมูลพอร์ตจริงของนักลงทุน">
+            <div className="hc-top">
+              <span className="hc-label">ต้นทุนคนส่วนใหญ่</span>
+              <b className="hc-avg">~{p2(holder.avg)}</b>
+              <span className={`hc-pill ${vsMkt >= 0 ? "up" : "down"}`}>ราคา{vsMkt >= 0 ? "สูงกว่า" : "ต่ำกว่า"} {Math.abs(vsMkt).toFixed(0)}%</span>
+            </div>
+            <div className="hc-bar" aria-hidden="true">
+              <span className="hc-band" style={{ left: pos(holder.rangeLow), width: `calc(${pos(holder.rangeHigh)} - ${pos(holder.rangeLow)})` }} />
+              <span className="hc-mark avg" style={{ left: pos(holder.avg) }} />
+              <span className="hc-dot now" style={{ left: pos(price) }}><em>ราคา</em></span>
+              {myCost != null && <span className="hc-dot me" style={{ left: pos(myCost) }}><em>คุณ</em></span>}
+            </div>
+            <p className="hc-line">
+              คนถือ <b className="ss-good">กำไร {holder.profitPct.toFixed(0)}%</b> · <b className="ss-bad">ขาดทุน {(100 - holder.profitPct).toFixed(0)}%</b>
+              {mine != null && <> · ทุนคุณ <b>{p2(myCost!)}</b> <span className={mine <= 0 ? "ss-good" : "ss-bad"}>({mine <= 0 ? "ต่ำกว่า" : "สูงกว่า"}คนส่วนใหญ่ {Math.abs(mine).toFixed(0)}%)</span></>}
+            </p>
+          </div>
+        );
+      })()}
 
       <div className="ss-sr-block" id="ss-sr">
         <div className="ss-sr-bar">
