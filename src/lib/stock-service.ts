@@ -120,7 +120,9 @@ export async function getStockData(
 
   if (fundamentals) fundamentals.historicalPE = historicalPE(
     primary ? primaryDaily?.candles ?? [] : daily.candles, earnings,
-    primary?.currency ?? fundamentals.quoteCurrency ?? ""
+    primary?.currency ?? fundamentals.quoteCurrency ?? "",
+    // EPS TTM ปัจจุบันใช้ได้เฉพาะหุ้นที่งบกับราคาเป็นหน่วยเดียวกัน (ไม่ใช่ ADR ที่อิงหุ้นต้นทาง)
+    primary ? null : fundamentals.trailingEps ?? null
   );
 
 
