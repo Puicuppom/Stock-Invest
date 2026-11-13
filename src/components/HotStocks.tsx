@@ -72,7 +72,7 @@ export default function HotStocks() {
           })}
         </ul>
       )}
-      <p className="hot-foot">{data ? `อัปเดต ${new Date(data.at).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })} · ` : ""}{market === "US" ? "เฉพาะบริษัทใหญ่ ≥ 1 หมื่นล้าน USD" : "เฉพาะบริษัท ≥ 1 หมื่นล้านบาท"} · <a href="/screener?tool=1">คัดหุ้นแบบละเอียด →</a></p>
+      <p className="hot-foot">{data ? `อัปเดต ${new Date(data.at).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })} · ` : ""}{market === "US" ? "เฉพาะบริษัทใหญ่ ≥ 1 หมื่นล้าน USD" : "เฉพาะบริษัท ≥ 1 หมื่นล้านบาท"}</p>
     </main>
   );
 }
