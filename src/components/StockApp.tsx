@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { StarIcon } from "./Icons";
 import AddStockFab from "@/components/AddStockFab";
 import AppNavigation from "@/components/AppNavigation";
@@ -98,6 +98,17 @@ export default function StockApp() {
     window.history.pushState({ investpuiDetail: true }, "");
     window.scrollTo(0, 0);
   }, [items, openStock]);
+  // เปิดจากหน้าหุ้นเด่น: /?open=SYMBOL::US
+  const openedFromLink = useRef(false);
+  useEffect(() => {
+    if (!loaded || openedFromLink.current) return;
+    const v = new URLSearchParams(window.location.search).get("open");
+    if (!v) return;
+    openedFromLink.current = true;
+    const [sym, mkt] = v.split("::");
+    if (sym) openSearch(sym, mkt === "TH" ? "TH" : "US");
+    window.history.replaceState(null, "", window.location.pathname);
+  }, [loaded, openSearch]);
   const backToList = useCallback(() => {
     if (window.history.state?.investpuiDetail) window.history.back();
     else setView("list");

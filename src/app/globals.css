@@ -2018,3 +2018,29 @@ body.ui2 .fab { position: fixed; right: max(12px, calc((100vw - 720px) / 2 + 16p
 .wl-logo:has(.wl-star) { overflow: visible; }
 .wl-logo:has(.wl-star) .wl-logo-img, .wl-logo:has(.wl-star) .wl-logo-text { border-radius: 50%; overflow: hidden; }
 .wl-star { position: absolute; top: -5px; left: -5px; width: 18px; height: 18px; display: grid; place-items: center; border-radius: 50%; background: var(--accent); color: #fff; font-size: 11px; font-style: normal; line-height: 1; box-shadow: 0 0 0 2px var(--bg); z-index: 1; }
+
+/* ── หุ้นเด่นวันนี้ ── */
+.hot-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 6px 0 10px; }
+.hot-head h1 { margin: 0; font-size: 1.35rem; }
+.hot-tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 6px; scrollbar-width: none; }
+.hot-tabs button { flex: none; padding: 7px 13px; border-radius: 999px; border: 1px solid var(--border); background: transparent; color: var(--muted); font: inherit; font-size: 0.85rem; cursor: pointer; }
+.hot-tabs button.on { background: color-mix(in srgb, var(--accent) 16%, transparent); border-color: var(--accent); color: var(--text, #e2e8f0); font-weight: 600; }
+.hot-list { list-style: none; margin: 0; padding: 0; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); overflow: hidden; }
+.hot-row { display: grid; grid-template-columns: minmax(0, 1fr) 44px; align-items: center; padding: 10px 6px 10px 12px; border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent); }
+.hot-row:first-child { border-top: 0; }
+.hot-main { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-width: 0; color: inherit; text-decoration: none; }
+.hot-main .hot-logo { width: 36px; height: 36px; }
+.hot-name { display: flex; flex-direction: column; min-width: 0; }
+.hot-name b { font-size: 0.95rem; }
+.hot-name small { font-size: 0.72rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hot-price { display: flex; flex-direction: column; align-items: flex-end; font-variant-numeric: tabular-nums; }
+.hot-price b { font-size: 0.92rem; }
+.hot-price em { font-style: normal; font-size: 0.78rem; font-weight: 700; }
+.hot-price em.up { color: var(--success); } .hot-price em.down { color: var(--danger); }
+.hot-star { width: 40px; height: 40px; justify-self: end; border: 0; border-radius: 50%; background: transparent; color: var(--muted); font-size: 1.25rem; cursor: pointer; }
+.hot-star.on { color: #facc15; }
+.hot-news { grid-column: 1 / -1; margin: 6px 0 0 46px; font-size: 0.74rem; line-height: 1.4; color: var(--muted); text-decoration: none; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.hot-news small { opacity: .75; }
+.hot-msg { color: var(--muted); }
+.hot-foot { margin: 10px 2px 24px; font-size: 0.72rem; color: var(--muted); }
+.hot-foot a { color: var(--accent); }

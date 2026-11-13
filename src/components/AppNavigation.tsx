@@ -10,7 +10,7 @@ export default function AppNavigation({ active }: { active: "stocks" | "rebalanc
         ปรับพอร์ต
       </Link>
       <Link href="/screener" aria-current={active === "screener" ? "page" : undefined}>
-        คัดหุ้น
+        หุ้นเด่น
       </Link>
     </nav>
   );
