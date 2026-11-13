@@ -158,8 +158,11 @@ export default function SignalSummary(props: Props) {
 
   const trendTone: TagTone = trend?.kind === "up" ? "good" : trend?.kind === "down" ? "bad" : "mid";
   const tiles: { id: string; label: string; value: string; sub: string; tone: TagTone; why: string }[] = [];
-  if (trend) tiles.push({ id: "trend", label: "แนวโน้ม", value: `${trendIcon(trend.kind, trend.label)} ${trend.label}`, sub: trend.adx != null ? `ADX ${trend.adx.toFixed(0)} · ${trend.adx >= 25 ? "ชัด" : trend.adx >= 20 ? "เริ่มมี" : "อ่อน"}` : "", tone: trendTone,
-    why: trend.reasons.join(" · ") });
+  // ชื่อสั้นให้พอดีช่อง (ชื่อเต็มอยู่ในคำอธิบายเมื่อแตะ)
+  const trendShort = (t: TrendResult) => /กลับตัวขึ้น/.test(t.label) ? "กลับตัวขึ้น" : /กลับตัวลง/.test(t.label) ? "กลับตัวลง"
+    : /เอียงขึ้น/.test(t.label) ? "เอียงขึ้น" : /เอียงลง/.test(t.label) ? "เอียงลง" : t.label;
+  if (trend) tiles.push({ id: "trend", label: "แนวโน้ม", value: `${trendIcon(trend.kind, trend.label)} ${trendShort(trend)}`, sub: trend.adx != null ? `ADX ${trend.adx.toFixed(0)} · ${trend.adx >= 25 ? "ชัด" : trend.adx >= 20 ? "เริ่มมี" : "อ่อน"}` : "", tone: trendTone,
+    why: `${trend.label} · ${trend.reasons.join(" · ")}` });
   if (rsi != null) tiles.push({ id: "rsi", label: "RSI", value: rsi.toFixed(0), sub: rsiText, tone: rsiTone === "good" ? "good" : rsiTone === "bad" ? "bad" : "dim",
     why: "RSI 14 วัน · ต่ำกว่า 30 = ขายมากเกิน อาจเด้ง · สูงกว่า 70 = ซื้อมากเกิน อาจย่อ" });
   if (upside != null && target != null) tiles.push({ id: "target", label: "เป้านักวิเคราะห์", value: `${upside >= 0 ? "+" : ""}${upside.toFixed(0)}%`, sub: `เป้า ${p2(target)}`, tone: upside >= 15 ? "good" : upside <= 0 ? "bad" : "mid",

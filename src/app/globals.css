@@ -2012,3 +2012,4 @@ body.ui2 .fab { position: fixed; right: max(12px, calc((100vw - 720px) / 2 + 16p
 .hc-dot.avg { background: var(--text, #e2e8f0); }
 .hc-dot.now { background: var(--accent); }
 .hc-dot.me { background: var(--warning); }
+.sx-tile b { font-size: clamp(0.82rem, 3.6vw, 0.95rem); }
