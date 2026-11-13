@@ -13,9 +13,10 @@ async function screen(name, operands, sortField, sortType, size=25){
   for(const q of res.quotes.slice(0,size)) console.log([q.symbol,(q.shortName||'').slice(0,22),q.regularMarketPrice,q.fiftyTwoWeekHigh, q.fiftyTwoWeekHigh?((q.regularMarketPrice/q.fiftyTwoWeekHigh-1)*100).toFixed(0)+'%':'', (q.marketCap/1e9).toFixed(0)+'B', q.fiftyTwoWeekChangePercent?.toFixed?.(0)].join(' | '));
   if(name==='keys') console.log(Object.keys(res.quotes[0]).join(','));
 }
-const base=[{operator:"eq",operands:["region","us"]},{operator:"gte",operands:["intradaymarketcap",2e9]}];
-await screen("keys",base,"intradaymarketcap","DESC",1);
-await screen("dip-quality",[...base,{operator:"gte",operands:["returnonequity.lasttwelvemonths",10]},{operator:"gte",operands:["totalrevenues1yrgrowth.lasttwelvemonths",0]},{operator:"gt",operands:["peratio.lasttwelvemonths",0]}],"fiftytwowkpercentchange","ASC");
-await screen("dip-q-alt",[...base,{operator:"gte",operands:["returnonequity.lasttwelvemonths",10]},{operator:"gt",operands:["quarterlyrevenuegrowth.quarterly",0]},{operator:"gt",operands:["epsgrowth.lasttwelvemonths",-100]}],"percentchange","ASC",5);
-await screen("momentum",[...base,{operator:"gte",operands:["returnonequity.lasttwelvemonths",15]},{operator:"gte",operands:["totalrevenues1yrgrowth.lasttwelvemonths",10]},{operator:"gt",operands:["epsgrowth.lasttwelvemonths",0]}],"fiftytwowkpercentchange","DESC");
-await screen("dip-th",[{operator:"eq",operands:["region","th"]},{operator:"gte",operands:["intradaymarketcap",10e9]},{operator:"gte",operands:["returnonequity.lasttwelvemonths",10]}],"fiftytwowkpercentchange","ASC",10);
+const ex=(codes)=>({operator:"or",operands:codes.map(c=>({operator:"eq",operands:["exchange",c]}))});
+const US=ex(["NMS","NGM","NCM","NYQ","ASE"]);
+const base=[{operator:"eq",operands:["region","us"]},US,{operator:"gte",operands:["intradaymarketcap",2e9]}];
+await screen("dip-us",[...base,{operator:"gte",operands:["returnonequity.lasttwelvemonths",10]},{operator:"gte",operands:["totalrevenues1yrgrowth.lasttwelvemonths",0]},{operator:"gt",operands:["peratio.lasttwelvemonths",0]}],"fiftytwowkpercentchange","ASC",40);
+await screen("mom-us",[...base,{operator:"gte",operands:["returnonequity.lasttwelvemonths",15]},{operator:"gte",operands:["totalrevenues1yrgrowth.lasttwelvemonths",10]},{operator:"gt",operands:["epsgrowth.lasttwelvemonths",0]}],"fiftytwowkpercentchange","DESC",40);
+await screen("dip-th",[{operator:"eq",operands:["region","th"]},ex(["SET"]),{operator:"gte",operands:["intradaymarketcap",5e9]},{operator:"gte",operands:["returnonequity.lasttwelvemonths",8]},{operator:"gt",operands:["peratio.lasttwelvemonths",0]}],"fiftytwowkpercentchange","ASC",20);
+await screen("mom-th",[{operator:"eq",operands:["region","th"]},ex(["SET"]),{operator:"gte",operands:["intradaymarketcap",5e9]},{operator:"gte",operands:["returnonequity.lasttwelvemonths",12]},{operator:"gte",operands:["totalrevenues1yrgrowth.lasttwelvemonths",5]}],"fiftytwowkpercentchange","DESC",15);
