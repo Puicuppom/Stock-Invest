@@ -24,6 +24,10 @@ function nearestLevels(pivot: PivotLevels, zones: PriceZone[], price: number) {
   return out;
 }
 
+// ราคาสดมาจาก /api/quotes ทุก 30 วิ → ส่วนนี้ (มูลค่ายุติธรรม/แนวรับ/กลุ่ม) ให้ CDN เก็บไว้ 2 นาที
+// และส่งของเดิมไปก่อนระหว่างโหลดใหม่ (สูงสุด 10 นาที) → เปิดหน้าซ้ำ/อุปกรณ์อื่นได้ทันที
+const CDN_CACHE = "public, s-maxage=120, stale-while-revalidate=600";
+
 // Compatibility endpoint for the imported ReBalance application.
 export async function GET(request: NextRequest) {
   const symbol = request.nextUrl.searchParams.get("symbol")?.trim();
@@ -41,7 +45,7 @@ export async function GET(request: NextRequest) {
       srLevels: nearestLevels(data.pivot, data.zones, data.lastClose),
       // จัดกลุ่มอัตโนมัติ (หน้าปรับพอร์ต)
       plan: classifyAsset(data),
-    });
+    }, { headers: { "Cache-Control": CDN_CACHE } });
   } catch {
     return NextResponse.json({ error: "โหลดราคาไม่สำเร็จ" }, { status: 502 });
   }

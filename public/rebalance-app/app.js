@@ -358,7 +358,15 @@ function syncAssetValues() {
     });
 }
 
-async function fetchPrices(fullRender = false) {
+/* ข้อมูลวิเคราะห์ (มูลค่ายุติธรรม/แนวรับ/กลุ่ม) ที่เพิ่งโหลดไม่เกิน 5 นาที ไม่ต้องโหลดซ้ำ
+ * เช่น ตอนเปิดหน้าโหลดจากข้อมูลในเครื่องแล้ว → พอข้อมูลคลาวด์มาถึงจะโหลดเฉพาะตัวที่เพิ่มเข้ามา */
+const ANALYSIS_FRESH_MS = 5 * 60 * 1000;
+const analysisFresh = sym => {
+    const c = priceCache[sym];
+    return !!(c && !c.error && c.analysisAt && Date.now() - c.analysisAt < ANALYSIS_FRESH_MS);
+};
+
+async function fetchPrices(fullRender = false, force = false) {
     const fxPromise = fetchUsdThbRate();
     if (priceFetching) {
         // กำลังโหลดรอบก่อนอยู่ → นัดโหลดอีกรอบเมื่อเสร็จ (เช่น คลาวด์เพิ่มหุ้นเข้ามาระหว่างนั้น)
@@ -384,7 +392,7 @@ async function fetchPrices(fullRender = false) {
         return { total: symbols.length, failed: symbols.filter(sym => priceCache[sym]?.error).length };
     }
 
-    await Promise.all(symbols.map(async (symbol) => {
+    await Promise.all(symbols.filter(sym => force || !analysisFresh(sym)).map(async (symbol) => {
         try {
             const res = await fetch(`/api/stock?symbol=${encodeURIComponent(symbol)}`);
             const data = await res.json();
@@ -392,6 +400,7 @@ async function fetchPrices(fullRender = false) {
                 priceCache[symbol] = {
                     price: data.price,
                     at: Date.now(),
+                    analysisAt: Date.now(),
                     fairValue: data.fairValue || null,
                     srLevels: data.srLevels || null,
                     plan: data.plan || null,
@@ -506,7 +515,7 @@ setInterval(() => {
 }, 30000);
 // แนวรับ/ต้านและมูลค่ายุติธรรม เปลี่ยนช้า → ดึงเต็มทุก 10 นาที
 setInterval(() => {
-    if (document.visibilityState === 'visible') fetchPrices();
+    if (document.visibilityState === 'visible') fetchPrices(false, true);
 }, 600000);
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && Date.now() - lastLiveAt > 15000) fetchLiveQuotes();
@@ -532,7 +541,7 @@ async function refreshAll() {
         let tries = 0;
         while (priceFetching && tries++ < 50) await new Promise(r => setTimeout(r, 200));
         const [result] = await Promise.all([
-            fetchPrices(true),
+            fetchPrices(true, true),
             sb ? loadFromCloud().catch(() => setSyncStatus('error')) : null
         ]);
         renderAndCalculate();
