@@ -5,33 +5,33 @@ const pctTxt = (n: number) => `${n >= 0 ? "+" : ""}${n.toFixed(1)}%`;
 
 /** ช่วง P/E ย้อนหลังของหุ้นเอง: ตอนนี้ถูกหรือแพงเทียบอดีต */
 function PeBand({ pe }: { pe: NonNullable<DeepInfo["pe"]> }) {
-  const W = 320, H = 110, pad = 6;
+  const W = 320, H = 100, pad = 8;
   const cur = pe.current;
-  // ช่วงที่กำไรต่ำผิดปกติ P/E จะพุ่งสูงมาก → ตัดแกนไม่ให้จุดเดียวบีบกราฟทั้งเส้นแบน
+  // ตัดยอด P/E ที่พุ่งผิดปกติ (ช่วงกำไรต่ำ) ไม่ให้บีบกราฟจนแบน
   const cap = Math.max(pe.high * 1.3, (cur ?? 0) * 1.15);
-  const vals = pe.series.map(s => Math.min(s.pe, cap)).concat(cur ?? []);
-  const lo = Math.max(0, Math.min(...vals, pe.low) * 0.9), hi = Math.max(...vals, pe.high) * 1.08;
+  const pts = pe.series.map(s => Math.min(s.pe, cap)).concat(cur != null ? [cur] : []);
+  const lo = Math.max(0, Math.min(...pts, pe.low) * 0.9), hi = Math.max(...pts, pe.high) * 1.08;
   const y = (v: number) => H - pad - ((Math.min(v, cap) - lo) / (hi - lo || 1)) * (H - pad * 2);
-  const x = (i: number) => (i / Math.max(1, pe.series.length - 1)) * (W - 12);
-  const line = pe.series.map((s, i) => `${x(i).toFixed(1)},${y(s.pe).toFixed(1)}`).join(" ");
+  const x = (i: number) => (i / Math.max(1, pts.length - 1)) * W;
+  const line = pts.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
   const state = cur == null ? null : cur < pe.low ? "cheap" : cur > pe.high ? "rich" : "fair";
-  const tone = state === "cheap" ? "up" : state === "rich" ? "down" : "";
+  const tone = state === "cheap" ? "up" : state === "rich" ? "down" : "mid";
   const label = state === "cheap" ? "ถูกกว่าอดีต" : state === "rich" ? "แพงกว่าอดีต" : "ราคาปกติ";
   return (
-    <section className="deep-card">
-      <h3>ถูกหรือแพงเทียบอดีต <small>P/E {pe.years} ปี</small></h3>
-      {cur != null && (
-        <p className="deep-lead">P/E ตอนนี้ <b className={tone}>{f1(cur)}</b> · ปกติ {f1(pe.low)}–{f1(pe.high)} → <b className={tone || "mid"}>{label}</b></p>
-      )}
-      <svg className="pe-chart" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label={`P/E ย้อนหลัง ช่วงปกติ ${f1(pe.low)}–${f1(pe.high)}`}>
-        <rect x="0" y={y(pe.high)} width={W} height={Math.max(2, y(pe.low) - y(pe.high))} className="pe-band" />
-        <polyline points={line} className="pe-line" />
-        {cur != null && <circle cx={W - 6} cy={y(cur)} r="4.5" className={`pe-now ${tone}`} />}
-      </svg>
-      <div className="deep-legend">
-        <span><i className="lg-band" /> ช่วงปกติ (ครึ่งกลางของ {pe.years} ปี)</span>
-        {cur != null && <span><i className={`lg-now ${tone}`} /> ตอนนี้</span>}
+    <section className="deep-card pe-card">
+      <div className="pe-top">
+        <h3>P/E เทียบอดีต</h3>
+        {state && <span className={`pe-pill ${tone}`}>{label}</span>}
       </div>
+      {cur != null && <p className="pe-sub">ตอนนี้ <b className={tone}>{f1(cur)}</b> · ปกติ {Math.round(pe.low)}–{Math.round(pe.high)}</p>}
+      <div className="pe-plot">
+        <svg className="pe-chart" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label={`P/E ${pe.years} ปี ช่วงปกติ ${f1(pe.low)}–${f1(pe.high)}`}>
+          <rect x="0" y={y(pe.high)} width={W} height={Math.max(2, y(pe.low) - y(pe.high))} className="pe-band" />
+          <polyline points={line} className="pe-line" />
+        </svg>
+        {cur != null && <span className={`pe-dot ${tone}`} style={{ top: `${(y(cur) / H) * 100}%` }} aria-hidden="true" />}
+      </div>
+      <p className="pe-foot"><span>{pe.years} ปีก่อน</span><span>แถบ = ช่วงปกติ</span><span>วันนี้</span></p>
     </section>
   );
 }
