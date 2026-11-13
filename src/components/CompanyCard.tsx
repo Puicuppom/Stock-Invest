@@ -1,6 +1,5 @@
 "use client";
-import { useState } from "react";
-import { financialChecks, type CompanyInfo, type YearValue } from "@/lib/financials";
+import type { CompanyInfo, YearValue } from "@/lib/financials";
 
 const SECTOR_TH: Record<string, string> = {
   Technology: "เทคโนโลยี", "Financial Services": "การเงิน", Healthcare: "สุขภาพ",
@@ -8,7 +7,6 @@ const SECTOR_TH: Record<string, string> = {
   "Communication Services": "การสื่อสาร", Industrials: "อุตสาหกรรม", Energy: "พลังงาน",
   "Basic Materials": "วัสดุพื้นฐาน", "Real Estate": "อสังหาฯ", Utilities: "สาธารณูปโภค",
 };
-const ICON = { yes: "✓", partial: "●", no: "✗", na: "?" } as const;
 
 /** 1,234,000,000 → 1.23B */
 function compact(n: number): string {
@@ -44,9 +42,6 @@ function Bars({ title, rows, currency }: { title: string; rows: YearValue[]; cur
 }
 
 export default function CompanyCard({ company }: { company: CompanyInfo }) {
-  const [open, setOpen] = useState<string | null>(null);
-  const checks = financialChecks(company);
-  const selected = checks.find(c => c.label === open);
   const hasFin = company.revenue.length > 0 || company.netIncome.length > 0;
   const cashMax = Math.max(company.cash ?? 0, company.debt ?? 0, 1);
   const meta = [
@@ -56,9 +51,7 @@ export default function CompanyCard({ company }: { company: CompanyInfo }) {
   ].filter(Boolean);
   return (
     <section className="company-card">
-      <div className="ss-head"><h3 className="section-title">ธุรกิจ & งบ</h3>{company.currency && <small className="fin-cur">หน่วย {company.currency}</small>}</div>
-      {meta.length > 0 && <p className="co-meta">{meta.join(" · ")}{company.website && <> · <a href={company.website} target="_blank" rel="noopener noreferrer">เว็บไซต์</a></>}</p>}
-      {company.summary && <details className="co-summary"><summary>ทำธุรกิจอะไร</summary><p lang="en">{company.summary}</p></details>}
+      <div className="ss-head"><h3 className="section-title">ผลประกอบการรายปี</h3>{company.currency && <small className="fin-cur">{company.currency}</small>}</div>
 
       {hasFin && <>
         <div className="fin-grid">
@@ -72,18 +65,15 @@ export default function CompanyCard({ company }: { company: CompanyInfo }) {
             <div><span>หนี้</span><i className="debt" style={{ width: `${(company.debt / cashMax) * 100}%` }} /><b>{compact(company.debt)}</b></div>
           </div>
         )}
-        <div className="rev-chips fin-checks">
-          {checks.map(c => (
-            <button key={c.label} type="button" title={c.detail} aria-expanded={open === c.label}
-              className={`rev-chip dip-chip rev-${c.state}${open === c.label ? " is-open" : ""}`}
-              onClick={() => setOpen(open === c.label ? null : c.label)}>
-              <span className="rev-icon" aria-hidden="true">{ICON[c.state]}</span>{c.label}
-            </button>
-          ))}
-        </div>
-        {selected && <p className="rev-detail-box" role="status"><b>{selected.label}</b> · {selected.detail}</p>}
       </>}
-      {!hasFin && <p className="hint-text">ไม่มีข้อมูลงบการเงินรายปีจาก Yahoo</p>}
+      {!hasFin && <p className="hint-text">ไม่มีข้อมูลงบการเงินรายปี</p>}
+      {(meta.length > 0 || company.summary) && (
+        <details className="co-summary">
+          <summary>ทำธุรกิจอะไร</summary>
+          {meta.length > 0 && <p className="co-meta">{meta.join(" · ")}{company.website && <> · <a href={company.website} target="_blank" rel="noopener noreferrer">เว็บไซต์</a></>}</p>}
+          {company.summary && <p lang="en">{company.summary}</p>}
+        </details>
+      )}
     </section>
   );
 }

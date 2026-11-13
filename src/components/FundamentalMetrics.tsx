@@ -13,11 +13,14 @@ export default function FundamentalMetrics({value, market, price}: {value:FairVa
     {label:"เงินสด/ราคา",amount:number(value.fcfYieldPercent,"%"),unit:"",note:"FCF Yield · กระแสเงินสดอิสระ ÷ มูลค่าบริษัท · ยิ่งสูงยิ่งคุ้ม"},
     {label:"ปันผล",amount:number(value.dividendYieldPercent,"%"),unit:"",note:value.dividendRate!=null?number(value.dividendRate)+" "+currency+"/หุ้น/ปี":"อัตราผลตอบแทนจากเงินปันผล"},
   ];
-  return <div className="fundamental-metrics fm-v2">
+  // ซ่อนตัวที่ไม่มีค่า (เช่น ไม่จ่ายปันผล) ให้เหลือเฉพาะที่มีความหมาย
+  const shown=rows.filter(r=>r.amount!=="—");
+  return <div className="fx-value">
     <AnalystCard value={value} price={price} currency={currency} />
-    {rows.map(row=><div className="dash-metric" key={row.label} title={row.note} tabIndex={0}>
-      <p className="dash-metric-label">{row.label}</p>
-      <div className="fundamental-value"><strong className="dash-metric-value">{row.amount}</strong>{row.unit && <small>{row.unit}</small>}</div>
-    </div>)}
+    {shown.length>0 && <div className="fx-metrics">
+      {shown.map(row=><div className="fx-metric" key={row.label} title={row.note} tabIndex={0}>
+        <small>{row.label}</small><b>{row.amount}</b>
+      </div>)}
+    </div>}
   </div>;
 }

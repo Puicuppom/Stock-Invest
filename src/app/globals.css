@@ -1955,3 +1955,17 @@ body.ui2 .fab { position: fixed; right: max(12px, calc((100vw - 720px) / 2 + 16p
 .fx-head small { font-size: 0.75rem; color: var(--muted); }
 .fx-verdict { font-size: 1.05rem; font-weight: 800; }
 .fx-verdict.tone-good { color: var(--success); } .fx-verdict.tone-bad { color: var(--danger); } .fx-verdict.tone-mid { color: var(--warning); }
+
+/* ── แท็บพื้นฐานแบบกระชับ ── */
+.fx-value { display: flex; flex-direction: column; gap: 8px; }
+.fx-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); gap: 6px; }
+.fx-metric { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); }
+.fx-metric small { font-size: 0.7rem; color: var(--muted); white-space: nowrap; }
+.fx-metric b { font-size: 0.95rem; font-variant-numeric: tabular-nums; }
+.eps-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.eps-pill { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 7px 2px; border-radius: 10px; background: var(--surface-2); }
+.eps-pill small { font-size: 0.68rem; color: var(--muted); }
+.eps-pill b { font-size: 0.8rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.eps-pill.up b { color: var(--success); } .eps-pill.down b { color: var(--danger); }
+.deep-card .pe-chart { height: 90px; }
+.company-card .co-summary p { margin-top: 6px; }

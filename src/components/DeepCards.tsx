@@ -17,8 +17,8 @@ function PeBand({ pe }: { pe: NonNullable<DeepInfo["pe"]> }) {
   return (
     <section className="deep-card">
       <h3>ถูกหรือแพงเทียบอดีต <small>P/E {pe.years} ปี</small></h3>
-      {cur != null && vsMedian != null && (
-        <p className="deep-lead">ตอนนี้ P/E <b>{f1(cur)}</b> · <b className={tone}>{vsMedian <= 0 ? "ต่ำกว่า" : "สูงกว่า"}ค่ากลาง {f1(Math.abs(vsMedian))}%</b> (ค่ากลาง {f1(pe.median)})</p>
+      {cur != null && (
+        <p className="deep-lead">ตอนนี้ <b className={tone}>{f1(cur)}</b> · ปกติ {f1(pe.low)}–{f1(pe.high)} → <b className={tone}>{cur < pe.low ? "ถูกกว่าอดีต" : cur > pe.high ? "แพงกว่าอดีต" : "ราคาปกติ"}</b></p>
       )}
       <svg className="pe-chart" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label={`P/E ย้อนหลัง ช่วงกลาง ${f1(pe.low)}–${f1(pe.high)}`}>
         <rect x="0" y={y(pe.high)} width={W} height={Math.max(1, y(pe.low) - y(pe.high))} className="pe-band" />
@@ -27,11 +27,9 @@ function PeBand({ pe }: { pe: NonNullable<DeepInfo["pe"]> }) {
         {cur != null && <circle cx={W - 6} cy={y(cur)} r="4.5" className={`pe-now ${tone}`} />}
       </svg>
       <div className="deep-legend">
-        <span><i className="lg-band" /> ช่วงปกติ {f1(pe.low)}–{f1(pe.high)}</span>
-        <span><i className="lg-med" /> ค่ากลาง</span>
+        <span><i className="lg-band" /> ช่วงปกติ</span>
         {cur != null && <span><i className="lg-now" /> ตอนนี้</span>}
       </div>
-      <p className="deep-note">ต่ำกว่าช่วงปกติ = ถูกเทียบอดีตของตัวเอง</p>
     </section>
   );
 }
@@ -63,20 +61,20 @@ function EarningsCard({ rows }: { rows: DeepInfo["earnings"] }) {
   const beats = rows.filter(r => (r.surprisePercent ?? 0) > 0).length;
   return (
     <section className="deep-card">
-      <h3>งบ {rows.length} ไตรมาสล่าสุด <small>{beats}/{rows.length} ครั้งดีกว่าคาด</small></h3>
-      <ul className="eps-list">
+      <h3>งบไตรมาส vs ที่คาด <small>ดีกว่าคาด {beats}/{rows.length}</small></h3>
+      <div className="eps-row">
         {rows.map(r => {
           const s = r.surprisePercent;
           const beat = s != null && s > 0;
+          const [y, m] = r.quarter.split("-");
           return (
-            <li key={r.quarter}>
-              <span className="eps-q">{r.quarter.slice(0, 7)}</span>
-              <span className="eps-v">กำไร/หุ้น <b>{r.actual?.toFixed(2)}</b>{r.estimate != null && <small> คาด {r.estimate.toFixed(2)}</small>}</span>
-              <em className={`eps-tag ${s == null ? "" : beat ? "up" : "down"}`}>{s == null ? "—" : `${beat ? "✓ ดีกว่าคาด" : "✗ แย่กว่าคาด"} ${pctTxt(s)}`}</em>
-            </li>
+            <span key={r.quarter} className={`eps-pill ${s == null ? "" : beat ? "up" : "down"}`}
+              title={`กำไร/หุ้น ${r.actual?.toFixed(2) ?? "—"}${r.estimate != null ? ` · คาด ${r.estimate.toFixed(2)}` : ""}`}>
+              <small>{m}/{y?.slice(2)}</small><b>{s == null ? "—" : `${beat ? "✓" : "✗"} ${pctTxt(s)}`}</b>
+            </span>
           );
         })}
-      </ul>
+      </div>
     </section>
   );
 }
@@ -106,15 +104,16 @@ function DividendCard({ d }: { d: NonNullable<DeepInfo["dividends"]> }) {
 }
 
 /** การ์ดข้อมูลเชิงลึกในแท็บพื้นฐาน */
-export default function DeepCards({ deep, trailingEps }: { deep: DeepInfo | null | undefined; trailingEps: number | null }) {
+export default function DeepCards({ deep, trailingEps, part = "all" }: { deep: DeepInfo | null | undefined; trailingEps: number | null; part?: "value" | "results" | "all" }) {
   if (!deep) return null;
   const losing = trailingEps == null || trailingEps <= 0;
+  const value = part !== "results", results = part !== "value";
   return (
     <>
-      {deep.pe && !losing && <PeBand pe={deep.pe} />}
-      {deep.ps && (losing || !deep.pe) && <PsCard ps={deep.ps} />}
-      {deep.earnings.length > 0 && <EarningsCard rows={deep.earnings} />}
-      {deep.dividends && deep.dividends.years.length > 1 && <DividendCard d={deep.dividends} />}
+      {value && deep.pe && !losing && <PeBand pe={deep.pe} />}
+      {value && deep.ps && (losing || !deep.pe) && <PsCard ps={deep.ps} />}
+      {results && deep.earnings.length > 0 && <EarningsCard rows={deep.earnings} />}
+      {results && deep.dividends && deep.dividends.years.length > 1 && <DividendCard d={deep.dividends} />}
     </>
   );
 }

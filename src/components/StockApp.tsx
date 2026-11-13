@@ -404,9 +404,10 @@ export default function StockApp() {
         {selectedData.assetKind === "stock" && <FundamentalMetrics value={selectedData.fairValue} market={selectedData.market} price={selectedData.lastClose} />}
         {selectedData.assetKind === "stock" && (selectedData.deep === undefined
           ? <i className="sk" style={{ display: "block", height: 160, borderRadius: 14 }} aria-label="กำลังโหลดข้อมูลเชิงลึก" />
-          : <DeepCards deep={selectedData.deep} trailingEps={selectedData.fairValue.trailingEps ?? null} />)}
+          : <DeepCards deep={selectedData.deep} trailingEps={selectedData.fairValue.trailingEps ?? null} part="value" />)}
         {(selectedData.assetKind === "etf" || selectedData.assetKind === "gold-etf") && <EtfCard data={selectedData} />}
         {selectedData.company && <CompanyCard company={selectedData.company} />}
+        {selectedData.assetKind === "stock" && selectedData.deep && <DeepCards deep={selectedData.deep} trailingEps={selectedData.fairValue.trailingEps ?? null} part="results" />}
         {selectedData.assetKind === "gold-spot" && <p className="state-banner">ทองคำไม่มีข้อมูลพื้นฐานแบบบริษัท</p>}
       </>}
 
