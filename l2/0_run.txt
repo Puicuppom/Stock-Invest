@@ -1,0 +1,268 @@
+﻿2026-11-13T05:49:28.6430053Z Current runner version: '2.338.2'
+2026-11-13T05:49:28.6456846Z ##[group]Runner Image Provisioner
+2026-11-13T05:49:28.6457750Z Hosted Compute Agent
+2026-11-13T05:49:28.6458356Z Version: 20261103.629
+2026-11-13T05:49:28.6459047Z Commit: 15dbd9ccb5dbf34fae002b6ed1a2670f52df37bc
+2026-11-13T05:49:28.6459801Z Build Date: 2026-11-03T17:26:59Z
+2026-11-13T05:49:28.6460506Z Worker ID: {aedf3404-dc90-41a7-aeea-7cdfc898a245}
+2026-11-13T05:49:28.6461238Z Region: us-east-1
+2026-11-13T05:49:28.6461765Z Cloud: AWS
+2026-11-13T05:49:28.6462259Z ##[endgroup]
+2026-11-13T05:49:28.6464382Z ##[group]Operating System
+2026-11-13T05:49:28.6465037Z Ubuntu
+2026-11-13T05:49:28.6465514Z 26.04.1
+2026-11-13T05:49:28.6466032Z LTS
+2026-11-13T05:49:28.6466586Z ##[endgroup]
+2026-11-13T05:49:28.6467103Z ##[group]Runner Image
+2026-11-13T05:49:28.6467799Z Image: ubuntu-26.04
+2026-11-13T05:49:28.6468334Z Version: 20261111.82.6
+2026-11-13T05:49:28.6469624Z Included Software: https://github.com/actions/runner-images/blob/ubuntu26/20261111.82/images/ubuntu/Ubuntu2604-Readme.md
+2026-11-13T05:49:28.6471158Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu26%2F20261111.82
+2026-11-13T05:49:28.6472288Z ##[endgroup]
+2026-11-13T05:49:28.6473741Z ##[group]GITHUB_TOKEN Permissions
+2026-11-13T05:49:28.6476288Z Contents: read
+2026-11-13T05:49:28.6476881Z Metadata: read
+2026-11-13T05:49:28.6477477Z Packages: read
+2026-11-13T05:49:28.6478048Z ##[endgroup]
+2026-11-13T05:49:28.6480347Z Secret source: Actions
+2026-11-13T05:49:28.6481275Z Cache mode: write
+2026-11-13T05:49:28.6482042Z Prepare workflow directory
+2026-11-13T05:49:28.6819262Z Prepare all required actions
+2026-11-13T05:49:28.6859083Z Getting action download info
+2026-11-13T05:49:28.8162020Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-11-13T05:49:29.7398429Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+2026-11-13T05:49:29.9724423Z Complete job name: run
+2026-11-13T05:49:30.0431911Z ##[group]Run actions/checkout@v4
+2026-11-13T05:49:30.0433349Z with:
+2026-11-13T05:49:30.0434226Z   repository: Puicuppom/Stock-Invest
+2026-11-13T05:49:30.0441647Z   token: ***
+2026-11-13T05:49:30.0442415Z   ssh-strict: true
+2026-11-13T05:49:30.0443339Z   ssh-user: git
+2026-11-13T05:49:30.0444097Z   persist-credentials: true
+2026-11-13T05:49:30.0444963Z   clean: true
+2026-11-13T05:49:30.0445735Z   sparse-checkout-cone-mode: true
+2026-11-13T05:49:30.0446660Z   fetch-depth: 1
+2026-11-13T05:49:30.0447591Z   fetch-tags: false
+2026-11-13T05:49:30.0448384Z   show-progress: true
+2026-11-13T05:49:30.0449183Z   lfs: false
+2026-11-13T05:49:30.0449920Z   submodules: false
+2026-11-13T05:49:30.0450711Z   set-safe-directory: true
+2026-11-13T05:49:30.0451627Z   allow-unsafe-pr-checkout: false
+2026-11-13T05:49:30.0452846Z ##[endgroup]
+2026-11-13T05:49:31.6766183Z Syncing repository: Puicuppom/Stock-Invest
+2026-11-13T05:49:31.6768364Z ##[group]Getting Git version info
+2026-11-13T05:49:31.6769227Z Working directory is '/home/runner/work/Stock-Invest/Stock-Invest'
+2026-11-13T05:49:31.6770179Z [command]/usr/bin/git version
+2026-11-13T05:49:31.6773645Z git version 2.56.1
+2026-11-13T05:49:31.6786992Z ##[endgroup]
+2026-11-13T05:49:31.6798128Z Temporarily overriding HOME='/home/runner/work/_temp/9bd99bfa-ea74-4641-a967-6f4a250b9001' before making global git config changes
+2026-11-13T05:49:31.6799152Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-13T05:49:31.6801406Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Stock-Invest/Stock-Invest
+2026-11-13T05:49:31.7141749Z Deleting the contents of '/home/runner/work/Stock-Invest/Stock-Invest'
+2026-11-13T05:49:31.7146699Z ##[group]Initializing the repository
+2026-11-13T05:49:31.7150771Z [command]/usr/bin/git init /home/runner/work/Stock-Invest/Stock-Invest
+2026-11-13T05:49:31.7589877Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-11-13T05:49:31.7590684Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-11-13T05:49:31.7591502Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-11-13T05:49:31.7591987Z hint: call:
+2026-11-13T05:49:31.7592252Z hint:
+2026-11-13T05:49:31.7592631Z hint: 	git config --global init.defaultBranch <name>
+2026-11-13T05:49:31.7593208Z hint:
+2026-11-13T05:49:31.7593713Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-11-13T05:49:31.7594215Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-11-13T05:49:31.7594574Z hint:
+2026-11-13T05:49:31.7594831Z hint: 	git branch -m <name>
+2026-11-13T05:49:31.7595142Z hint:
+2026-11-13T05:49:31.7595490Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-11-13T05:49:31.7605472Z Initialized empty Git repository in /home/runner/work/Stock-Invest/Stock-Invest/.git/
+2026-11-13T05:49:31.7613239Z [command]/usr/bin/git remote add origin https://github.com/Puicuppom/Stock-Invest
+2026-11-13T05:49:31.7656952Z ##[endgroup]
+2026-11-13T05:49:31.7657583Z ##[group]Disabling automatic garbage collection
+2026-11-13T05:49:31.7658867Z [command]/usr/bin/git config --local gc.auto 0
+2026-11-13T05:49:31.7681732Z ##[endgroup]
+2026-11-13T05:49:31.7682252Z ##[group]Setting up auth
+2026-11-13T05:49:31.7686350Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-13T05:49:31.7707805Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-13T05:49:32.0771747Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-13T05:49:32.0799632Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-13T05:49:32.0976955Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-13T05:49:32.1001746Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-13T05:49:32.1174769Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-11-13T05:49:32.1204458Z ##[endgroup]
+2026-11-13T05:49:32.1205150Z ##[group]Fetching the repository
+2026-11-13T05:49:32.1211142Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +c3869ca96d5d93b581a91797933f9bd344e841fd:refs/remotes/origin/probe-screener-tmp
+2026-11-13T05:49:32.4735768Z From https://github.com/Puicuppom/Stock-Invest
+2026-11-13T05:49:32.4736592Z  * [new ref]         c3869ca96d5d93b581a91797933f9bd344e841fd -> origin/probe-screener-tmp
+2026-11-13T05:49:32.4742816Z ##[endgroup]
+2026-11-13T05:49:32.4743321Z ##[group]Determining the checkout info
+2026-11-13T05:49:32.4743769Z ##[endgroup]
+2026-11-13T05:49:32.4745951Z [command]/usr/bin/git sparse-checkout disable
+2026-11-13T05:49:32.4789501Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-11-13T05:49:32.4815610Z ##[group]Checking out the ref
+2026-11-13T05:49:32.4818694Z [command]/usr/bin/git checkout --progress --force -B probe-screener-tmp refs/remotes/origin/probe-screener-tmp
+2026-11-13T05:49:32.4945644Z Switched to a new branch 'probe-screener-tmp'
+2026-11-13T05:49:32.4949380Z branch 'probe-screener-tmp' set up to track 'origin/probe-screener-tmp'.
+2026-11-13T05:49:32.4955027Z ##[endgroup]
+2026-11-13T05:49:32.4989230Z [command]/usr/bin/git log -1 --format=%H
+2026-11-13T05:49:32.5006335Z c3869ca96d5d93b581a91797933f9bd344e841fd
+2026-11-13T05:49:32.5219509Z ##[group]Run actions/setup-node@v4
+2026-11-13T05:49:32.5219793Z with:
+2026-11-13T05:49:32.5220038Z   node-version: 22
+2026-11-13T05:49:32.5220289Z   always-auth: false
+2026-11-13T05:49:32.5220511Z   check-latest: false
+2026-11-13T05:49:32.5222606Z   token: ***
+2026-11-13T05:49:32.5223104Z ##[endgroup]
+2026-11-13T05:49:32.7488814Z (node:2368) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-13T05:49:32.7490493Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-13T05:49:32.7491522Z Found in cache @ /opt/hostedtoolcache/node/22.23.4/x64
+2026-11-13T05:49:32.7492488Z ##[group]Environment details
+2026-11-13T05:49:35.0092231Z node: v22.23.4
+2026-11-13T05:49:35.0093109Z npm: 10.9.9
+2026-11-13T05:49:35.0093410Z yarn: 1.22.22
+2026-11-13T05:49:35.0094666Z ##[endgroup]
+2026-11-13T05:49:35.0195707Z ##[group]Run node probe/run.mjs
+2026-11-13T05:49:35.0196138Z [36;1mnode probe/run.mjs[0m
+2026-11-13T05:49:35.0224973Z shell: /usr/bin/bash -e {0}
+2026-11-13T05:49:35.0225291Z ##[endgroup]
+2026-11-13T05:49:35.3832474Z 
+2026-11-13T05:49:35.3839474Z == dip-us status 200 total 1067 ms 105
+2026-11-13T05:49:35.3840213Z ALNY | Alnylam Pharmaceutical | 156.65 | 479.79 | -67% | 21B | -65
+2026-11-13T05:49:35.3840863Z CDLR | Cadeler plc | 6.93 | 32.81 | -79% | 2B | -65
+2026-11-13T05:49:35.3841344Z TTD | The Trade Desk, Inc. | 15.47 | 43.86 | -65% | 7B | -63
+2026-11-13T05:49:35.3841738Z BSX | Boston Scientific Corp | 44.2 | 105.65 | -58% | 64B | -57
+2026-11-13T05:49:35.3842207Z LEU | Centrus Energy Corp. | 103.92 | 345.6 | -70% | 2B | -56
+2026-11-13T05:49:35.3842590Z PODD | Insulet Corporation | 149.29 | 354.88 | -58% | 10B | -55
+2026-11-13T05:49:35.3843248Z FIS | Fidelity National Info | 28.36 | 68.37 | -59% | 15B | -54
+2026-11-13T05:49:35.3843721Z MNDY | monday.com Ltd. | 77.04 | 164.49 | -53% | 3B | -52
+2026-11-13T05:49:35.3844107Z APTV | Aptiv PLC | 38.81 | 88.93 | -56% | 8B | -51
+2026-11-13T05:49:35.3844473Z TME | Tencent Music Entertai | 9.02 | 19.45 | -54% | 15B | -51
+2026-11-13T05:49:35.3844884Z MNSO | MINISO Group Holding L | 10.94 | 21.94 | -50% | 3B | -48
+2026-11-13T05:49:35.3845278Z HUBS | HubSpot, Inc. | 215.84 | 406.94 | -47% | 11B | -48
+2026-11-13T05:49:35.3845645Z INTU | Intuit Inc. | 340.17 | 682.27 | -50% | 91B | -47
+2026-11-13T05:49:35.3846050Z SE | Sea Limited | 74.52 | 148.26 | -50% | 46B | -47
+2026-11-13T05:49:35.3846389Z BILI | Bilibili Inc. | 13.5 | 36.4 | -63% | 5B | -46
+2026-11-13T05:49:35.3846786Z FUTU | Futu Holdings Limited | 95.62 | 189.38 | -50% | 13B | -45
+2026-11-13T05:49:35.3847178Z PEGA | Pegasystems Inc. | 32.04 | 63.26 | -49% | 5B | -45
+2026-11-13T05:49:35.3847552Z TLK | PT Telekomunikasi Indo | 11.49 | 23.52 | -51% | 11B | -44
+2026-11-13T05:49:35.3847943Z RDDT | Reddit, Inc. | 99.55 | 263.5 | -62% | 19B | -44
+2026-11-13T05:49:35.3848303Z NFLX | Netflix, Inc. | 62.69 | 116.733 | -46% | 257B | -44
+2026-11-13T05:49:35.3848680Z DOX | Amdocs Limited | 44.11 | 84.95 | -48% | 5B | -44
+2026-11-13T05:49:35.3849090Z TCOM | Trip.com Group Limited | 43.21 | 78.99 | -45% | 27B | -41
+2026-11-13T05:49:35.3849481Z NRG | NRG Energy, Inc. | 98.05 | 189.96 | -48% | 21B | -41
+2026-11-13T05:49:35.3849909Z PDD | PDD Holdings Inc. | 77.53 | 138.2 | -44% | 110B | -41
+2026-11-13T05:49:35.3850300Z ORCL | Oracle Corporation | 127.11 | 250.25 | -49% | 396B | -41
+2026-11-13T05:49:35.3850703Z SLM | SLM Corporation | 16.59 | 31.06 | -47% | 3B | -40
+2026-11-13T05:49:35.3851119Z CRK | Comstock Resources, In | 15.07 | 28.1 | -46% | 4B | -40
+2026-11-13T05:49:35.3851502Z NOW | ServiceNow, Inc. | 100.66 | 175 | -42% | 104B | -40
+2026-11-13T05:49:35.3851873Z LIF | Life360, Inc. | 43.7 | 80.51 | -46% | 4B | -39
+2026-11-13T05:49:35.3852228Z LVS | Las Vegas Sands Corp. | 39.33 | 70.45 | -44% | 25B | -39
+2026-11-13T05:49:35.3852589Z SFM | Sprouts Farmers Market | 51.38 | 94.89 | -46% | 5B | -38
+2026-11-13T05:49:35.3853190Z GIL | Gildan Activewear, Inc | 34.83 | 73.7 | -53% | 6B | -38
+2026-11-13T05:49:35.3853574Z BROS | Dutch Bros Inc. | 33.71 | 74.024 | -54% | 5B | -37
+2026-11-13T05:49:35.3853983Z LULU | lululemon athletica in | 104.46 | 225.98 | -54% | 12B | -37
+2026-11-13T05:49:35.3854378Z TSCO | Tractor Supply Company | 36.63 | 56.94 | -36% | 19B | -35
+2026-11-13T05:49:35.3855011Z ROL | Rollins, Inc. | 37.91 | 66.14 | -43% | 18B | -33
+2026-11-13T05:49:35.3855403Z DOCS | Doximity, Inc. | 33.2 | 51.845 | -36% | 6B | -33
+2026-11-13T05:49:35.3855794Z DKS | Dick's Sporting Goods  | 145.66 | 244.38 | -40% | 13B | -32
+2026-11-13T05:49:35.3856167Z ZTS | Zoetis Inc. | 82.96 | 132.49 | -37% | 34B | -32
+2026-11-13T05:49:35.3856531Z KEP | Korea Electric Power C | 11.13 | 23.41 | -52% | 14B | -32
+2026-11-13T05:49:35.4804007Z 
+2026-11-13T05:49:35.4804913Z == mom-us status 200 total 373 ms 97
+2026-11-13T05:49:35.4805656Z CDNA | CareDx, Inc. | 79.81 | 90.87 | -12% | 4B | 411
+2026-11-13T05:49:35.4806718Z PACS | PACS Group, Inc. | 48 | 51.68 | -7% | 8B | 368
+2026-11-13T05:49:35.4807284Z MU | Micron Technology, Inc | 798.44 | 1255 | -36% | 903B | 242
+2026-11-13T05:49:35.4807779Z IBRX | ImmunityBio, Inc. | 6.07 | 12.43 | -51% | 6B | 234
+2026-11-13T05:49:35.4808363Z VSXY | Victorias Secret & Co. | 104.63 | 116.32 | -10% | 8B | 214
+2026-11-13T05:49:35.4808844Z SEZL | Sezzle Inc. | 154.67 | 195.71 | -21% | 5B | 190
+2026-11-13T05:49:35.4809218Z PENG | Penguin Solutions, Inc | 50.1 | 89.86 | -44% | 3B | 162
+2026-11-13T05:49:35.4809637Z ASX | ASE Technology Holding | 36.29 | 47.93 | -24% | 80B | 159
+2026-11-13T05:49:35.4809990Z FIGS | FIGS, Inc. | 22.68 | 23.765 | -5% | 4B | 149
+2026-11-13T05:49:35.4810343Z SN | SharkNinja, Inc. | 220.14 | 232.76 | -5% | 31B | 149
+2026-11-13T05:49:35.4810768Z KNSA | Kiniksa Pharmaceutical | 96.28 | 99.31 | -3% | 8B | 138
+2026-11-13T05:49:35.4811159Z BTSG | BrightSpring Health Se | 71.45 | 73.75 | -3% | 14B | 129
+2026-11-13T05:49:35.4811581Z UMC | United Microelectronic | 15.76 | 28.96 | -46% | 40B | 126
+2026-11-13T05:49:35.4811973Z AAMI | Acadian Asset Manageme | 95.12 | 100.647 | -5% | 3B | 125
+2026-11-13T05:49:35.4812359Z CON | Concentra Group Holdin | 42.99 | 44.22 | -3% | 5B | 120
+2026-11-13T05:49:35.4812928Z MRX | Marex Group Limited | 71.68 | 79.11 | -9% | 5B | 113
+2026-11-13T05:49:35.4813316Z SIMO | Silicon Motion Technol | 179.5 | 355 | -49% | 6B | 112
+2026-11-13T05:49:35.4813731Z STX | Seagate Technology Hol | 545.14 | 1145 | -52% | 125B | 110
+2026-11-13T05:49:35.4814146Z MPC | Marathon Petroleum Cor | 412.85 | 493.98 | -16% | 112B | 107
+2026-11-13T05:49:35.4814558Z VLO | Valero Energy Corporat | 374.95 | 461.52 | -19% | 105B | 107
+2026-11-13T05:49:35.4814974Z GCT | GigaCloud Technology I | 64.79 | 67.18 | -4% | 2B | 107
+2026-11-13T05:49:35.4815336Z BE | Bloom Energy Corporati | 201.93 | 351.28 | -43% | 60B | 102
+2026-11-13T05:49:35.4815752Z WDC | Western Digital Corpor | 311.21 | 799.87 | -61% | 116B | 99
+2026-11-13T05:49:35.4816170Z VCTR | Victory Capital Holdin | 124.44 | 129.31 | -4% | 8B | 99
+2026-11-13T05:49:35.4816720Z CLMT | Calumet, Inc | 36.45 | 59.87 | -39% | 3B | 96
+2026-11-13T05:49:35.4817062Z CXW | CoreCivic, Inc. | 31.48 | 36.55 | -14% | 3B | 94
+2026-11-13T05:49:35.4817424Z TXN | Texas Instruments Inco | 312.48 | 334.03 | -6% | 286B | 91
+2026-11-13T05:49:35.4817827Z VICR | Vicor Corporation | 164.69 | 382.65 | -57% | 8B | 90
+2026-11-13T05:49:35.4818257Z INSW | International Seaways, | 104.65 | 126.274 | -17% | 5B | 89
+2026-11-13T05:49:35.4818686Z FORM | FormFactor, Inc. | 92.32 | 160.27 | -42% | 7B | 89
+2026-11-13T05:49:35.4819058Z DINO | HF Sinclair Corporatio | 102.15 | 129.37 | -21% | 17B | 88
+2026-11-13T05:49:35.4819404Z WT | WisdomTree, Inc. | 21.65 | 25.91 | -16% | 3B | 86
+2026-11-13T05:49:35.4819771Z PSX | Phillips 66 | 262.91 | 299.39 | -12% | 103B | 85
+2026-11-13T05:49:35.4820132Z SMTC | Semtech Corporation | 119.44 | 201.99 | -41% | 11B | 85
+2026-11-13T05:49:35.4820555Z MEOH | Methanex Corporation | 70.11 | 72.32 | -3% | 5B | 84
+2026-11-13T05:49:35.4821174Z RELY | Remitly Global, Inc. | 22.79 | 28 | -19% | 5B | 83
+2026-11-13T05:49:35.4821538Z FRO | Frontline Plc | 46.76 | 59.75 | -22% | 10B | 82
+2026-11-13T05:49:35.4821931Z CHEF | The Chefs' Warehouse,  | 106.07 | 118.51 | -10% | 5B | 80
+2026-11-13T05:49:35.4822322Z NUE | Nucor Corporation | 260.75 | 287.7 | -9% | 59B | 79
+2026-11-13T05:49:35.4822871Z LPG | Dorian LPG Ltd. | 47.8 | 59.97 | -20% | 2B | 79
+2026-11-13T05:49:35.5475024Z 
+2026-11-13T05:49:35.5475824Z == dip-th status 200 total 311 ms 67
+2026-11-13T05:49:35.5476832Z TGH-R.BK | TGH_THAI GROUP HOLDING | 10.2 | 30 | -66% | 8B | -66
+2026-11-13T05:49:35.5477864Z KUAISH01.BK | KUAISH01_DR KUAISH#BLS | 1.42 | 4.24 | -67% | 6B | -64
+2026-11-13T05:49:35.5478799Z MONTAGE80.BK | MONTAGE80_DR MONTAGE#K | 7.85 | 21.8 | -64% | 10B | -60
+2026-11-13T05:49:35.5479569Z VIBHA-R.BK | VIBHA_VIBHAVADI MEDICA | 1.31 | 2.77077 | -53% | 18B | -52
+2026-11-13T05:49:35.5480327Z GIGA80.BK | GIGA80_DR GIGA#KTB | 12.7 | 30 | -58% | 9B | -51
+2026-11-13T05:49:35.5481316Z THAI-R.BK | THAI_THAI AIRWAYS INTE | 5.2 | 12 | -57% | 147B | -50
+2026-11-13T05:49:35.5482010Z FPTVN11.BK | FPTVN11_DR FPTVN#KS | 1.3 | 2.6 | -50% | 123B | -46
+2026-11-13T05:49:35.5482664Z FPTVN19.BK | FPTVN19_DR FPTVN#YUANT | 6.6 | 13.1 | -50% | 124B | -46
+2026-11-13T05:49:35.5483569Z BEM-R.BK | BEM_BANGKOK EXPRESSWAY | 6.25 | 33.25 | -81% | 94B | -43
+2026-11-13T05:49:35.5484201Z THAI.BK | THAI_THAI AIRWAYS INTE | 5.2 | 9.65 | -46% | 147B | -43
+2026-11-13T05:49:35.5484818Z NFLX80.BK | NFLX80_DR NFLX#KTB | 2.14 | 3.78 | -43% | 9B | -42
+2026-11-13T05:49:35.5485493Z CHHONGQ19.BK | CHHONGQ19_DR CHHONGQ#Y | 8.55 | 16.6 | -48% | 830B | -41
+2026-11-13T05:49:35.5486155Z SOFTBANK80.BK | SOFTBANK80_DR SOFTBANK | 7.55 | 17.7 | -57% | 43B | -39
+2026-11-13T05:49:35.5486879Z JDHEAL19.BK | JDHEAL19_DR JDHEAL#YUA | 3.56 | 5.9 | -40% | 568B | -35
+2026-11-13T05:49:35.5487595Z CATL23.BK | CATL23_DR CATL#INVX | 6.4 | 13 | -51% | 30B | -35
+2026-11-13T05:49:35.5488163Z CATL01.BK | CATL01_DR CATL#BLS | 3.64 | 5.6 | -35% | 17B | -34
+2026-11-13T05:49:35.5488722Z CNRE80.BK | CNRE80_DR CNRE#KTB | 1.84 | 2.68 | -31% | 7B | -31
+2026-11-13T05:49:35.5489196Z BYDCOM01.BK | BYDCOM01_DR BYDCOM#BLS | 0.65 | 1.06 | -39% | 2608B | -30
+2026-11-13T05:49:35.5489647Z XIAOMI80.BK | XIAOMI80_DR XIAOMI#KTB | 12.6 | 18.3 | -31% | 3242B | -29
+2026-11-13T05:49:35.5490075Z XIAOMI01.BK | XIAOMI01_DR XIAOMI#BLS | 2.86 | 4.16 | -31% | 74B | -29
+2026-11-13T05:49:35.6139059Z 
+2026-11-13T05:49:35.6139869Z == mom-th status 200 total 130 ms 66
+2026-11-13T05:49:35.6140394Z STECON-R.BK | STECON_STECON GROUP | 19 | 20 | -5% | 29B | 195
+2026-11-13T05:49:35.6140921Z STECON.BK | STECON_STECON GROUP | 19 | 20 | -5% | 29B | 195
+2026-11-13T05:49:35.6141422Z GUNKUL-R.BK | GUNKUL_GUNKUL ENGINEER | 4.92 | 5.4 | -9% | 44B | 172
+2026-11-13T05:49:35.6141872Z GUNKUL.BK | GUNKUL_GUNKUL ENGINEER | 4.92 | 5.55 | -11% | 44B | 164
+2026-11-13T05:49:35.6142505Z MICRON01.BK | MICRON01_DR MICRON#BLS | 16.7 | 26.25 | -36% | 19B | 152
+2026-11-13T05:49:35.6143128Z IRPC-R.BK | IRPC_IRPC | 2.5 | 3.08 | -19% | 51B | 149
+2026-11-13T05:49:35.6143540Z MICRON19.BK | MICRON19_DR MICRON#YUA | 18 | 28 | -36% | 20B | 141
+2026-11-13T05:49:35.6143982Z IRPC.BK | IRPC_IRPC | 2.5 | 3.22 | -22% | 51B | 131
+2026-11-13T05:49:35.6144382Z PLANB.BK | PLANB_PLAN B MEDIA | 8.6 | 9.2 | -7% | 40B | 120
+2026-11-13T05:49:35.6144793Z FORTH.BK | FORTH_FORTH CORPORATIO | 13.5 | 18.9 | -29% | 13B | 109
+2026-11-13T05:49:35.6145153Z BBGI.BK | BBGI_BBGI | 6.15 | 7.6 | -19% | 9B | 107
+2026-11-13T05:49:35.6145540Z LENOVO13.BK | LENOVO13_DR LENOVO#KGI | 3.88 | 8.15 | -52% | 48B | 104
+2026-11-13T05:49:35.6145953Z WUXIAT80.BK | WUXIAT80_DR WUXIAT#KTB | 8.3 | 9.7 | -14% | 25B | 96
+2026-11-13T05:49:35.6146379Z SRICHA.BK | SRICHA_SRIRACHA CONSTR | 18 | 23.2 | -22% | 6B | 89
+2026-11-13T05:49:35.6146798Z FORTH-R.BK | FORTH_FORTH CORPORATIO | 13.5 | 16.9 | -20% | 13B | 86
+2026-11-13T05:49:35.6275233Z Post job cleanup.
+2026-11-13T05:49:35.7173561Z (node:2414) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-13T05:49:35.7174299Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-13T05:49:35.7315441Z Post job cleanup.
+2026-11-13T05:49:35.7955925Z [command]/usr/bin/git version
+2026-11-13T05:49:35.7986419Z git version 2.56.1
+2026-11-13T05:49:35.8011661Z Temporarily overriding HOME='/home/runner/work/_temp/2ab4418a-bb60-4661-a8fe-4055fe45aa91' before making global git config changes
+2026-11-13T05:49:35.8013613Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-13T05:49:35.8014884Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Stock-Invest/Stock-Invest
+2026-11-13T05:49:35.8047922Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-13T05:49:35.8074139Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-13T05:49:35.8283528Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-13T05:49:35.8300667Z http.https://github.com/.extraheader
+2026-11-13T05:49:35.8308180Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-11-13T05:49:35.8333541Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-13T05:49:35.8518754Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-13T05:49:35.8540181Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-13T05:49:35.8891216Z Cleaning up orphan processes
+2026-11-13T05:49:35.9147134Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-node@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

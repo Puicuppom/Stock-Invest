@@ -1,0 +1,34 @@
+﻿2026-11-13T05:49:28.6429361Z Current runner version: '2.338.2'
+2026-11-13T05:49:28.6456808Z ##[group]Runner Image Provisioner
+2026-11-13T05:49:28.6457745Z Hosted Compute Agent
+2026-11-13T05:49:28.6458352Z Version: 20261103.629
+2026-11-13T05:49:28.6459043Z Commit: 15dbd9ccb5dbf34fae002b6ed1a2670f52df37bc
+2026-11-13T05:49:28.6459797Z Build Date: 2026-11-03T17:26:59Z
+2026-11-13T05:49:28.6460502Z Worker ID: {aedf3404-dc90-41a7-aeea-7cdfc898a245}
+2026-11-13T05:49:28.6461234Z Region: us-east-1
+2026-11-13T05:49:28.6461761Z Cloud: AWS
+2026-11-13T05:49:28.6462255Z ##[endgroup]
+2026-11-13T05:49:28.6464360Z ##[group]Operating System
+2026-11-13T05:49:28.6465033Z Ubuntu
+2026-11-13T05:49:28.6465510Z 26.04.1
+2026-11-13T05:49:28.6466028Z LTS
+2026-11-13T05:49:28.6466583Z ##[endgroup]
+2026-11-13T05:49:28.6467097Z ##[group]Runner Image
+2026-11-13T05:49:28.6467795Z Image: ubuntu-26.04
+2026-11-13T05:49:28.6468330Z Version: 20261111.82.6
+2026-11-13T05:49:28.6469430Z Included Software: https://github.com/actions/runner-images/blob/ubuntu26/20261111.82/images/ubuntu/Ubuntu2604-Readme.md
+2026-11-13T05:49:28.6471151Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu26%2F20261111.82
+2026-11-13T05:49:28.6472275Z ##[endgroup]
+2026-11-13T05:49:28.6473729Z ##[group]GITHUB_TOKEN Permissions
+2026-11-13T05:49:28.6476272Z Contents: read
+2026-11-13T05:49:28.6476877Z Metadata: read
+2026-11-13T05:49:28.6477474Z Packages: read
+2026-11-13T05:49:28.6478044Z ##[endgroup]
+2026-11-13T05:49:28.6480336Z Secret source: Actions
+2026-11-13T05:49:28.6481271Z Cache mode: write
+2026-11-13T05:49:28.6482037Z Prepare workflow directory
+2026-11-13T05:49:28.6819231Z Prepare all required actions
+2026-11-13T05:49:28.6859047Z Getting action download info
+2026-11-13T05:49:28.8161976Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-11-13T05:49:29.7398391Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+2026-11-13T05:49:29.9724356Z Complete job name: run
