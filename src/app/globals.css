@@ -1996,20 +1996,19 @@ body.ui2 .fab { position: fixed; right: max(12px, calc((100vw - 720px) / 2 + 16p
 .pe-dot.up { background: var(--success); } .pe-dot.down { background: var(--danger); }
 .pe-foot { display: flex; justify-content: space-between; margin: 0; font-size: 0.68rem; color: var(--muted); }
 /* ต้นทุนคนส่วนใหญ่ (ประมาณ) */
-.hc { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); }
-.hc-top { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
-.hc-label { font-size: 0.78rem; color: var(--muted); }
-.hc-avg { font-size: 1.05rem; font-variant-numeric: tabular-nums; }
-.hc-pill { margin-left: auto; padding: 2px 9px; border-radius: 999px; font-size: 0.74rem; font-weight: 700; }
+.hc { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); }
+.hc-nums { display: flex; align-items: center; gap: 18px; }
+.hc-nums > div { display: flex; flex-direction: column; }
+.hc-nums small { font-size: 0.72rem; color: var(--muted); }
+.hc-nums b { font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+.hc-pill { margin-left: auto; padding: 3px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: 700; white-space: nowrap; }
 .hc-pill.up { color: var(--success); background: color-mix(in srgb, var(--success) 14%, transparent); }
 .hc-pill.down { color: var(--danger); background: color-mix(in srgb, var(--danger) 14%, transparent); }
-.hc-bar { position: relative; height: 26px; margin: 10px 4px 0; }
+.hc-bar { position: relative; height: 40px; }
 .hc-bar::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: var(--border); transform: translateY(-50%); }
-.hc-band { position: absolute; top: 50%; height: 10px; border-radius: 5px; background: color-mix(in srgb, var(--accent) 30%, transparent); transform: translateY(-50%); }
-.hc-mark { position: absolute; top: 50%; width: 2px; height: 16px; background: var(--text, #e2e8f0); transform: translate(-50%, -50%); border-radius: 1px; }
 .hc-dot { position: absolute; top: 50%; width: 11px; height: 11px; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 0 2px var(--surface-2); }
-.hc-dot em { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); font-style: normal; font-size: 0.66rem; white-space: nowrap; color: var(--muted); }
-.hc-dot.me em { bottom: auto; top: 14px; }
+.hc-dot em { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); font-style: normal; font-size: 0.68rem; white-space: nowrap; color: var(--muted); }
+.hc-dot.below em { bottom: auto; top: 14px; }
+.hc-dot.avg { background: var(--text, #e2e8f0); }
 .hc-dot.now { background: var(--accent); }
 .hc-dot.me { background: var(--warning); }
-.hc-line { margin: 6px 0 0; font-size: 0.78rem; color: var(--muted); line-height: 1.5; }

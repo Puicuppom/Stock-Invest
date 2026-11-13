@@ -228,28 +228,28 @@ export default function SignalSummary(props: Props) {
       {openTag && <div className="sx-explain">{openTag.body}</div>}
 
       {holder && (() => {
-        const vsMkt = (price / holder.avg - 1) * 100;
         const mine = myCost != null ? (myCost / holder.avg - 1) * 100 : null;
-        const pts = [holder.rangeLow, holder.rangeHigh, holder.avg, price, ...(myCost != null ? [myCost] : [])];
-        const a = Math.min(...pts) * 0.97, b = Math.max(...pts) * 1.03;
-        const pos = (v: number) => `${((v - a) / (b - a)) * 100}%`;
+        const vsPrice = (price / holder.avg - 1) * 100;
+        const pts = [holder.avg, price, ...(myCost != null ? [myCost] : [])];
+        const a = Math.min(...pts), b = Math.max(...pts), span = (b - a) || a * 0.1;
+        const at = (v: number) => 8 + ((v - (a - span * 0.05)) / (span * 1.1)) * 84;
+        const pAvg = at(holder.avg), pNow = at(price);
+        // ป้ายราคาอยู่ด้านบนถ้าไม่ชนป้าย "ส่วนใหญ่" ไม่งั้นลงด้านล่าง
+        const nowBelow = Math.abs(pNow - pAvg) < 18;
         return (
-          <div className="hc" title="ประมาณจากราคาและปริมาณซื้อขายย้อนหลัง 2 ปี: หุ้นที่เปลี่ยนมือแต่ละวันจะย้ายต้นทุนไปอยู่ที่ราคาวันนั้น (วิธีเดียวกับ Chip Distribution) · ไม่ใช่ข้อมูลพอร์ตจริงของนักลงทุน">
-            <div className="hc-top">
-              <span className="hc-label">ต้นทุนคนส่วนใหญ่</span>
-              <b className="hc-avg">~{p2(holder.avg)}</b>
-              <span className={`hc-pill ${vsMkt >= 0 ? "up" : "down"}`}>ราคา{vsMkt >= 0 ? "สูงกว่า" : "ต่ำกว่า"} {Math.abs(vsMkt).toFixed(0)}%</span>
+          <div className="hc" title="ทุนส่วนใหญ่ = ประมาณจากราคาและปริมาณซื้อขาย 2 ปี (แบบ Chip Distribution) ไม่ใช่ข้อมูลพอร์ตจริงของคนอื่น">
+            <div className="hc-nums">
+              <div><small>ทุนส่วนใหญ่</small><b>{p2(holder.avg)}</b></div>
+              {myCost != null && <div><small>ทุนคุณ</small><b>{p2(myCost)}</b></div>}
+              {mine != null
+                ? <span className={`hc-pill ${mine <= 0 ? "up" : "down"}`}>คุณ{mine <= 0 ? "ต่ำกว่า" : "สูงกว่า"} {Math.abs(mine).toFixed(0)}%</span>
+                : <span className={`hc-pill ${vsPrice >= 0 ? "up" : "down"}`}>ราคา{vsPrice >= 0 ? "สูงกว่า" : "ต่ำกว่า"} {Math.abs(vsPrice).toFixed(0)}%</span>}
             </div>
             <div className="hc-bar" aria-hidden="true">
-              <span className="hc-band" style={{ left: pos(holder.rangeLow), width: `calc(${pos(holder.rangeHigh)} - ${pos(holder.rangeLow)})` }} />
-              <span className="hc-mark avg" style={{ left: pos(holder.avg) }} />
-              <span className="hc-dot now" style={{ left: pos(price) }}><em>ราคา</em></span>
-              {myCost != null && <span className="hc-dot me" style={{ left: pos(myCost) }}><em>คุณ</em></span>}
+              <span className="hc-dot avg" style={{ left: `${pAvg}%` }}><em>ส่วนใหญ่</em></span>
+              <span className={`hc-dot now${nowBelow ? " below" : ""}`} style={{ left: `${pNow}%` }}><em>ราคา</em></span>
+              {myCost != null && <span className="hc-dot me below" style={{ left: `${at(myCost)}%` }}><em>คุณ</em></span>}
             </div>
-            <p className="hc-line">
-              คนถือ <b className="ss-good">กำไร {holder.profitPct.toFixed(0)}%</b> · <b className="ss-bad">ขาดทุน {(100 - holder.profitPct).toFixed(0)}%</b>
-              {mine != null && <> · ทุนคุณ <b>{p2(myCost!)}</b> <span className={mine <= 0 ? "ss-good" : "ss-bad"}>({mine <= 0 ? "ต่ำกว่า" : "สูงกว่า"}คนส่วนใหญ่ {Math.abs(mine).toFixed(0)}%)</span></>}
-            </p>
           </div>
         );
       })()}
