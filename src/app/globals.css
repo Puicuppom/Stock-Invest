@@ -1923,7 +1923,8 @@ body.ui2 .fab { position: fixed; right: max(12px, calc((100vw - 720px) / 2 + 16p
 .sx { gap: 10px; }
 .sx-hero { display: flex; flex-direction: column; gap: 8px; padding: 2px 0 4px; }
 .sx-hero-top { display: flex; align-items: center; justify-content: space-between; }
-.sx-verdict { padding: 6px 16px; border-radius: 999px; font-size: 1.15rem; font-weight: 800; background: var(--surface-2); color: var(--muted); }
+.sx-verdict { padding: 6px 16px; border-radius: 999px; font-size: 1.15rem; font-weight: 800; }
+.sx-hero .tr-meter { flex: none; height: 6px; margin: 2px 0; }
 .sx-more { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 0; border: 0; background: none; color: var(--muted); font: inherit; font-size: 0.78rem; cursor: pointer; font-variant-numeric: tabular-nums; }
 .sx-more-link { color: var(--accent); }
 .sx-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
@@ -1948,3 +1949,4 @@ body.ui2 .fab { position: fixed; right: max(12px, calc((100vw - 720px) / 2 + 16p
 .sx-tag.tone-mid { color: var(--warning); background: color-mix(in srgb, var(--warning) 13%, transparent); }
 .sx-vol { display: flex; align-items: center; gap: 10px; }
 .sx .ss-sr-block { border-top: 1px solid var(--border); padding-top: 8px; }
+.sx-verdict.tr-neutral { background: var(--surface-2); color: var(--muted); }
