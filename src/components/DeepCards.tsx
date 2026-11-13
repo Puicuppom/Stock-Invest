@@ -5,30 +5,32 @@ const pctTxt = (n: number) => `${n >= 0 ? "+" : ""}${n.toFixed(1)}%`;
 
 /** ช่วง P/E ย้อนหลังของหุ้นเอง: ตอนนี้ถูกหรือแพงเทียบอดีต */
 function PeBand({ pe }: { pe: NonNullable<DeepInfo["pe"]> }) {
-  const W = 320, H = 120, pad = 4;
-  const vals = pe.series.map(s => s.pe).concat(pe.current ?? []);
-  const lo = Math.min(...vals) * 0.95, hi = Math.max(...vals) * 1.05;
-  const y = (v: number) => H - pad - ((v - lo) / (hi - lo || 1)) * (H - pad * 2);
+  const W = 320, H = 110, pad = 6;
+  const cur = pe.current;
+  // ช่วงที่กำไรต่ำผิดปกติ P/E จะพุ่งสูงมาก → ตัดแกนไม่ให้จุดเดียวบีบกราฟทั้งเส้นแบน
+  const cap = Math.max(pe.high * 1.3, (cur ?? 0) * 1.15);
+  const vals = pe.series.map(s => Math.min(s.pe, cap)).concat(cur ?? []);
+  const lo = Math.max(0, Math.min(...vals, pe.low) * 0.9), hi = Math.max(...vals, pe.high) * 1.08;
+  const y = (v: number) => H - pad - ((Math.min(v, cap) - lo) / (hi - lo || 1)) * (H - pad * 2);
   const x = (i: number) => (i / Math.max(1, pe.series.length - 1)) * (W - 12);
   const line = pe.series.map((s, i) => `${x(i).toFixed(1)},${y(s.pe).toFixed(1)}`).join(" ");
-  const cur = pe.current;
-  const vsMedian = cur != null ? (cur / pe.median - 1) * 100 : null;
-  const tone = vsMedian == null ? "" : vsMedian <= -10 ? "up" : vsMedian >= 10 ? "down" : "";
+  const state = cur == null ? null : cur < pe.low ? "cheap" : cur > pe.high ? "rich" : "fair";
+  const tone = state === "cheap" ? "up" : state === "rich" ? "down" : "";
+  const label = state === "cheap" ? "ถูกกว่าอดีต" : state === "rich" ? "แพงกว่าอดีต" : "ราคาปกติ";
   return (
     <section className="deep-card">
       <h3>ถูกหรือแพงเทียบอดีต <small>P/E {pe.years} ปี</small></h3>
       {cur != null && (
-        <p className="deep-lead">ตอนนี้ <b className={tone}>{f1(cur)}</b> · ปกติ {f1(pe.low)}–{f1(pe.high)} → <b className={tone}>{cur < pe.low ? "ถูกกว่าอดีต" : cur > pe.high ? "แพงกว่าอดีต" : "ราคาปกติ"}</b></p>
+        <p className="deep-lead">P/E ตอนนี้ <b className={tone}>{f1(cur)}</b> · ปกติ {f1(pe.low)}–{f1(pe.high)} → <b className={tone || "mid"}>{label}</b></p>
       )}
-      <svg className="pe-chart" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label={`P/E ย้อนหลัง ช่วงกลาง ${f1(pe.low)}–${f1(pe.high)}`}>
-        <rect x="0" y={y(pe.high)} width={W} height={Math.max(1, y(pe.low) - y(pe.high))} className="pe-band" />
-        <line x1="0" x2={W} y1={y(pe.median)} y2={y(pe.median)} className="pe-median" />
+      <svg className="pe-chart" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label={`P/E ย้อนหลัง ช่วงปกติ ${f1(pe.low)}–${f1(pe.high)}`}>
+        <rect x="0" y={y(pe.high)} width={W} height={Math.max(2, y(pe.low) - y(pe.high))} className="pe-band" />
         <polyline points={line} className="pe-line" />
         {cur != null && <circle cx={W - 6} cy={y(cur)} r="4.5" className={`pe-now ${tone}`} />}
       </svg>
       <div className="deep-legend">
-        <span><i className="lg-band" /> ช่วงปกติ</span>
-        {cur != null && <span><i className="lg-now" /> ตอนนี้</span>}
+        <span><i className="lg-band" /> ช่วงปกติ (ครึ่งกลางของ {pe.years} ปี)</span>
+        {cur != null && <span><i className={`lg-now ${tone}`} /> ตอนนี้</span>}
       </div>
     </section>
   );
@@ -59,22 +61,25 @@ function PsCard({ ps }: { ps: NonNullable<DeepInfo["ps"]> }) {
 
 function EarningsCard({ rows }: { rows: DeepInfo["earnings"] }) {
   const beats = rows.filter(r => (r.surprisePercent ?? 0) > 0).length;
+  // วันปิดไตรมาส → ไตรมาสตามปฏิทิน เช่น 2026-09-30 → Q3/26
+  const qName = (iso: string) => { const [y, m] = iso.split("-").map(Number); return `Q${Math.ceil(m / 3)}/${String(y).slice(2)}`; };
   return (
     <section className="deep-card">
-      <h3>งบไตรมาส vs ที่คาด <small>ดีกว่าคาด {beats}/{rows.length}</small></h3>
-      <div className="eps-row">
-        {rows.map(r => {
+      <h3>กำไรแต่ละไตรมาส เทียบที่นักวิเคราะห์คาด</h3>
+      <p className="deep-lead">ดีกว่าคาด <b className={beats >= Math.ceil(rows.length * 0.75) ? "up" : beats <= rows.length / 2 ? "down" : ""}>{beats} จาก {rows.length}</b> ไตรมาสล่าสุด</p>
+      <ul className="eps-rows">
+        {[...rows].reverse().map(r => {
           const s = r.surprisePercent;
           const beat = s != null && s > 0;
-          const [y, m] = r.quarter.split("-");
           return (
-            <span key={r.quarter} className={`eps-pill ${s == null ? "" : beat ? "up" : "down"}`}
-              title={`กำไร/หุ้น ${r.actual?.toFixed(2) ?? "—"}${r.estimate != null ? ` · คาด ${r.estimate.toFixed(2)}` : ""}`}>
-              <small>{m}/{y?.slice(2)}</small><b>{s == null ? "—" : `${beat ? "✓" : "✗"} ${pctTxt(s)}`}</b>
-            </span>
+            <li key={r.quarter} title={`กำไรต่อหุ้นจริง ${r.actual?.toFixed(2) ?? "—"}${r.estimate != null ? ` · คาด ${r.estimate.toFixed(2)}` : ""}`}>
+              <span className="eps-q">{qName(r.quarter)}</span>
+              <span className={`eps-word ${s == null ? "" : beat ? "up" : "down"}`}>{s == null ? "ไม่มีข้อมูล" : beat ? "ดีกว่าคาด" : "แย่กว่าคาด"}</span>
+              <b className={s == null ? "" : beat ? "up" : "down"}>{s == null ? "" : pctTxt(s)}</b>
+            </li>
           );
         })}
-      </div>
+      </ul>
     </section>
   );
 }

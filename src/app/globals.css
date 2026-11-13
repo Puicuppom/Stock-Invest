@@ -1969,3 +1969,11 @@ body.ui2 .fab { position: fixed; right: max(12px, calc((100vw - 720px) / 2 + 16p
 .eps-pill.up b { color: var(--success); } .eps-pill.down b { color: var(--danger); }
 .deep-card .pe-chart { height: 90px; }
 .company-card .co-summary p { margin-top: 6px; }
+.deep-card b.mid { color: var(--warning); }
+.lg-now.up { background: var(--success) !important; } .lg-now.down { background: var(--danger) !important; }
+.eps-rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.eps-rows li { display: grid; grid-template-columns: 56px 1fr auto; align-items: center; gap: 8px; padding: 7px 2px; border-top: 1px solid var(--border); font-size: 0.85rem; }
+.eps-rows li:first-child { border-top: 0; }
+.eps-rows .eps-q { color: var(--muted); font-variant-numeric: tabular-nums; }
+.eps-rows .eps-word.up, .eps-rows b.up { color: var(--success); } .eps-rows .eps-word.down, .eps-rows b.down { color: var(--danger); }
+.eps-rows b { font-variant-numeric: tabular-nums; }
