@@ -1,0 +1,13 @@
+name: probe-tmp
+on:
+  push:
+    branches: [probe-screener-tmp]
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: node probe/run.mjs
