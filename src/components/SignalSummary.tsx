@@ -1,15 +1,15 @@
 "use client";
 import { useState } from "react";
-import Gauge from "./Gauge";
+import type React from "react";
 import SrLadder from "./SrLadder";
 import { analyzeReversal, analyzeTopReversal, reversalTag, rsiSeries, type ReversalSignal } from "@/lib/reversal";
 import { completedCandles } from "@/lib/screener";
 import type { SrHit } from "@/lib/sr-levels";
-import { TREND_METHOD, trendIcon, type TrendResult } from "@/lib/trend";
+import { trendIcon, type TrendResult } from "@/lib/trend";
 import type { TradePlan } from "@/lib/trade-plan";
-import { analyzeVolume, VOLUME_METHOD } from "@/lib/volume";
+import { analyzeVolume } from "@/lib/volume";
 import { eventBadges } from "@/lib/events";
-import { analyzeDip, DIP_METHOD, type DipCheck } from "@/lib/dip";
+import { analyzeDip, type DipCheck } from "@/lib/dip";
 import { atrSeries, RATING_METHOD, technicalRating, type RatingItem } from "@/lib/indicators";
 import type { SrMode, StockData } from "@/lib/types";
 
@@ -33,6 +33,7 @@ export default function SignalSummary(props: Props) {
   const [openSignal, setOpenSignal] = useState<string | null>(null);
   const [openDip, setOpenDip] = useState<string | null>(null);
   const [openRating, setOpenRating] = useState(false);
+  const [openSignalTag, setOpenSignalTag] = useState<string | null>(null);
   const price = data.lastClose;
   // กลับตัวขึ้น (ลงแล้วขึ้น) หรือกลับตัวลง (ขึ้นแล้วลง): หุ้นขาขึ้นหรือมีสัญญาณขึ้นแล้วลงชัด → ดูฝั่งกลับตัวลง
   const revTag = reversalTag(data);
@@ -77,8 +78,6 @@ export default function SignalSummary(props: Props) {
     : null;
   const plan = { buy, sell, stop };
 
-  const valueText = upside == null ? null : upside >= 0 ? `ต่ำกว่าเป้า ${upside.toFixed(0)}%` : `เกินเป้า ${Math.abs(upside).toFixed(0)}%`;
-  const valueTone = upside == null ? "" : upside >= 15 ? "good" : upside <= 0 ? "bad" : "mid";
   // RSI ใช้แค่ 15 วัน — หุ้นเพิ่งเข้าตลาด (ข้อมูล <70 วัน) ยังแสดง RSI ได้แม้ยังวิเคราะห์แนวโน้ม/กลับตัวไม่ได้
   const done = completedCandles(data);
   const rsiFallback = done.length > 15 ? rsiSeries(done.map(c => c.close)).at(-1) : undefined;
@@ -103,144 +102,118 @@ export default function SignalSummary(props: Props) {
     </button>
   );
 
-  return (
-    <section className="signal-summary">
-      <div className="ss-head">
-        <h3 className="section-title">สรุปสัญญาณ</h3>
-      </div>
+  // ── สรุปให้อ่านง่าย: ป้ายสั้น + แตะเพื่อดูเหตุผล (เปิดได้ทีละอัน) ──
+  type TagTone = "good" | "bad" | "mid" | "dim";
+  type Tag = { id: string; text: string; tone: TagTone; body: React.ReactNode };
+  const tags: Tag[] = [];
+  if (dip && dip.drawdownPercent != null && dip.kind !== "na") {
+    const tone: TagTone = dip.kind === "good" ? "good" : dip.kind === "trap" ? "bad" : dip.kind === "notdeep" ? "dim" : "mid";
+    tags.push({ id: "dip", tone, text: `${dip.verdict} ${dip.drawdownPercent.toFixed(0)}%`, body: (
+      <>
+        <p className="sx-why">ราคาลงมา {Math.abs(dip.drawdownPercent).toFixed(0)}% จากจุดสูงสุด {dip.high52 != null ? p2(dip.high52) : ""} · เช็กว่าเป็นหุ้นดีที่ถูกลง หรือถูกเพราะแย่ลง</p>
+        <div className="rev-chips"><span className="dip-group">พื้นฐาน</span>{dip.checks.filter(c => c.group === "quality").map(dipChip)}</div>
+        <div className="rev-chips dip-chips-2"><span className="dip-group">ถูกจริง?</span>{dip.checks.filter(c => c.group === "value").map(dipChip)}</div>
+        {dipSelected && <p className="rev-detail-box" role="status"><b>{dipSelected.label}</b> · {dipSelected.detail}</p>}
+      </>) });
+  }
+  if (reversal && reversal.verdictKind !== "none") {
+    tags.push({ id: "rev", tone: revDown ? "bad" : "good", text: `${revDown ? "กลับตัวลง" : "กลับตัวขึ้น"} ${reversal.score}/7`, body: (
+      <>
+        <p className="sx-why">{reversal.verdict} · ผ่าน {reversal.score} จาก 7 ข้อ (ยิ่งมากยิ่งชัด)</p>
+        <div className="rev-chips">{reversal.signals.filter(s => s.group === "early").map(chip)}<span className="rev-divider" aria-hidden="true" />{reversal.signals.filter(s => s.group === "confirm").map(chip)}</div>
+        {selected && <p className="rev-detail-box" role="status"><b>{selected.label}</b> · {selected.detail}</p>}
+      </>) });
+  }
+  if (vol?.breakout) {
+    const b = vol.breakout;
+    tags.push({ id: "brk", tone: b.dir === "up" ? (b.strong ? "good" : "mid") : (b.strong ? "bad" : "mid"),
+      text: `${b.dir === "up" ? "ทะลุแนวต้าน" : "หลุดแนวรับ"} ${p2(b.level)}`,
+      body: <p className="sx-why">{b.daysAgo === 0 ? "วันล่าสุด" : `${b.daysAgo} วันก่อน`} · ซื้อขาย {b.ratio.toFixed(1)} เท่าของปกติ · {b.strong ? "คนเล่นหนาแน่น น่าเชื่อถือ" : "คนเล่นบางเบา ระวังหลอก"}</p> });
+  }
+  if (vol && (vol.tone === "good" || vol.tone === "bad")) {
+    tags.push({ id: "vol", tone: vol.tone, text: vol.label, body: (
+      <div className="ss-vol sx-vol">
+        <span className="vol-spark" aria-hidden="true">
+          {vol.bars.map((b, i) => <i key={i} className={`${b.up ? "up" : "down"}${i === vol.bars.length - 1 ? " last" : ""}`} style={{ height: `${Math.max(6, (b.volume / volMax) * 100)}%` }} />)}
+          <s style={{ bottom: `${(vol.avg20 / volMax) * 100}%` }} />
+        </span>
+        <p className="sx-why">วันล่าสุดซื้อขาย {vol.lastRatio.toFixed(1)} เท่าของปกติ · 2 สัปดาห์: {vol.balanceLabel}</p>
+      </div>) });
+  }
+  if (trend?.cross) tags.push({ id: "cross", tone: trend.cross === "golden" ? "good" : "bad", text: trend.cross === "golden" ? "Golden Cross" : "Death Cross",
+    body: <p className="sx-why">{trend.cross === "golden" ? "เส้นเฉลี่ย 50 วันเพิ่งตัดขึ้นเหนือ 200 วัน · มักเป็นจุดเริ่มขาขึ้นระยะยาว" : "เส้นเฉลี่ย 50 วันเพิ่งตัดลงใต้ 200 วัน · มักเป็นจุดเริ่มขาลงระยะยาว"}</p> });
+  const openTag = tags.find(t => t.id === openSignalTag) ?? null;
 
+  const trendTone: TagTone = trend?.kind === "up" ? "good" : trend?.kind === "down" ? "bad" : "mid";
+  const tiles: { id: string; label: string; value: string; sub: string; tone: TagTone; why: string }[] = [];
+  if (trend) tiles.push({ id: "trend", label: "แนวโน้ม", value: `${trendIcon(trend.kind, trend.label)} ${trend.label}`, sub: trend.adx != null ? `ADX ${trend.adx.toFixed(0)} · ${trend.adx >= 25 ? "ชัด" : trend.adx >= 20 ? "เริ่มมี" : "อ่อน"}` : "", tone: trendTone,
+    why: trend.reasons.join(" · ") });
+  if (rsi != null) tiles.push({ id: "rsi", label: "RSI", value: rsi.toFixed(0), sub: rsiText, tone: rsiTone === "good" ? "good" : rsiTone === "bad" ? "bad" : "dim",
+    why: "RSI 14 วัน · ต่ำกว่า 30 = ขายมากเกิน อาจเด้ง · สูงกว่า 70 = ซื้อมากเกิน อาจย่อ" });
+  if (upside != null && target != null) tiles.push({ id: "target", label: "เป้านักวิเคราะห์", value: `${upside >= 0 ? "+" : ""}${upside.toFixed(0)}%`, sub: `เป้า ${p2(target)}`, tone: upside >= 15 ? "good" : upside <= 0 ? "bad" : "mid",
+    why: `ราคาเป้าเฉลี่ยของนักวิเคราะห์ ${p2(target)} · ${upside >= 0 ? `ยังห่างอีก ${upside.toFixed(0)}%` : `ราคาเกินเป้าแล้ว ${Math.abs(upside).toFixed(0)}%`}` });
+  const openTile = tiles.find(t => t.id === openSignalTag) ?? null;
+  const toggle = (id: string) => { setOpenSignalTag(openSignalTag === id ? null : id); setOpenSignal(null); setOpenDip(null); };
+
+  return (
+    <section className="signal-summary sx">
       {rating && (
-        <div className="ss-row ss-row-top" id="ss-rating" title={RATING_METHOD}>
-          <span className="ss-label">ภาพรวม</span>
-          <div className="ss-body">
-            <button type="button" className="tr-head" aria-expanded={openRating} onClick={() => setOpenRating(!openRating)}>
-              <span className={`tr-verdict tr-${rating.kind}`}>{rating.label}</span>
-              <span className="tr-meter" aria-hidden="true"><i style={{ left: `${((rating.score + 1) / 2) * 100}%` }} /></span>
-              <span className="tr-counts"><b className="ss-good">ซื้อ {rating.counts.buy}</b> · กลาง {rating.counts.neutral} · <b className="ss-bad">ขาย {rating.counts.sell}</b></span>
-              <span className="tr-tf">กราฟรายวัน</span>
-            </button>
-            {openRating && (
-              <div className="tr-detail">
-                {([["เส้นเฉลี่ย", rating.ma], ["โมเมนตัม", rating.osc]] as const).map(([name, g]) => (
-                  <div key={name} className="tr-group">
-                    <p className="tr-group-head">{name} <span className={g.score > 0.1 ? "ss-good" : g.score < -0.1 ? "ss-bad" : ""}>{g.score > 0.5 ? "ซื้อแรง" : g.score > 0.1 ? "ซื้อ" : g.score >= -0.1 ? "กลาง" : g.score >= -0.5 ? "ขาย" : "ขายแรง"}</span></p>
-                    <ul>{g.items.map((it: RatingItem) => (
-                      <li key={it.name}><span>{it.name}</span><span className="tr-val">{it.value}</span><span className={`tr-act tr-act-${it.action}`}>{it.action === "buy" ? "ซื้อ" : it.action === "sell" ? "ขาย" : "กลาง"}</span></li>
-                    ))}</ul>
-                  </div>
-                ))}
-                <p className="tr-note">สูตรเดียวกับ TradingView · ดูจากราคาอย่างเดียว ไม่ใช่คำแนะนำการลงทุน</p>
-              </div>
-            )}
+        <div className="sx-hero" title={RATING_METHOD}>
+          <div className="sx-hero-top">
+            <span className={`sx-verdict tr-${rating.kind}`}>{rating.label}</span>
+            <span className="tr-tf">กราฟรายวัน</span>
           </div>
+          <span className="tr-meter" aria-hidden="true"><i style={{ left: `${((rating.score + 1) / 2) * 100}%` }} /></span>
+          <button type="button" className="sx-more" aria-expanded={openRating} onClick={() => setOpenRating(!openRating)}>
+            <span><b className="ss-good">ซื้อ {rating.counts.buy}</b> · กลาง {rating.counts.neutral} · <b className="ss-bad">ขาย {rating.counts.sell}</b></span>
+            <span className="sx-more-link">{openRating ? "ซ่อน" : "ดูตัวชี้วัด"}</span>
+          </button>
+          {openRating && (
+            <div className="tr-detail">
+              {([["เส้นเฉลี่ย", rating.ma], ["โมเมนตัม", rating.osc]] as const).map(([name, g]) => (
+                <div key={name} className="tr-group">
+                  <p className="tr-group-head">{name} <span className={g.score > 0.1 ? "ss-good" : g.score < -0.1 ? "ss-bad" : ""}>{g.score > 0.5 ? "ซื้อแรง" : g.score > 0.1 ? "ซื้อ" : g.score >= -0.1 ? "กลาง" : g.score >= -0.5 ? "ขาย" : "ขายแรง"}</span></p>
+                  <ul>{g.items.map((it: RatingItem) => (
+                    <li key={it.name}><span>{it.name}</span><span className="tr-val">{it.value}</span><span className={`tr-act tr-act-${it.action}`}>{it.action === "buy" ? "ซื้อ" : it.action === "sell" ? "ขาย" : "กลาง"}</span></li>
+                  ))}</ul>
+                </div>
+              ))}
+              <p className="tr-note">สูตรเดียวกับ TradingView · ดูจากราคาอย่างเดียว</p>
+            </div>
+          )}
         </div>
       )}
 
-      <div className="ss-row" id="ss-plan">
-        <span className="ss-label">แผน</span>
-        <div className="ss-body ss-plan">
-          <span className={`ss-pill ss-pill-buy${plan.buy?.fallback ? " ss-fallback" : ""}`} title={plan.buy?.note}>ซื้อ <b>{plan.buy ? p2(plan.buy.price) : "—"}</b>{plan.buy?.fallback && <sup>*</sup>}</span>
-          <span className={`ss-pill ss-pill-sell${plan.sell?.fallback ? " ss-fallback" : ""}`} title={plan.sell?.note}>ขาย <b>{plan.sell ? p2(plan.sell.price) : "—"}</b>{plan.sell?.fallback && <sup>*</sup>}</span>
-          <span className={`ss-pill ss-pill-stop${plan.stop?.fallback ? " ss-fallback" : ""}`} title={plan.stop?.note}>Stop <b>{plan.stop ? p2(plan.stop.price) : "—"}</b>{plan.stop?.fallback && <sup>*</sup>}</span>
-          {eventWarn.map(b => (
-            <p key={b.kind} className={`ss-event-warn ev-${b.kind}`}>
-              {b.kind === "earnings"
-                ? (b.days < 0 ? "📅 เพิ่งประกาศงบ ราคาอาจยังเหวี่ยงแรง รอให้นิ่งก่อนค่อยใช้แผน"
-                  : `📅 ${b.text} · ช่วงงบราคามักเหวี่ยงแรง แนวรับ/ต้านอาจหลุดง่าย ควรรอหลังงบหรือซื้อน้อยลง`)
-                : `💰 ${b.text} · ถือก่อนวัน XD ถึงได้ปันผล และวัน XD ราคามักลดลงเท่าปันผล`}
-            </p>
+      {tiles.length > 0 && (
+        <div className="sx-tiles">
+          {tiles.map(t => (
+            <button key={t.id} type="button" className={`sx-tile tone-${t.tone}${openSignalTag === t.id ? " is-open" : ""}`} aria-expanded={openSignalTag === t.id} onClick={() => toggle(t.id)}>
+              <small>{t.label}</small><b>{t.value}</b><em>{t.sub}</em>
+            </button>
           ))}
         </div>
+      )}
+      {openTile && <p className="sx-explain" role="status">{openTile.why}</p>}
+
+      <div className="sx-plan">
+        <span className={`ss-pill ss-pill-buy${plan.buy?.fallback ? " ss-fallback" : ""}`} title={plan.buy?.note}><small>ซื้อ</small><b>{plan.buy ? p2(plan.buy.price) : "—"}</b></span>
+        <span className={`ss-pill ss-pill-sell${plan.sell?.fallback ? " ss-fallback" : ""}`} title={plan.sell?.note}><small>ขาย</small><b>{plan.sell ? p2(plan.sell.price) : "—"}</b></span>
+        <span className={`ss-pill ss-pill-stop${plan.stop?.fallback ? " ss-fallback" : ""}`} title={plan.stop?.note}><small>ตัดขาดทุน</small><b>{plan.stop ? p2(plan.stop.price) : "—"}</b></span>
       </div>
+      {eventWarn.map(b => (
+        <p key={b.kind} className={`ss-event-warn ev-${b.kind}`}>
+          {b.kind === "earnings" ? (b.days < 0 ? "📅 เพิ่งประกาศงบ ราคาอาจเหวี่ยงแรง" : `📅 ${b.text} · ช่วงงบราคาเหวี่ยงแรง`) : `💰 ${b.text}`}
+        </p>
+      ))}
 
-      {trend && (
-        <div className="ss-row" id="ss-trend" title={trend.reasons.join("\n") + "\n\n" + TREND_METHOD}>
-          <span className="ss-label">แนวโน้ม</span>
-          <div className="ss-body ss-inline">
-            <span className={`trend-badge trend-${trend.kind}${trend.strong ? " trend-strong" : ""}`}>{trendIcon(trend.kind, trend.label)} {trend.label}</span>
-            {trend.adx != null && <span className="ss-adx" title="ADX 14 วัน: ต่ำกว่า 20 ไม่มีแนวโน้ม · 20–25 เริ่มมี · เกิน 25 แนวโน้มชัด">ADX {trend.adx.toFixed(0)}</span>}
-            {trend.cross && <span className={`ss-cross ${trend.cross === "golden" ? "ss-good" : "ss-bad"}`}>{trend.cross === "golden" ? "Golden Cross" : "Death Cross"}</span>}
-            <span className="ss-range">{p2(trend.rangeLow)}–{p2(trend.rangeHigh)}</span>
-          </div>
+      {tags.length > 0 && (
+        <div className="sx-tags">
+          {tags.map(t => (
+            <button key={t.id} type="button" className={`sx-tag tone-${t.tone}${openSignalTag === t.id ? " is-open" : ""}`} aria-expanded={openSignalTag === t.id} onClick={() => toggle(t.id)}>{t.text}</button>
+          ))}
         </div>
       )}
-
-      {dip && dip.drawdownPercent != null && (
-        <div className="ss-row ss-row-top" id="ss-dip" title={DIP_METHOD}>
-          <span className="ss-label">ลดราคา</span>
-          <div className="ss-body">
-            <div className="ss-dots-line">
-              <span className={`dip-verdict dip-${dip.kind}`}>{dip.verdict}</span>
-              <span className="dip-dd"><b>{dip.drawdownPercent.toFixed(0)}%</b> จากจุดสูงสุด {dip.high52 != null ? p2(dip.high52) : ""}</span>
-            </div>
-            <div className="rev-chips">
-              <span className="dip-group">พื้นฐาน</span>
-              {dip.checks.filter(c => c.group === "quality").map(dipChip)}
-            </div>
-            <div className="rev-chips dip-chips-2">
-              <span className="dip-group">ถูกจริง?</span>
-              {dip.checks.filter(c => c.group === "value").map(dipChip)}
-            </div>
-            {dipSelected && <p className="rev-detail-box" role="status"><b>{dipSelected.label}</b> · {dipSelected.detail}</p>}
-          </div>
-        </div>
-      )}
-
-      {(upside != null || rsi != null) && (
-        <div className="ss-gauges">
-          {upside != null && target != null && (
-            <Gauge
-              title="เป้านักวิเคราะห์"
-              value={50 - ((upside - 15) * 50) / 40}
-              zones={[
-                { from: 0, to: 37.5, color: "var(--success, #4ade80)" },
-                { from: 37.5, to: 62.5, color: "var(--warning, #fbbf24)" },
-                { from: 62.5, to: 100, color: "var(--danger, #f87171)" },
-              ]}
-              main={valueText ?? ""}
-              sub={`เป้า ${p2(target)}`}
-              tone={valueTone as "good" | "bad" | "mid" | ""}
-              leftLabel="ห่างเป้า"
-              rightLabel="เกินเป้า"
-              hint="ราคาปัจจุบันเทียบเป้าราคาเฉลี่ยของนักวิเคราะห์ · เข็มซ้าย = ยังห่างเป้ามาก (มีช่องให้ขึ้น) · กลาง = ห่าง ~15% · ขวา = ราคาเกินเป้าแล้ว"
-            />
-          )}
-          {rsi != null && (
-            <Gauge
-              title="RSI"
-              value={rsi}
-              zones={[
-                { from: 0, to: 30, color: "var(--success, #4ade80)" },
-                { from: 30, to: 70, color: "var(--muted, #94a3b8)" },
-                { from: 70, to: 100, color: "var(--danger, #f87171)" },
-              ]}
-              main={rsi.toFixed(0)}
-              sub={rsiText}
-              tone={rsiTone as "good" | "bad" | "mid" | ""}
-              leftLabel="0"
-              rightLabel="100"
-              hint="RSI 14 วัน · ต่ำกว่า 30 = ขายมากเกิน (อาจเด้ง) · สูงกว่า 70 = ซื้อมากเกิน (อาจย่อ)"
-            />
-          )}
-        </div>
-      )}
-
-      {vol && (
-        <div className="ss-row" id="ss-vol" title={VOLUME_METHOD}>
-          <span className="ss-label">Volume</span>
-          <div className="ss-body ss-inline ss-vol">
-            <span className="vol-spark" aria-hidden="true">
-              {vol.bars.map((b, i) => (
-                <i key={i} className={`${b.up ? "up" : "down"}${i === vol.bars.length - 1 ? " last" : ""}`}
-                  style={{ height: `${Math.max(6, (b.volume / volMax) * 100)}%` }} />
-              ))}
-              <s style={{ bottom: `${(vol.avg20 / volMax) * 100}%` }} />
-            </span>
-            <span className={`vol-ratio tone-${vol.tone}`}><b>{vol.label}</b> <small>{vol.lastRatio.toFixed(1)} เท่าของปกติ</small></span>
-            <span className={`vol-bal tone-${vol.balanceTone}`}>2 สัปดาห์: {vol.balanceLabel}</span>
-          </div>
-        </div>
-      )}
+      {openTag && <div className="sx-explain">{openTag.body}</div>}
 
       <div className="ss-sr-block" id="ss-sr">
         <div className="ss-sr-bar">
@@ -254,48 +227,14 @@ export default function SignalSummary(props: Props) {
               const opts = props.toleranceOptions;
               const i = opts.indexOf(props.tolerancePercent);
               props.onToleranceChange(opts[(i + 1) % opts.length]);
-            }}>ใกล้ ±{props.tolerancePercent}%</button>
+            }}>±{props.tolerancePercent}%</button>
         </div>
-        {vol?.breakout && (
-          <p className={`ss-brk ${vol.breakout.dir === "up" ? "is-up" : "is-down"}${vol.breakout.strong ? " is-strong" : ""}`}
-            title={`วันที่ทะลุมีคนซื้อขาย ${vol.breakout.ratio.toFixed(1)} เท่าของปกติ`}>
-            {vol.breakout.dir === "up" ? "▲ ทะลุแนวต้าน" : "▼ หลุดแนวรับ"} {p2(vol.breakout.level)}
-            <em>{vol.breakout.strong
-              ? (vol.breakout.dir === "up" ? "คนซื้อหนาแน่น · น่าเชื่อถือ" : "คนขายหนาแน่น · น่าเชื่อถือ")
-              : (vol.breakout.dir === "up" ? "คนซื้อบางเบา · ระวังหลอก" : "คนขายบางเบา · อาจเด้งกลับ")}</em>
-            <small>{vol.breakout.daysAgo === 0 ? "วันล่าสุด" : `${vol.breakout.daysAgo} วันก่อน`}</small>
-          </p>
-        )}
         <SrLadder pivot={data.pivot} zones={data.zones} price={price} mode={srMode} tolerancePercent={props.tolerancePercent} />
       </div>
 
       {shortHistory != null && shortHistory < 70 && (
-        <p className="ss-short">ข้อมูลราคามี {shortHistory} วัน · แนวโน้มและสัญญาณกลับตัวต้องใช้อย่างน้อย 70 วัน</p>
+        <p className="ss-short">มีข้อมูลราคา {shortHistory} วัน · สัญญาณบางตัวต้องใช้ 70 วันขึ้นไป</p>
       )}
-
-      {reversal && (
-        <div className={`ss-row ss-row-top${revDown ? " rev-bear" : ""}`} id="ss-rev">
-          <span className="ss-label">{revDown ? "กลับตัวลง" : "กลับตัวขึ้น"}</span>
-          <div className="ss-body">
-            <div className="ss-dots-line">
-              <span className="ss-dots" aria-label={`คะแนน ${reversal.score} จาก 7`}>
-                {reversal.signals.map(s => <i key={s.label} className={`ss-dot ss-dot-${s.state}`} />)}
-              </span>
-              <b>{reversal.score}/7</b>
-              <span className={`rev-verdict rev-verdict-${reversal.verdictKind}`}>{reversal.verdict}</span>
-            </div>
-            <div className="rev-chips">
-              {reversal.signals.filter(s => s.group === "early").map(chip)}
-              <span className="rev-divider" aria-hidden="true" />
-              {reversal.signals.filter(s => s.group === "confirm").map(chip)}
-            </div>
-            {selected && <p className="rev-detail-box" role="status"><b>{selected.label}</b> · {selected.detail}</p>}
-          </div>
-        </div>
-      )}
-
-
-
     </section>
   );
 }
