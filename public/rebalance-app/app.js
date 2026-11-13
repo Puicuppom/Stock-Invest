@@ -3795,28 +3795,30 @@ function renderPerfCard(keepOpen) {
     const pct = v => v == null ? '—' : `${v >= 0 ? '+' : '−'}${fmt(Math.abs(v), 2)}%`;
     const cls = v => v == null ? '' : v >= 0 ? 'gain' : 'loss';
     const sel = perfSelected();
-    const main = perfBenchList.find(b => b.k === sel[0]) || perfBenchList[0];
+    const vs = perfBenchList.filter(b => last && last[b.k] != null).map(b => ({ ...b, ret: last[b.k], diff: last.pf - last[b.k] }));
+    const wins = vs.filter(x => x.diff >= 0).length;
     const head = `<summary class="perf-head"><span class="perf-title">เทียบตลาด</span>
-        ${s.length >= 2 ? `<span class="perf-sum"><b class="${cls(last.pf)}">${pct(last.pf)}</b><small>${main.name} ${pct(last[main.k])}</small></span>` : `<span class="perf-sum"><small>เริ่มบันทึก ${all[0] ? new Date(all[0].d).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }) : 'คืนนี้'}</small></span>`}
+        ${s.length >= 2 ? `<span class="perf-sum"><b class="${cls(last.pf)}">${pct(last.pf)}</b><small class="${wins * 2 >= vs.length ? 'gain' : 'loss'}">ชนะ ${wins}/${vs.length} ตลาด</small></span>` : `<span class="perf-sum"><small>เริ่มบันทึก ${all[0] ? new Date(all[0].d).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }) : 'คืนนี้'}</small></span>`}
         <span class="pc-chev" aria-hidden="true"></span></summary>`;
     if (s.length < 2) {
         el.innerHTML = head + `<p class="perf-empty">ระบบบันทึกยอดพอร์ตทุกวันหลังตลาดสหรัฐปิด (ประมาณ 05:30 น.) · กราฟจะเริ่มขึ้นเมื่อมีข้อมูลตั้งแต่ 2 วัน</p>`;
         el.open = wasOpen;
         return;
     }
-    // ตารางอันดับ: พอร์ต + ดัชนีที่เลือก เรียงจากผลตอบแทนมากไปน้อย
-    const chips = perfBenchList.map(b => {
+    // ตาราง: พอร์ต vs แต่ละตลาด · ชนะ/แพ้กี่ % · แตะแถวเพื่อแสดง/ซ่อนเส้นในกราฟ
+    const rows = vs.sort((x, y) => y.diff - x.diff).map(b => {
         const on = sel.includes(b.k);
-        return `<button type="button" class="perf-chip${on ? ' on' : ''}" style="--c:${PERF_COLORS[b.k] || '#94a3b8'}" aria-pressed="${on}" onclick="togglePerfBench('${b.k}')"><i></i>${escapePfHtml(b.name)}<b class="${cls(last[b.k])}">${pct(last[b.k])}</b></button>`;
+        const win = b.diff >= 0;
+        return `<button type="button" class="perf-row${on ? ' on' : ''}" style="--c:${PERF_COLORS[b.k] || '#94a3b8'}" aria-pressed="${on}" onclick="togglePerfBench('${b.k}')">
+            <i></i><span class="pr-name">${escapePfHtml(b.name)}</span><span class="pr-ret ${cls(b.ret)}">${pct(b.ret)}</span>
+            <span class="pr-diff ${win ? 'win' : 'lose'}">${win ? 'ชนะ' : 'แพ้'} ${fmt(Math.abs(b.diff), 2)}%</span></button>`;
     }).join('');
-    const beat = sel.filter(k => last[k] != null && last.pf != null && last.pf >= last[k]).length;
-    const valid = sel.filter(k => last[k] != null).length;
     el.innerHTML = head + `
         <div class="perf-range" role="group" aria-label="ช่วงเวลา">${[['1m', '1 เดือน'], ['3m', '3 เดือน'], ['1y', '1 ปี'], ['all', 'ทั้งหมด']].map(([k, t]) => `<button type="button" class="${perfRange === k ? 'on' : ''}" onclick="setPerfRange('${k}')">${t}</button>`).join('')}</div>
+        <div class="perf-me"><span><i></i>พอร์ตนี้</span><b class="${cls(last.pf)}">${pct(last.pf)}</b></div>
+        <div class="perf-table">${rows}</div>
         ${perfChartSvg(s, sel)}
-        <div class="perf-legend"><span class="perf-me"><i style="background:var(--ui-accent)"></i>พอร์ตนี้ <b class="${cls(last.pf)}">${pct(last.pf)}</b></span></div>
-        <div class="perf-chips" role="group" aria-label="เลือกดัชนีที่จะเทียบ">${chips}</div>
-        <p class="perf-note">${valid ? `ชนะ ${beat}/${valid} ตลาดที่เลือก · ` : ''}แตะเพื่อเลือกตลาด · หักเงินที่ใส่เพิ่ม/ถอนออกแล้ว</p>`;
+        <p class="perf-note">แตะตลาดเพื่อแสดงในกราฟ · หักเงินเติม/ถอนแล้ว</p>`;
     el.open = wasOpen;
 }
 function perfChartSvg(s, keys) {
