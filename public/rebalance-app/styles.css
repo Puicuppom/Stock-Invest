@@ -1894,26 +1894,6 @@ html:root { font-size: 16px; }
 .rb2 .push-opts input { accent-color: var(--ui-accent); width: 16px; height: 16px; }
 .rb2 .push-test { margin-left: auto; padding: 4px 10px; border-radius: 8px; border: 1px solid var(--ui-border); background: transparent; color: var(--ui-text); font: inherit; font-size: 12.5px; cursor: pointer; }
 
-/* เทียบตลาด */
-.rb2 .perf-card { margin: 0; border: 1px solid var(--ui-border); border-radius: 16px; background: var(--ui-surface); padding: 14px 16px 12px; }
-.rb2 .perf-card[hidden] { display: none; }
-.rb2 .perf-head { display: flex; align-items: center; gap: 10px; list-style: none; cursor: pointer; }
-.rb2 .perf-head::-webkit-details-marker { display: none; }
-.rb2 .perf-title { font-weight: 600; font-size: 15px; }
-.rb2 .perf-sum { margin-left: auto; display: inline-flex; align-items: baseline; gap: 8px; font-variant-numeric: tabular-nums; }
-.rb2 .perf-sum b { font-size: 15px; }
-.rb2 .perf-sum small { font-size: 12px; color: var(--ui-muted); }
-.rb2 .perf-card .gain { color: var(--rb-gain); } .rb2 .perf-card .loss { color: var(--rb-loss); }
-.rb2 .perf-empty, .rb2 .perf-note { margin: 10px 0 0; font-size: 12.5px; color: var(--ui-muted); }
-.rb2 .perf-range { display: flex; gap: 6px; margin: 12px 0 8px; }
-.rb2 .perf-range button { padding: 4px 10px; border-radius: 999px; border: 1px solid var(--ui-border); background: transparent; color: var(--ui-muted); font: inherit; font-size: 12.5px; cursor: pointer; }
-.rb2 .perf-range button.on { background: color-mix(in srgb, var(--ui-accent) 16%, transparent); color: var(--ui-accent); border-color: transparent; }
-.rb2 .perf-chart { color: var(--ui-text); }
-.rb2 .perf-chart svg { display: block; width: 100%; height: 150px; }
-.rb2 .perf-axis { display: flex; justify-content: space-between; font-size: 11px; color: var(--ui-muted); margin-top: 2px; }
-.rb2 .perf-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 8px; font-size: 12.5px; color: var(--ui-muted); font-variant-numeric: tabular-nums; }
-.rb2 .perf-legend i { display: inline-block; width: 10px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
-.perf-card[open] .pc-chev { transform: rotate(-135deg) translateY(-1px); }
 
 /* ตรวจยอดกับ Dime */
 .rc-sheet { display: flex; flex-direction: column; max-height: 88dvh; }
@@ -1985,15 +1965,6 @@ html:root { font-size: 16px; }
 .rb2 .chip-check input:focus-visible + span { outline: 2px solid var(--ui-accent); outline-offset: 2px; }
 .rb2 .push-opts label.chip-check { display: block; gap: 0; }
 
-/* เทียบตลาด: ชิปเลือกดัชนี */
-.rb2 .perf-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-.rb2 .perf-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--ui-border); background: transparent; color: var(--ui-muted); font: inherit; font-size: 12.5px; cursor: pointer; font-variant-numeric: tabular-nums; }
-.rb2 .perf-chip i { width: 10px; height: 3px; border-radius: 2px; background: var(--c); opacity: .35; }
-.rb2 .perf-chip b { font-weight: 600; color: var(--ui-muted); }
-.rb2 .perf-chip.on { color: var(--ui-text); border-color: color-mix(in srgb, var(--c) 55%, var(--ui-border)); background: color-mix(in srgb, var(--c) 10%, transparent); }
-.rb2 .perf-chip.on i { opacity: 1; }
-.rb2 .perf-chip.on b.gain { color: var(--rb-gain); } .rb2 .perf-chip.on b.loss { color: var(--rb-loss); }
-.rb2 .perf-card .perf-chip:not(.on) b { color: var(--ui-muted); }
 
 /* คำนวณถัวเฉลี่ย */
 .avg-box .avg-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
@@ -2011,20 +1982,3 @@ html:root { font-size: 16px; }
 .avg-box .avg-hint { margin: 8px 2px 0; font-size: 11.5px; color: var(--ui-muted, var(--muted)); }
 .avg-box .avg-use { width: 100%; margin-top: 10px; padding: 9px; border-radius: 12px; border: 1px dashed var(--ui-border, var(--border)); background: transparent; color: var(--ui-accent, var(--accent)); font: inherit; font-size: 13px; cursor: pointer; }
 
-/* เทียบตลาด: ตารางชนะ/แพ้ */
-.rb2 .perf-sum small.gain { color: var(--rb-gain); } .rb2 .perf-sum small.loss { color: var(--rb-loss); }
-.rb2 .perf-me { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; margin-top: 4px; font-size: 13.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.rb2 .perf-me span { display: inline-flex; align-items: center; gap: 8px; }
-.rb2 .perf-me i { width: 12px; height: 3px; border-radius: 2px; background: var(--ui-accent); }
-.rb2 .perf-table { display: flex; flex-direction: column; border-top: 1px solid var(--ui-border); }
-.rb2 .perf-row { display: grid; grid-template-columns: 12px 1fr auto 92px; align-items: center; gap: 8px; padding: 9px 10px; border: 0; border-bottom: 1px solid var(--ui-border); background: transparent; color: var(--ui-muted); font: inherit; font-size: 13px; text-align: left; cursor: pointer; font-variant-numeric: tabular-nums; }
-.rb2 .perf-row i { width: 12px; height: 3px; border-radius: 2px; background: var(--c); opacity: .3; }
-.rb2 .perf-row.on { color: var(--ui-text); }
-.rb2 .perf-row.on i { opacity: 1; }
-.rb2 .perf-row .pr-ret { font-size: 12.5px; }
-.rb2 .perf-card .perf-row:not(.on) .pr-ret { color: var(--ui-muted); }
-.rb2 .perf-row .pr-diff { justify-self: end; padding: 3px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
-.rb2 .perf-row .pr-diff.win { color: var(--rb-gain); background: color-mix(in srgb, var(--rb-gain) 14%, transparent); }
-.rb2 .perf-row .pr-diff.lose { color: var(--rb-loss); background: color-mix(in srgb, var(--rb-loss) 14%, transparent); }
-.rb2 .perf-card .perf-chart { margin-top: 10px; }
-.rb2 .perf-me span { flex-wrap: wrap; } .rb2 .perf-me small { flex-basis: 100%; padding-left: 20px; font-size: 11.5px; font-weight: 400; color: var(--ui-muted); }
