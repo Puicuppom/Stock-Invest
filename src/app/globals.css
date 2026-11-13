@@ -2014,3 +2014,7 @@ body.ui2 .fab { position: fixed; right: max(12px, calc((100vw - 720px) / 2 + 16p
 .hc-dot.me { background: var(--warning); }
 .sx-tile b { font-size: clamp(0.82rem, 3.6vw, 0.95rem); }
 .wl-held { flex: none; margin-left: 6px; padding: 1px 6px; border-radius: 6px; font-style: normal; font-size: 0.62rem; font-weight: 700; color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); vertical-align: middle; }
+/* กระเป๋า = หุ้นที่มีในพอร์ต (มุมซ้ายบนของโลโก้ · ไม่ใช้ดาวเพราะซ้ำกับปุ่ม Watchlist) */
+.wl-logo:has(.wl-star) { overflow: visible; }
+.wl-logo:has(.wl-star) .wl-logo-img, .wl-logo:has(.wl-star) .wl-logo-text { border-radius: 50%; overflow: hidden; }
+.wl-star { position: absolute; top: -5px; left: -5px; width: 18px; height: 18px; display: grid; place-items: center; border-radius: 50%; background: var(--accent); color: #fff; font-size: 11px; font-style: normal; line-height: 1; box-shadow: 0 0 0 2px var(--bg); z-index: 1; }

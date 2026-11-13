@@ -146,9 +146,10 @@ export default function WatchlistList({ items, signals, quotes, onRefresh, refre
                 <span className="wl-logo">
                   <span className="wl-logo-text">{sym.slice(0, 4)}</span>
                   <StockLogo symbol={item.market === "TH" ? `${item.symbol}.BK` : item.symbol} size={40} className="wl-logo-img" />
+                  {heldSet.has(id) && <i className="wl-star" title="มีในพอร์ต" aria-label="มีในพอร์ต"><svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true"><path fill="currentColor" d="M6 2h4a1 1 0 0 1 1 1v1h2.5A1.5 1.5 0 0 1 15 5.5v7A1.5 1.5 0 0 1 13.5 14h-11A1.5 1.5 0 0 1 1 12.5v-7A1.5 1.5 0 0 1 2.5 4H5V3a1 1 0 0 1 1-1zm0 2h4V3H6v1z"/></svg></i>}
                 </span>
                 <span className="wl-name">
-                  <span className="wl-line1"><b>{sym}</b>{heldSet.has(id) && <em className="wl-held" title="มีในพอร์ต">พอร์ต</em>}<small>{sig?.name ?? (item.market === "TH" ? "SET" : "US")}</small></span>
+                  <span className="wl-line1"><b>{sym}</b><small>{sig?.name ?? (item.market === "TH" ? "SET" : "US")}</small></span>
                   {/* แสดงบรรทัดที่ 2 เสมอ (ว่างได้) ให้ทุกแถวสูงเท่ากัน */}
                   {(
                     <span className="wl-line2">
