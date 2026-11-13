@@ -37,6 +37,7 @@ export default function StockApp() {
     reorderStock,
     loaded,
     syncStatus,
+    held,
   } = useWatchlist();
 
   const { mode: srMode, setMode: setSrMode } = useSrMode();
@@ -310,6 +311,7 @@ export default function StockApp() {
           onAdd={() => setAddOpen(true)}
           onToggleStock={toggleWatch}
           syncStatus={syncStatus}
+          held={held}
         />
       )}
       {view === "detail" && (

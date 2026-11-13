@@ -13,6 +13,9 @@ const POLL_MS = 30_000;
 
 export function useWatchlistSync(loaded: boolean, setItems: Dispatch<SetStateAction<WatchlistItem[]>>) {
   const [syncStatus,setStatus] = useState("บันทึกในเครื่อง");
+  // หุ้นที่ถืออยู่ในพอร์ต (จำไว้ในเครื่องเพื่อเรียงได้ทันทีตอนเปิด)
+  const [held,setHeld] = useState<string[]>([]);
+  useEffect(()=>{ try { const v = JSON.parse(localStorage.getItem("wlHeld")||"[]"); if (Array.isArray(v)) setHeld(v); } catch { /* ignore */ } },[]);
   useEffect(()=>{
     if (!loaded) return;
     let stopped = false, running = false;
@@ -29,6 +32,11 @@ export function useWatchlistSync(loaded: boolean, setItems: Dispatch<SetStateAct
         const cloud = await response.json();
         if (stopped) return;
         if (!cloud.enabled) {setStatus("บันทึกในเครื่อง · ยังไม่ได้ตั้งค่าซิงค์"); return;}
+        if (Array.isArray(cloud.held)) {
+          const ids = cloud.held.filter((h: WatchlistItem)=>h && typeof h.symbol==="string").map((h: WatchlistItem)=>`${h.symbol}::${h.market}`);
+          setHeld(prev=>JSON.stringify(prev)===JSON.stringify(ids)?prev:ids);
+          try { localStorage.setItem("wlHeld", JSON.stringify(ids)); } catch { /* ignore */ }
+        }
         if (cloud.items !== null && (!Array.isArray(cloud.items) || cloud.items.some((i: WatchlistItem)=>!i || typeof i.symbol!=="string" || !["TH","US"].includes(i.market)))) throw new Error();
         if (localStorage.getItem(WATCHLIST_DIRTY) || cloud.items === null) {
           const snapshot = localStorage.getItem(WATCHLIST_KEY) || "[]";
@@ -58,5 +66,5 @@ export function useWatchlistSync(loaded: boolean, setItems: Dispatch<SetStateAct
     document.addEventListener("visibilitychange", onVisible);
     return ()=>{stopped=true;abort.abort();clearInterval(timer);window.clearTimeout(soon);window.removeEventListener(DIRTY_EVENT,onDirty);window.removeEventListener("focus",sync);window.removeEventListener("online",sync);document.removeEventListener("visibilitychange",onVisible);};
   },[loaded,setItems]);
-  return syncStatus;
+  return { syncStatus, held };
 }

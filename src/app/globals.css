@@ -2013,3 +2013,4 @@ body.ui2 .fab { position: fixed; right: max(12px, calc((100vw - 720px) / 2 + 16p
 .hc-dot.now { background: var(--accent); }
 .hc-dot.me { background: var(--warning); }
 .sx-tile b { font-size: clamp(0.82rem, 3.6vw, 0.95rem); }
+.wl-held { flex: none; margin-left: 6px; padding: 1px 6px; border-radius: 6px; font-style: normal; font-size: 0.62rem; font-weight: 700; color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); vertical-align: middle; }

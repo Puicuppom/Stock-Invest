@@ -27,7 +27,7 @@ export function useWatchlist() {
   );
   const [loaded, setLoaded] = useState(false);
 
-  const syncStatus = useWatchlistSync(loaded, setItems);
+  const { syncStatus, held } = useWatchlistSync(loaded, setItems);
 
   useEffect(() => {
     try {
@@ -119,5 +119,6 @@ export function useWatchlist() {
     reorderStock,
     loaded,
     syncStatus,
+    held,
   };
 }

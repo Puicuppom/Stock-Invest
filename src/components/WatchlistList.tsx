@@ -26,7 +26,7 @@ function Spark({ values }: { values?: number[] }) {
 const DIP_ICON: Record<string, string> = { good: "🏷️", trap: "⚠️", watch: "👀" };
 
 /** รายการหุ้นแบบ Dime: โลโก้ · ชื่อ · ราคา · % — แตะเพื่อเปิดหน้าวิเคราะห์ */
-export default function WatchlistList({ items, signals, quotes, onRefresh, refreshing, updatedAt, srTags, onOpen, onSearch, onRemove, onReorder, onToggleStock, syncStatus }: {
+export default function WatchlistList({ items, signals, quotes, onRefresh, refreshing, updatedAt, srTags, onOpen, onSearch, onRemove, onReorder, onToggleStock, syncStatus, held = [] }: {
   items: WatchlistItem[];
   signals: WatchlistSignals;
   quotes: WatchlistQuotes;
@@ -44,6 +44,8 @@ export default function WatchlistList({ items, signals, quotes, onRefresh, refre
   /** ดาวในผลค้นหา: เพิ่ม/เอาออกจาก Watchlist */
   onToggleStock?: (symbol: string, market: "TH" | "US") => void;
   syncStatus?: string;
+  /** หุ้นที่ถืออยู่ในพอร์ต (id) → อยู่บนสุดเสมอ */
+  held?: string[];
 }) {
   // ค้นหา: พิมพ์เพื่อกรองรายการ · Enter เพื่อเปิดหุ้นตัวไหนก็ได้
   const [query, setQuery] = useState("");
@@ -81,13 +83,16 @@ export default function WatchlistList({ items, signals, quotes, onRefresh, refre
     });
   }, []);
   const chg = (it: WatchlistItem) => quotes[watchlistId(it)]?.changePercent ?? signals[watchlistId(it)]?.changePercent;
-  const sorted = sort === "manual" ? items : [...items].sort((a, b) => {
+  const sorted = sort === "manual" ? [...items] : [...items].sort((a, b) => {
     const x = chg(a), y = chg(b);
     if (x == null && y == null) return 0;
     if (x == null) return 1;
     if (y == null) return -1;
     return sort === "up" ? y - x : x - y;
   });
+  // หุ้นในพอร์ตขึ้นก่อนเสมอ (ในกลุ่มยังเรียงตามที่เลือก)
+  const heldSet = new Set(held);
+  if (heldSet.size) sorted.sort((a, b) => Number(heldSet.has(watchlistId(b))) - Number(heldSet.has(watchlistId(a))));
   const shown = q ? sorted.filter(it => it.symbol.toUpperCase().includes(q) || (signals[watchlistId(it)]?.name ?? "").toUpperCase().includes(q)) : sorted;
   return (
     <section className="wl">
@@ -143,7 +148,7 @@ export default function WatchlistList({ items, signals, quotes, onRefresh, refre
                   <StockLogo symbol={item.market === "TH" ? `${item.symbol}.BK` : item.symbol} size={40} className="wl-logo-img" />
                 </span>
                 <span className="wl-name">
-                  <span className="wl-line1"><b>{sym}</b><small>{sig?.name ?? (item.market === "TH" ? "SET" : "US")}</small></span>
+                  <span className="wl-line1"><b>{sym}</b>{heldSet.has(id) && <em className="wl-held" title="มีในพอร์ต">พอร์ต</em>}<small>{sig?.name ?? (item.market === "TH" ? "SET" : "US")}</small></span>
                   {/* แสดงบรรทัดที่ 2 เสมอ (ว่างได้) ให้ทุกแถวสูงเท่ากัน */}
                   {(
                     <span className="wl-line2">

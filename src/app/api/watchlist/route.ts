@@ -1,4 +1,15 @@
 import { NextResponse } from "next/server";
+import { isCash, loadPortfolios } from "@/lib/portfolio-summary";
+
+/** หุ้นที่ถืออยู่ในหน้าปรับพอร์ต (เฉพาะชื่อ ไม่ส่งจำนวน/ต้นทุน) → ให้ Watchlist ดันขึ้นบนสุด */
+async function heldSymbols() {
+  try {
+    const { pfs } = await loadPortfolios();
+    const out = new Set<string>();
+    for (const p of pfs) { if (p.cur !== "USD") continue; for (const a of p.assets) if (!isCash(a) && a.name) out.add(String(a.name).toUpperCase()); }
+    return [...out].map(s => ({ symbol: s.replace(/\.BK$/, ""), market: /\.BK$/.test(s) ? "TH" : "US" }));
+  } catch { return []; }
+}
 
 function config() {
   const url = process.env.REBALANCE_SUPABASE_URL;
@@ -12,10 +23,13 @@ export async function GET() {
   if (!c) return NextResponse.json({enabled: false});
   try {
     const query = new URLSearchParams({sync_key: `eq.${c.syncKey}`, select: "items", limit: "1"});
-    const response = await fetch(`${c.url}/rest/v1/watchlists?${query}`, {headers:c.headers,cache:"no-store",signal:AbortSignal.timeout(10000)});
+    const [response, held] = await Promise.all([
+      fetch(`${c.url}/rest/v1/watchlists?${query}`, {headers:c.headers,cache:"no-store",signal:AbortSignal.timeout(10000)}),
+      heldSymbols(),
+    ]);
     if (!response.ok) throw new Error();
     const rows = await response.json();
-    return NextResponse.json({enabled:true, items:rows[0]?.items ?? null});
+    return NextResponse.json({enabled:true, items:rows[0]?.items ?? null, held});
   } catch { return NextResponse.json({error:"ซิงค์ไม่ได้ ตรวจตาราง watchlists และค่าตั้งค่า Supabase"},{status:502}); }
 }
 export async function PUT(request: Request) {
