@@ -1984,3 +1984,13 @@ html:root { font-size: 16px; }
 .rb2 .chip-check input:checked + span { color: var(--ui-text); border-color: color-mix(in srgb, var(--ui-accent) 60%, transparent); background: color-mix(in srgb, var(--ui-accent) 14%, transparent); }
 .rb2 .chip-check input:focus-visible + span { outline: 2px solid var(--ui-accent); outline-offset: 2px; }
 .rb2 .push-opts label.chip-check { display: block; gap: 0; }
+
+/* เทียบตลาด: ชิปเลือกดัชนี */
+.rb2 .perf-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.rb2 .perf-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--ui-border); background: transparent; color: var(--ui-muted); font: inherit; font-size: 12.5px; cursor: pointer; font-variant-numeric: tabular-nums; }
+.rb2 .perf-chip i { width: 10px; height: 3px; border-radius: 2px; background: var(--c); opacity: .35; }
+.rb2 .perf-chip b { font-weight: 600; color: var(--ui-muted); }
+.rb2 .perf-chip.on { color: var(--ui-text); border-color: color-mix(in srgb, var(--c) 55%, var(--ui-border)); background: color-mix(in srgb, var(--c) 10%, transparent); }
+.rb2 .perf-chip.on i { opacity: 1; }
+.rb2 .perf-chip.on b.gain { color: var(--rb-gain); } .rb2 .perf-chip.on b.loss { color: var(--rb-loss); }
+.rb2 .perf-card .perf-chip:not(.on) b { color: var(--ui-muted); }

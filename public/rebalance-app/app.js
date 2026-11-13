@@ -3644,20 +3644,41 @@ async function testPush() {
 }
 refreshPushState();
 
-/* ── ผลตอบแทนพอร์ตเทียบ S&P 500 / SET (จากยอดที่บันทึกทุกวัน) ── */
+/* ── ผลตอบแทนพอร์ตเทียบตลาด (S&P 500 / Nasdaq / Dow / SET / ทองคำ) จากยอดที่บันทึกทุกวัน ── */
 let perfHistory = null;
+let perfBenchList = [{ k: 'spy', name: 'S&P 500' }, { k: 'qqq', name: 'Nasdaq 100' }, { k: 'dia', name: 'Dow Jones' }, { k: 'set', name: 'SET' }, { k: 'gold', name: 'ทองคำ' }];
+const PERF_COLORS = { spy: '#fb923c', qqq: '#f472b6', dia: '#2dd4bf', set: '#a78bfa', gold: '#eab308' };
 let perfRange = (() => { try { return localStorage.getItem('rbPerfRange') || 'all'; } catch { return 'all'; } })();
+/* ดัชนีที่เลือกแสดง แยกตามพอร์ตหุ้นสหรัฐ / กองทุนไทย */
+const perfBenchKey = () => 'rbPerfBench' + (IS_FUND_PF ? 'TH' : '');
+function perfSelected() {
+    try {
+        const v = JSON.parse(localStorage.getItem(perfBenchKey()) || 'null');
+        if (Array.isArray(v) && v.length) return v.filter(k => perfBenchList.some(b => b.k === k));
+    } catch { /* ignore */ }
+    return IS_FUND_PF ? ['set', 'spy'] : ['spy', 'qqq'];
+}
+function togglePerfBench(k) {
+    let sel = perfSelected();
+    sel = sel.includes(k) ? sel.filter(x => x !== k) : [...sel, k];
+    if (!sel.length) return;
+    try { localStorage.setItem(perfBenchKey(), JSON.stringify(sel)); } catch { /* ignore */ }
+    renderPerfCard(true);
+}
 async function loadPerfHistory() {
     try {
         const res = await fetch('/api/history', { cache: 'no-store' });
         if (!res.ok) return;
-        perfHistory = (await res.json()).days || [];
+        const j = await res.json();
+        perfHistory = j.days || [];
+        if (Array.isArray(j.benchmarks) && j.benchmarks.length) perfBenchList = j.benchmarks;
         renderPerfCard();
     } catch { /* ignore */ }
 }
 /* ผลตอบแทนแบบถ่วงเวลา: หักเงินเข้า-ออก (ต้นทุน + เงินสดที่เปลี่ยน) ออกก่อนเทียบวันต่อวัน */
 function perfSeries(days, pfId) {
     const rows = days.filter(d => d.pf && d.pf[pfId]);
+    const keys = perfBenchList.map(b => b.k);
     const out = [];
     let idx = 1, base = null;
     rows.forEach((d, i) => {
@@ -3669,8 +3690,13 @@ function perfSeries(days, pfId) {
             const flow = ((p.c || 0) - (q.c || 0)) + ((p.cash || 0) - (q.cash || 0));
             if (prevTotal > 0) idx *= (total - flow) / prevTotal;
         }
-        if (base == null) base = { spy: d.spy, set: d.set };
-        out.push({ d: d.d, pf: (idx - 1) * 100, spy: base.spy && d.spy ? (d.spy / base.spy - 1) * 100 : null, set: base.set && d.set ? (d.set / base.set - 1) * 100 : null });
+        if (base == null) base = {};
+        const r = { d: d.d, pf: (idx - 1) * 100 };
+        for (const k of keys) {
+            if (base[k] == null && d[k]) base[k] = d[k];
+            r[k] = base[k] && d[k] ? (d[k] / base[k] - 1) * 100 : null;
+        }
+        out.push(r);
     });
     return out;
 }
@@ -3692,30 +3718,34 @@ function renderPerfCard(keepOpen) {
     const last = s[s.length - 1];
     const pct = v => v == null ? '—' : `${v >= 0 ? '+' : '−'}${fmt(Math.abs(v), 2)}%`;
     const cls = v => v == null ? '' : v >= 0 ? 'gain' : 'loss';
-    const bm = IS_FUND_PF ? ['set', 'SET'] : ['spy', 'S&P 500'];
-    const other = IS_FUND_PF ? ['spy', 'S&P 500'] : ['set', 'SET'];
+    const sel = perfSelected();
+    const main = perfBenchList.find(b => b.k === sel[0]) || perfBenchList[0];
     const head = `<summary class="perf-head"><span class="perf-title">เทียบตลาด</span>
-        ${s.length >= 2 ? `<span class="perf-sum"><b class="${cls(last.pf)}">${pct(last.pf)}</b><small>${bm[1]} ${pct(last[bm[0]])}</small></span>` : `<span class="perf-sum"><small>เริ่มบันทึก ${all[0] ? new Date(all[0].d).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }) : 'คืนนี้'}</small></span>`}
+        ${s.length >= 2 ? `<span class="perf-sum"><b class="${cls(last.pf)}">${pct(last.pf)}</b><small>${main.name} ${pct(last[main.k])}</small></span>` : `<span class="perf-sum"><small>เริ่มบันทึก ${all[0] ? new Date(all[0].d).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }) : 'คืนนี้'}</small></span>`}
         <span class="pc-chev" aria-hidden="true"></span></summary>`;
     if (s.length < 2) {
         el.innerHTML = head + `<p class="perf-empty">ระบบบันทึกยอดพอร์ตทุกวันหลังตลาดสหรัฐปิด (ประมาณ 05:30 น.) · กราฟจะเริ่มขึ้นเมื่อมีข้อมูลตั้งแต่ 2 วัน</p>`;
         el.open = wasOpen;
         return;
     }
+    // ตารางอันดับ: พอร์ต + ดัชนีที่เลือก เรียงจากผลตอบแทนมากไปน้อย
+    const chips = perfBenchList.map(b => {
+        const on = sel.includes(b.k);
+        return `<button type="button" class="perf-chip${on ? ' on' : ''}" style="--c:${PERF_COLORS[b.k] || '#94a3b8'}" aria-pressed="${on}" onclick="togglePerfBench('${b.k}')"><i></i>${escapePfHtml(b.name)}<b class="${cls(last[b.k])}">${pct(last[b.k])}</b></button>`;
+    }).join('');
+    const beat = sel.filter(k => last[k] != null && last.pf != null && last.pf >= last[k]).length;
+    const valid = sel.filter(k => last[k] != null).length;
     el.innerHTML = head + `
         <div class="perf-range" role="group" aria-label="ช่วงเวลา">${[['1m', '1 เดือน'], ['3m', '3 เดือน'], ['1y', '1 ปี'], ['all', 'ทั้งหมด']].map(([k, t]) => `<button type="button" class="${perfRange === k ? 'on' : ''}" onclick="setPerfRange('${k}')">${t}</button>`).join('')}</div>
-        ${perfChartSvg(s, bm[0], other[0])}
-        <div class="perf-legend">
-            <span><i style="background:var(--ui-accent)"></i>พอร์ตนี้ <b class="${cls(last.pf)}">${pct(last.pf)}</b></span>
-            <span><i style="background:#f59e0b"></i>${bm[1]} <b class="${cls(last[bm[0]])}">${pct(last[bm[0]])}</b></span>
-            <span><i style="background:#a78bfa"></i>${other[1]} <b class="${cls(last[other[0]])}">${pct(last[other[0]])}</b></span>
-        </div>
-        <p class="perf-note">${last.pf != null && last[bm[0]] != null ? (last.pf >= last[bm[0]] ? `ชนะ ${bm[1]} ${fmt(last.pf - last[bm[0]], 2)}%` : `แพ้ ${bm[1]} ${fmt(last[bm[0]] - last.pf, 2)}%`) : ''} · หักเงินที่ใส่เพิ่ม/ถอนออกแล้ว</p>`;
+        ${perfChartSvg(s, sel)}
+        <div class="perf-legend"><span class="perf-me"><i style="background:var(--ui-accent)"></i>พอร์ตนี้ <b class="${cls(last.pf)}">${pct(last.pf)}</b></span></div>
+        <div class="perf-chips" role="group" aria-label="เลือกดัชนีที่จะเทียบ">${chips}</div>
+        <p class="perf-note">${valid ? `ชนะ ${beat}/${valid} ตลาดที่เลือก · ` : ''}แตะเพื่อเลือกตลาด · หักเงินที่ใส่เพิ่ม/ถอนออกแล้ว</p>`;
     el.open = wasOpen;
 }
-function perfChartSvg(s, k1, k2) {
+function perfChartSvg(s, keys) {
     const W = 600, H = 170, P = 6;
-    const vals = s.flatMap(r => [r.pf, r[k1], r[k2]]).filter(v => v != null);
+    const vals = s.flatMap(r => [r.pf, ...keys.map(k => r[k])]).filter(v => v != null);
     let lo = Math.min(0, ...vals), hi = Math.max(0, ...vals);
     if (hi - lo < 1) { hi += 0.5; lo -= 0.5; }
     const x = i => P + (i / (s.length - 1)) * (W - 2 * P);
@@ -3727,7 +3757,7 @@ function perfChartSvg(s, k1, k2) {
     const fmtD = d => new Date(d).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
     return `<div class="perf-chart"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="กราฟผลตอบแทนเทียบดัชนี">
         <line x1="0" x2="${W}" y1="${y(0).toFixed(1)}" y2="${y(0).toFixed(1)}" stroke="currentColor" stroke-opacity=".18" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"/>
-        ${line(k2, '#a78bfa', 1.5)}${line(k1, '#f59e0b', 1.75)}${line('pf', 'var(--ui-accent)', 2.5)}
+        ${keys.map(k => line(k, PERF_COLORS[k] || '#94a3b8', 1.6)).join('')}${line('pf', 'var(--ui-accent)', 2.5)}
     </svg><div class="perf-axis"><span>${fmtD(s[0].d)}</span><span>${fmtD(s[s.length - 1].d)}</span></div></div>`;
 }
 loadPerfHistory();
