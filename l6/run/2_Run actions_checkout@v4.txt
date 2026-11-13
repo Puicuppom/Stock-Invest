@@ -1,0 +1,73 @@
+﻿2026-11-13T08:44:55.3632526Z ##[group]Run actions/checkout@v4
+2026-11-13T08:44:55.3633494Z with:
+2026-11-13T08:44:55.3634158Z   repository: Puicuppom/Stock-Invest
+2026-11-13T08:44:55.3637992Z   token: ***
+2026-11-13T08:44:55.3638471Z   ssh-strict: true
+2026-11-13T08:44:55.3638957Z   ssh-user: git
+2026-11-13T08:44:55.3639438Z   persist-credentials: true
+2026-11-13T08:44:55.3639958Z   clean: true
+2026-11-13T08:44:55.3640448Z   sparse-checkout-cone-mode: true
+2026-11-13T08:44:55.3641001Z   fetch-depth: 1
+2026-11-13T08:44:55.3641460Z   fetch-tags: false
+2026-11-13T08:44:55.3641933Z   show-progress: true
+2026-11-13T08:44:55.3642409Z   lfs: false
+2026-11-13T08:44:55.3642845Z   submodules: false
+2026-11-13T08:44:55.3643320Z   set-safe-directory: true
+2026-11-13T08:44:55.3643860Z   allow-unsafe-pr-checkout: false
+2026-11-13T08:44:55.3644780Z ##[endgroup]
+2026-11-13T08:44:55.6599646Z Syncing repository: Puicuppom/Stock-Invest
+2026-11-13T08:44:55.6602480Z ##[group]Getting Git version info
+2026-11-13T08:44:55.6603651Z Working directory is '/home/runner/work/Stock-Invest/Stock-Invest'
+2026-11-13T08:44:55.6606077Z [command]/usr/bin/git version
+2026-11-13T08:44:55.6645368Z git version 2.56.1
+2026-11-13T08:44:55.6662160Z ##[endgroup]
+2026-11-13T08:44:55.6680482Z Temporarily overriding HOME='/home/runner/work/_temp/992cbe58-42fb-472d-b0e0-b043ab974333' before making global git config changes
+2026-11-13T08:44:55.6683725Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-13T08:44:55.6687775Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Stock-Invest/Stock-Invest
+2026-11-13T08:44:55.6769248Z Deleting the contents of '/home/runner/work/Stock-Invest/Stock-Invest'
+2026-11-13T08:44:55.6775762Z ##[group]Initializing the repository
+2026-11-13T08:44:55.6781619Z [command]/usr/bin/git init /home/runner/work/Stock-Invest/Stock-Invest
+2026-11-13T08:44:55.6940912Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-11-13T08:44:55.6945072Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-11-13T08:44:55.6948887Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-11-13T08:44:55.6950309Z hint: call:
+2026-11-13T08:44:55.6950996Z hint:
+2026-11-13T08:44:55.6951744Z hint: 	git config --global init.defaultBranch <name>
+2026-11-13T08:44:55.6952585Z hint:
+2026-11-13T08:44:55.6954442Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-11-13T08:44:55.6956650Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-11-13T08:44:55.6958428Z hint:
+2026-11-13T08:44:55.6959720Z hint: 	git branch -m <name>
+2026-11-13T08:44:55.6960950Z hint:
+2026-11-13T08:44:55.6985772Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-11-13T08:44:55.7005829Z Initialized empty Git repository in /home/runner/work/Stock-Invest/Stock-Invest/.git/
+2026-11-13T08:44:55.7044585Z [command]/usr/bin/git remote add origin https://github.com/Puicuppom/Stock-Invest
+2026-11-13T08:44:55.7099757Z ##[endgroup]
+2026-11-13T08:44:55.7108823Z ##[group]Disabling automatic garbage collection
+2026-11-13T08:44:55.7125575Z [command]/usr/bin/git config --local gc.auto 0
+2026-11-13T08:44:55.7137594Z ##[endgroup]
+2026-11-13T08:44:55.7139129Z ##[group]Setting up auth
+2026-11-13T08:44:55.7140925Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-13T08:44:55.7146172Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-13T08:44:55.7665021Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-13T08:44:55.7710424Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-13T08:44:55.8018035Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-13T08:44:55.8061675Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-13T08:44:55.8358900Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-11-13T08:44:55.8403842Z ##[endgroup]
+2026-11-13T08:44:55.8413835Z ##[group]Fetching the repository
+2026-11-13T08:44:55.8416355Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +c3a246a34b92f3f33430e2759e356230bdbab21c:refs/remotes/origin/probe-screener-tmp
+2026-11-13T08:44:57.0883108Z From https://github.com/Puicuppom/Stock-Invest
+2026-11-13T08:44:57.0886285Z  * [new ref]         c3a246a34b92f3f33430e2759e356230bdbab21c -> origin/probe-screener-tmp
+2026-11-13T08:44:57.0889969Z ##[endgroup]
+2026-11-13T08:44:57.0891172Z ##[group]Determining the checkout info
+2026-11-13T08:44:57.0903295Z ##[endgroup]
+2026-11-13T08:44:57.0906204Z [command]/usr/bin/git sparse-checkout disable
+2026-11-13T08:44:57.0970739Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-11-13T08:44:57.1005914Z ##[group]Checking out the ref
+2026-11-13T08:44:57.1012952Z [command]/usr/bin/git checkout --progress --force -B probe-screener-tmp refs/remotes/origin/probe-screener-tmp
+2026-11-13T08:44:57.1230381Z Switched to a new branch 'probe-screener-tmp'
+2026-11-13T08:44:57.1235237Z branch 'probe-screener-tmp' set up to track 'origin/probe-screener-tmp'.
+2026-11-13T08:44:57.1243685Z ##[endgroup]
+2026-11-13T08:44:57.1297575Z [command]/usr/bin/git log -1 --format=%H
+2026-11-13T08:44:57.1325903Z c3a246a34b92f3f33430e2759e356230bdbab21c
