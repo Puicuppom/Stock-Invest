@@ -55,12 +55,16 @@ async function toThai(text: string): Promise<string | null> {
   return null;
 }
 
-async function headline(symbol: string, auth: { cookie: string; crumb: string }) {
+async function headline(symbol: string, name: string, auth: { cookie: string; crumb: string }) {
   try {
     const j = await yget<{ news?: { title?: string; publisher?: string; link?: string; providerPublishTime?: number; relatedTickers?: string[] }[] }>(
-      `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(symbol)}&quotesCount=0&newsCount=5`, auth);
-    const list = (j.news ?? []).filter(n => n.title && n.link);
-    const n = list.find(x => x.relatedTickers?.includes(symbol)) ?? list[0];
+      `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(symbol)}&quotesCount=0&newsCount=10`, auth);
+    // ตัดบทถอดเสียงประชุมนักลงทุน (ยาว ไม่ได้บอกเหตุผล)
+    const list = (j.news ?? []).filter(n => n.title && n.link && !/transcript/i.test(n.title));
+    // ข่าวที่พาดหัวพูดถึงหุ้นตัวนี้จริง (ชื่อย่อ หรือคำแรกของชื่อบริษัท)
+    const word = name.split(/[\s,.]+/).find(w => w.length >= 4 && !/^(the|inc|corp|holdings?|group|company)$/i.test(w));
+    const mentions = (t: string) => new RegExp(`\\b${symbol.replace(".", "\\.")}\\b`).test(t) || (word ? t.toLowerCase().includes(word.toLowerCase()) : false);
+    const n = list.find(x => mentions(x.title!)) ?? list.find(x => x.relatedTickers?.length === 1 && x.relatedTickers[0] === symbol);
     return n ? { title: n.title!, titleTh: await toThai(n.title!), publisher: n.publisher ?? "", link: n.link!, time: n.providerPublishTime ?? 0 } : null;
   } catch { return null; }
 }
@@ -87,8 +91,8 @@ export async function GET(request: NextRequest) {
         { id: "active", title: "ซื้อขายมากสุด", items: pick(active, 6) },
       ];
       // พาดหัวข่าว 1 ข่าวต่อหุ้น (ไม่ซ้ำ)
-      const uniq = [...new Set(sections.flatMap(s => s.items.map(i => i.symbol)))];
-      const news = new Map(await Promise.all(uniq.map(async s => [s, await headline(s, auth)] as const)));
+      const uniq = [...new Map(sections.flatMap(s => s.items.map(i => [i.symbol, i.name] as const))).entries()];
+      const news = new Map(await Promise.all(uniq.map(async ([s, n]) => [s, await headline(s, n, auth)] as const)));
       sections.forEach(s => s.items.forEach(i => { i.news = news.get(i.symbol) ?? null; }));
     } else {
       const [gain, lose, active] = await Promise.all([
