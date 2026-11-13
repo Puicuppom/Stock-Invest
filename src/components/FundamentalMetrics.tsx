@@ -7,11 +7,11 @@ export default function FundamentalMetrics({value, market, price}: {value:FairVa
   // P/E หลักร้อยขึ้นไปเกิดจากกำไรใกล้ศูนย์ ตัวเลขไม่มีความหมาย
   const pe=(n:number|null|undefined)=>n!=null && Number.isFinite(n) && n>200?"สูงมาก":number(n,"x");
   const rows=[
-    {label:"Fwd P/E",amount:pe(value.forwardPE),unit:"",note:"อิงกำไรคาดการณ์"},
-    {label:"P/E (TTM)",amount:pe(value.trailingPE),unit:"",note:"อิงกำไรย้อนหลัง 12 เดือน"},
-    {label:"EPS (TTM)",amount:number(value.trailingEps),unit:currency+"/หุ้น",note:"กำไรต่อหุ้นย้อนหลัง 12 เดือน"},
-    {label:"FCF Yield",amount:number(value.fcfYieldPercent,"%"),unit:"",note:"กระแสเงินสดอิสระ ÷ มูลค่าตลาด"},
-    {label:"อัตราปันผล",amount:number(value.dividendYieldPercent,"%"),unit:"",note:value.dividendRate!=null?number(value.dividendRate)+" "+currency+"/หุ้น/ปี":"อัตราผลตอบแทนจากเงินปันผล"},
+    {label:"P/E ปีหน้า",amount:pe(value.forwardPE),unit:"",note:"Forward P/E · ราคา ÷ กำไรคาดการณ์ปีหน้า · ยิ่งต่ำยิ่งถูก"},
+    {label:"P/E ปีล่าสุด",amount:pe(value.trailingPE),unit:"",note:"P/E (TTM) · ราคา ÷ กำไร 12 เดือนล่าสุด"},
+    {label:"กำไร/หุ้น",amount:number(value.trailingEps),unit:currency,note:"EPS (TTM) · กำไรต่อหุ้น 12 เดือนล่าสุด"},
+    {label:"เงินสด/ราคา",amount:number(value.fcfYieldPercent,"%"),unit:"",note:"FCF Yield · กระแสเงินสดอิสระ ÷ มูลค่าบริษัท · ยิ่งสูงยิ่งคุ้ม"},
+    {label:"ปันผล",amount:number(value.dividendYieldPercent,"%"),unit:"",note:value.dividendRate!=null?number(value.dividendRate)+" "+currency+"/หุ้น/ปี":"อัตราผลตอบแทนจากเงินปันผล"},
   ];
   return <div className="fundamental-metrics fm-v2">
     <AnalystCard value={value} price={price} currency={currency} />

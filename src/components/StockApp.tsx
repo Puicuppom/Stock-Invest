@@ -7,6 +7,7 @@ import AppNavigation from "@/components/AppNavigation";
 import StockDashboard from "@/components/StockDashboard";
 import CompanyCard from "./CompanyCard";
 import FundamentalMetrics from "./FundamentalMetrics";
+import FundSummary from "./FundSummary";
 import DeepCards from "./DeepCards";
 import EtfCard from "./EtfCard";
 import SignalSummary from "@/components/SignalSummary";
@@ -399,6 +400,7 @@ export default function StockApp() {
       )}
 
       {tab === "fund" && selectedData && <>
+        {selectedData.assetKind === "stock" && <FundSummary data={selectedData} />}
         {selectedData.assetKind === "stock" && <FundamentalMetrics value={selectedData.fairValue} market={selectedData.market} price={selectedData.lastClose} />}
         {selectedData.assetKind === "stock" && (selectedData.deep === undefined
           ? <i className="sk" style={{ display: "block", height: 160, borderRadius: 14 }} aria-label="กำลังโหลดข้อมูลเชิงลึก" />

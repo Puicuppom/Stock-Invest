@@ -1950,3 +1950,8 @@ body.ui2 .fab { position: fixed; right: max(12px, calc((100vw - 720px) / 2 + 16p
 .sx-vol { display: flex; align-items: center; gap: 10px; }
 .sx .ss-sr-block { border-top: 1px solid var(--border); padding-top: 8px; }
 .sx-verdict.tr-neutral { background: var(--surface-2); color: var(--muted); }
+.fx-sum { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); margin-bottom: 10px; }
+.fx-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.fx-head small { font-size: 0.75rem; color: var(--muted); }
+.fx-verdict { font-size: 1.05rem; font-weight: 800; }
+.fx-verdict.tone-good { color: var(--success); } .fx-verdict.tone-bad { color: var(--danger); } .fx-verdict.tone-mid { color: var(--warning); }

@@ -16,7 +16,7 @@ function PeBand({ pe }: { pe: NonNullable<DeepInfo["pe"]> }) {
   const tone = vsMedian == null ? "" : vsMedian <= -10 ? "up" : vsMedian >= 10 ? "down" : "";
   return (
     <section className="deep-card">
-      <h3>ช่วง P/E ย้อนหลัง {pe.years} ปี</h3>
+      <h3>ถูกหรือแพงเทียบอดีต <small>P/E {pe.years} ปี</small></h3>
       {cur != null && vsMedian != null && (
         <p className="deep-lead">ตอนนี้ P/E <b>{f1(cur)}</b> · <b className={tone}>{vsMedian <= 0 ? "ต่ำกว่า" : "สูงกว่า"}ค่ากลาง {f1(Math.abs(vsMedian))}%</b> (ค่ากลาง {f1(pe.median)})</p>
       )}
@@ -31,7 +31,7 @@ function PeBand({ pe }: { pe: NonNullable<DeepInfo["pe"]> }) {
         <span><i className="lg-med" /> ค่ากลาง</span>
         {cur != null && <span><i className="lg-now" /> ตอนนี้</span>}
       </div>
-      <p className="deep-note">P/E รายเดือนจากกำไรต่อหุ้นรายปีที่ประกาศแล้ว · ต่ำกว่าช่วงปกติ = ถูกเทียบอดีตของหุ้นเอง (ต้องดูด้วยว่ากำไรยังไม่แย่ลง)</p>
+      <p className="deep-note">ต่ำกว่าช่วงปกติ = ถูกเทียบอดีตของตัวเอง</p>
     </section>
   );
 }
