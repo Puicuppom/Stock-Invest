@@ -2027,3 +2027,4 @@ html:root { font-size: 16px; }
 .rb2 .perf-row .pr-diff.win { color: var(--rb-gain); background: color-mix(in srgb, var(--rb-gain) 14%, transparent); }
 .rb2 .perf-row .pr-diff.lose { color: var(--rb-loss); background: color-mix(in srgb, var(--rb-loss) 14%, transparent); }
 .rb2 .perf-card .perf-chart { margin-top: 10px; }
+.rb2 .perf-me span { flex-wrap: wrap; } .rb2 .perf-me small { flex-basis: 100%; padding-left: 20px; font-size: 11.5px; font-weight: 400; color: var(--ui-muted); }

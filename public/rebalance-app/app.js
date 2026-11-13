@@ -3815,10 +3815,10 @@ function renderPerfCard(keepOpen) {
     }).join('');
     el.innerHTML = head + `
         <div class="perf-range" role="group" aria-label="ช่วงเวลา">${[['1m', '1 เดือน'], ['3m', '3 เดือน'], ['1y', '1 ปี'], ['all', 'ทั้งหมด']].map(([k, t]) => `<button type="button" class="${perfRange === k ? 'on' : ''}" onclick="setPerfRange('${k}')">${t}</button>`).join('')}</div>
-        <div class="perf-me"><span><i></i>พอร์ตนี้</span><b class="${cls(last.pf)}">${pct(last.pf)}</b></div>
+        <div class="perf-me"><span><i></i>${escapePfHtml(getActivePortfolioName())}<small>ผลตอบแทนตั้งแต่ ${new Date(s[0].d).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })}</small></span><b class="${cls(last.pf)}">${pct(last.pf)}</b></div>
         <div class="perf-table">${rows}</div>
         ${perfChartSvg(s, sel)}
-        <p class="perf-note">แตะตลาดเพื่อแสดงในกราฟ · หักเงินเติม/ถอนแล้ว</p>`;
+        <p class="perf-note">ผลตอบแทน = กำไร/ขาดทุนของพอร์ตเป็น % ในช่วงที่เลือก ไม่นับเงินที่เติมหรือถอน · แตะตลาดเพื่อแสดงในกราฟ</p>`;
     el.open = wasOpen;
 }
 function perfChartSvg(s, keys) {
