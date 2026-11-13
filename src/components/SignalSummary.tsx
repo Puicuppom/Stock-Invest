@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { estimateHolderCost } from "@/lib/holder-cost";
 import type React from "react";
 import SrLadder from "./SrLadder";
@@ -35,15 +35,6 @@ export default function SignalSummary(props: Props) {
   const [openDip, setOpenDip] = useState<string | null>(null);
   const [openRating, setOpenRating] = useState(false);
   const [openSignalTag, setOpenSignalTag] = useState<string | null>(null);
-  // ต้นทุนของเราจากหน้าปรับพอร์ต (ถ้ามีหุ้นตัวนี้)
-  const [myCost, setMyCost] = useState<number | null>(null);
-  useEffect(() => {
-    let alive = true;
-    setMyCost(null);
-    fetch(`/api/my-cost?symbol=${encodeURIComponent(data.symbol)}`, { cache: "no-store" })
-      .then(r => (r.ok ? r.json() : null)).then(j => { if (alive && j?.avgCost > 0) setMyCost(j.avgCost); }).catch(() => {});
-    return () => { alive = false; };
-  }, [data.symbol]);
   const price = data.lastClose;
   // กลับตัวขึ้น (ลงแล้วขึ้น) หรือกลับตัวลง (ขึ้นแล้วลง): หุ้นขาขึ้นหรือมีสัญญาณขึ้นแล้วลงชัด → ดูฝั่งกลับตัวลง
   const revTag = reversalTag(data);
@@ -231,27 +222,20 @@ export default function SignalSummary(props: Props) {
       {openTag && <div className="sx-explain">{openTag.body}</div>}
 
       {holder && (() => {
-        const mine = myCost != null ? (myCost / holder.avg - 1) * 100 : null;
-        const vsPrice = (price / holder.avg - 1) * 100;
-        const pts = [holder.avg, price, ...(myCost != null ? [myCost] : [])];
-        const a = Math.min(...pts), b = Math.max(...pts), span = (b - a) || a * 0.1;
-        const at = (v: number) => 8 + ((v - (a - span * 0.05)) / (span * 1.1)) * 84;
-        const pAvg = at(holder.avg), pNow = at(price);
-        // ป้ายราคาอยู่ด้านบนถ้าไม่ชนป้าย "ส่วนใหญ่" ไม่งั้นลงด้านล่าง
-        const nowBelow = Math.abs(pNow - pAvg) < 18;
+        const vs = (price / holder.avg - 1) * 100;
+        const lo = Math.min(holder.avg, price), hi = Math.max(holder.avg, price), span = (hi - lo) || lo * 0.1;
+        const at = (v: number) => 10 + ((v - (lo - span * 0.1)) / (span * 1.2)) * 80;
+        // ราคาต่ำกว่าทุนคนส่วนใหญ่ = ได้ของถูกกว่าคนอื่น (สีเขียว)
         return (
           <div className="hc" title="ทุนส่วนใหญ่ = ประมาณจากราคาและปริมาณซื้อขาย 2 ปี (แบบ Chip Distribution) ไม่ใช่ข้อมูลพอร์ตจริงของคนอื่น">
             <div className="hc-nums">
               <div><small>ทุนส่วนใหญ่</small><b>{p2(holder.avg)}</b></div>
-              {myCost != null && <div><small>ทุนคุณ</small><b>{p2(myCost)}</b></div>}
-              {mine != null
-                ? <span className={`hc-pill ${mine <= 0 ? "up" : "down"}`}>คุณ{mine <= 0 ? "ต่ำกว่า" : "สูงกว่า"} {Math.abs(mine).toFixed(0)}%</span>
-                : <span className={`hc-pill ${vsPrice >= 0 ? "up" : "down"}`}>ราคา{vsPrice >= 0 ? "สูงกว่า" : "ต่ำกว่า"} {Math.abs(vsPrice).toFixed(0)}%</span>}
+              <div><small>ราคาตอนนี้</small><b>{p2(price)}</b></div>
+              <span className={`hc-pill ${vs <= 0 ? "up" : "down"}`}>ราคา{vs <= 0 ? "ต่ำกว่า" : "สูงกว่า"} {Math.abs(vs).toFixed(0)}%</span>
             </div>
             <div className="hc-bar" aria-hidden="true">
-              <span className="hc-dot avg" style={{ left: `${pAvg}%` }}><em>ส่วนใหญ่</em></span>
-              <span className={`hc-dot now${nowBelow ? " below" : ""}`} style={{ left: `${pNow}%` }}><em>ราคา</em></span>
-              {myCost != null && <span className="hc-dot me below" style={{ left: `${at(myCost)}%` }}><em>คุณ</em></span>}
+              <span className="hc-dot avg" style={{ left: `${at(holder.avg)}%` }}><em>ส่วนใหญ่</em></span>
+              <span className="hc-dot now below" style={{ left: `${at(price)}%` }}><em>ราคา</em></span>
             </div>
           </div>
         );
