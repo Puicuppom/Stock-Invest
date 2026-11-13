@@ -8,13 +8,16 @@ import PortfolioPlanner from "./PortfolioPlanner";
 import { useLiveQuotes } from "@/hooks/useLiveQuotes";
 import { useWatchlist } from "@/hooks/useWatchlist";
 import { screeningStyles, screenStock, valuationRiskFlags, VISIBLE_STYLES, type ScreeningStyle } from "@/lib/screener";
-import { returnPercent, type MarketContext } from "@/lib/momentum";
+import { analyzeMomentum, returnPercent, techSnapshot, type MarketContext } from "@/lib/momentum";
+import { analyzeDip } from "@/lib/dip";
 import { interestScore, RANKING_DESCRIPTION } from "@/lib/screener-ranking";
 import { analyzeTrend, LEAN_GLYPH, LEAN_SHORT, trendLean } from "@/lib/trend";
 import { DISCOVERY_SECTORS } from "@/lib/discovery";
 import type { StockData } from "@/lib/types";
 type Row = { symbol: string; data?: StockData; error?: string };
-const CONCURRENCY = 8;
+const CONCURRENCY = 10;
+/** หยุดเมื่อได้ตัวที่ผ่านครบเท่านี้ (กดหาเพิ่มได้) */
+const GOAL = 20;
 const STYLE_ICON: Record<string, string> = { dip: "🏷️", momentum: "🚀", smallcap: "💎", dividend: "💰", etf: "📦" };
 const STYLE_SHORT: Record<string, string> = { dip: "ลดราคา", momentum: "ไปต่อ", smallcap: "หุ้นจิ๋ว", dividend: "ปันผล", etf: "ETF" };
 type Snapshot = {
@@ -109,7 +112,7 @@ export default function StockScreener() {
     let passedInBatch=0;
     const updateContinuation=()=>setNextOffset(pending.current.length ? cursor.current ?? 0 : cursor.current);
     try {
-      while (!abort.signal.aborted && passedInBatch < 30) {
+      while (!abort.signal.aborted && passedInBatch < GOAL) {
         if (!pending.current.length) {
           if (cursor.current === null) break;
           const offset=cursor.current;
@@ -130,7 +133,7 @@ export default function StockScreener() {
         await new Promise<void>(resolve=>{
           const inflight=new Set<string>();
           const pump=()=>{
-            if (abort.signal.aborted || passedInBatch>=30) { if (!inflight.size) resolve(); return; }
+            if (abort.signal.aborted || passedInBatch>=GOAL) { if (!inflight.size) resolve(); return; }
             const next=pending.current.filter(sym=>!inflight.has(sym));
             if (!next.length) { if (!inflight.size) resolve(); return; }
             for (const symbol of next.slice(0,CONCURRENCY-inflight.size)) {
@@ -155,7 +158,7 @@ export default function StockScreener() {
         if (abort.signal.aborted) return;
         updateContinuation();
       }
-      if (!abort.signal.aborted) setMessage(passedInBatch>=30 ? "ครบ 30 ตัว" : "ตรวจครบทุกตัวแล้ว");
+      if (!abort.signal.aborted) setMessage(passedInBatch>=GOAL ? `เจอ ${GOAL} ตัวแล้ว · กดหาเพิ่มได้` : "ตรวจครบทุกตัวแล้ว");
     } catch(error) {
       if (!abort.signal.aborted) setMessage((error instanceof Error ? error.message : "ค้นหาไม่สำเร็จ") + " · กดหาเพิ่มเพื่อทำต่อ");
     } finally {
@@ -185,6 +188,22 @@ export default function StockScreener() {
     if (el instanceof HTMLDetailsElement) el.open=true;
     el.scrollIntoView({behavior:"smooth",block:"start"});
     el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash");
+  };
+  // ตัวเลขสำคัญ 2–3 ตัวต่อหุ้น ตามแนวทางที่เลือก (อ่านแล้วเข้าใจทันทีว่าทำไมติด)
+  const keyFacts=(d:StockData):{t:string;tone:string}[]=>{
+    const out:{t:string;tone:string}[]=[];
+    const up=d.fairValue.analystTarget!=null&&d.lastClose>0?(d.fairValue.analystTarget/d.lastClose-1)*100:null;
+    if (style==="dip") {
+      const dip=analyzeDip(d);
+      if (dip?.drawdownPercent!=null) out.push({t:`ลง ${Math.abs(dip.drawdownPercent).toFixed(0)}%`,tone:"down"});
+      if (up!=null) out.push({t:`เป้า ${up>=0?"+":""}${up.toFixed(0)}%`,tone:up>=15?"up":""});
+    } else if (style==="momentum") {
+      const t=techSnapshot(d);
+      if (t?.ret6m!=null) out.push({t:`6 เดือน ${t.ret6m>=0?"+":""}${t.ret6m.toFixed(0)}%`,tone:t.ret6m>=0?"up":"down"});
+      if (t?.fromHigh52!=null) out.push({t:t.fromHigh52>-1?"จุดสูงสุดใหม่":`ห่างยอด ${Math.abs(t.fromHigh52).toFixed(0)}%`,tone:""});
+      const m=analyzeMomentum(d,ctx); if (m?.kind==="wait") out.push({t:"รอย่อ",tone:"warn"});
+    } else if (up!=null) out.push({t:`เป้า ${up>=0?"+":""}${up.toFixed(0)}%`,tone:up>=15?"up":""});
+    return out;
   };
   return <main className="app-shell screener">
     <AppNavigation active="screener" />
@@ -220,8 +239,8 @@ export default function StockScreener() {
     <div className="scr-go">
       {busy ? <>
         <div className="scr-progress" aria-live="polite">
-          <i style={{width:`${Math.min(100,total/30*100)}%`}} />
-          <span>🔍 ตรวจ {rows.length} · ✓ {total}/30</span>
+          <i style={{width:`${Math.min(100,total/GOAL*100)}%`}} />
+          <span>ตรวจแล้ว {rows.length} ตัว · เจอ {total}/{GOAL}</span>
         </div>
         <button type="button" className="scr-stop" onClick={()=>{controller.current?.abort();setMessage("หยุดแล้ว");}} aria-label="หยุดค้นหา">■</button>
       </> : <>
@@ -248,8 +267,8 @@ export default function StockScreener() {
       return <ScreenRow key={row.symbol} symbol={row.symbol} market={scannedMarket} name={row.data?.longName} price={lq(row.symbol)?.price ?? row.data?.lastClose} changePercent={lq(row.symbol)?.changePercent ?? row.data?.changePercent} ext={lq(row.symbol)?.ext}
         open={openRow===row.symbol} onToggle={()=>setOpenRow(openRow===row.symbol?null:row.symbol)} error={row.error?"โหลดไม่ได้":null}
         line2={<>
-          <em className="scr-chip rank">#{index+1}</em>
-          {row.data && <em className="scr-chip score" title={`คะแนน · ${RANKING_DESCRIPTION[style]}`}>★ {row.score}</em>}
+          <em className="scr-chip rank" title={`อันดับตามคะแนน · ${RANKING_DESCRIPTION[style]}`}>#{index+1} · {row.score}</em>
+          {row.data && keyFacts(row.data).map(f=><em key={f.t} className={`scr-chip fact ${f.tone}`}>{f.t}</em>)}
           {lean && <em className={`scr-chip ico lean lean-${lean}`} title={`${LEAN_SHORT[lean]} · ${row.trend!.label}`} aria-label={LEAN_SHORT[lean]}>{LEAN_GLYPH[lean]}</em>}
           {row.flags.length>0 && <em className="scr-chip warn" title={row.flags.join(" · ")}>⚠</em>}
           {style==="etf" && row.data?.etf?.expenseRatio!=null && <em className="scr-chip" title="ค่าธรรมเนียมต่อปี">💸 {row.data.etf.expenseRatio.toFixed(2)}%</em>}

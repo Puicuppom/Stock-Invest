@@ -1977,3 +1977,5 @@ body.ui2 .fab { position: fixed; right: max(12px, calc((100vw - 720px) / 2 + 16p
 .eps-rows .eps-q { color: var(--muted); font-variant-numeric: tabular-nums; }
 .eps-rows .eps-word.up, .eps-rows b.up { color: var(--success); } .eps-rows .eps-word.down, .eps-rows b.down { color: var(--danger); }
 .eps-rows b { font-variant-numeric: tabular-nums; }
+.scr-chip.fact { font-style: normal; font-weight: 600; }
+.scr-chip.fact.up { color: var(--success); } .scr-chip.fact.down { color: var(--danger); } .scr-chip.fact.warn { color: var(--warning); }

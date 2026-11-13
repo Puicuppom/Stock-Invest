@@ -18,14 +18,32 @@ export async function GET(request: NextRequest) {
   try {
     const selectedMarket=market as "US"|"TH";
     const [minimum,maximum]=capLimits(selectedMarket,cap);
-    const operands: {operator:string;operands:(string|number)[]}[]=[{operator:"eq",operands:["region",market.toLowerCase()]}];
+    type Op={operator:string;operands:(string|number|Op)[]};
+    const gte=(f:string,v:number):Op=>({operator:"gte",operands:[f,v]});
+    const gt=(f:string,v:number):Op=>({operator:"gt",operands:[f,v]});
+    const operands: Op[]=[{operator:"eq",operands:["region",market.toLowerCase()]}];
+    // เฉพาะตลาดหลัก: ตัดหุ้น OTC ต่างประเทศ/หุ้นบุริมสิทธิ์ ที่ข้อมูลมักผิดและซื้อจริงยาก
+    const exchanges=selectedMarket==="US"?["NMS","NGM","NCM","NYQ","ASE"]:["SET"];
+    operands.push({operator:"or",operands:exchanges.map(c=>({operator:"eq",operands:["exchange",c]}))});
     if (sector) operands.push({operator:"eq",operands:["sector",sector]});
-    if (minimum>0) operands.push({operator:"gte",operands:["intradaymarketcap",minimum]});
+    // ลดราคา/ไปต่อ: ขั้นต่ำขนาดบริษัทเพื่อสภาพคล่อง (US 2 พันล้าน USD · ไทย 5 พันล้านบาท) ถ้าไม่ได้เลือกขนาดเอง
+    const floor=(style==="dip"||style==="momentum") ? (selectedMarket==="US"?2e9:5e9) : 0;
+    const minCap=Math.max(minimum,floor);
+    if (minCap>0) operands.push(gte("intradaymarketcap",minCap));
     if (maximum!==null) operands.push({operator:"lt",operands:["intradaymarketcap",maximum]});
+    // คัดพื้นฐานที่ Yahoo ก่อน (เร็วกว่าโหลดทีละตัวมาก) แล้วค่อยตรวจละเอียดฝั่งเรา
+    let sortField="intradaymarketcap", sortType="DESC";
+    if (style==="dip") {
+      operands.push(gte("returnonequity.lasttwelvemonths",selectedMarket==="US"?10:8), gte("totalrevenues1yrgrowth.lasttwelvemonths",0), gt("peratio.lasttwelvemonths",0));
+      sortField="fiftytwowkpercentchange"; sortType="ASC";  // ลงมากสุดก่อน
+    } else if (style==="momentum") {
+      operands.push(gte("returnonequity.lasttwelvemonths",selectedMarket==="US"?15:12), gte("totalrevenues1yrgrowth.lasttwelvemonths",selectedMarket==="US"?10:5), gt("epsgrowth.lasttwelvemonths",0));
+      sortField="fiftytwowkpercentchange"; sortType="DESC";  // แรงสุดก่อน
+    }
     const auth=await getYahooAuth();
     const response=await fetch(`https://query1.finance.yahoo.com/v1/finance/screener?crumb=${encodeURIComponent(auth.crumb)}`,{
       method:"POST",headers:{"Content-Type":"application/json","User-Agent":USER_AGENT,Cookie:auth.cookie},
-      body:JSON.stringify({offset,size,sortField:"intradaymarketcap",sortType:"DESC",quoteType:"EQUITY",query:{operator:"and",operands},userId:"",userIdType:"guid"}),
+      body:JSON.stringify({offset,size,sortField,sortType,quoteType:"EQUITY",query:{operator:"and",operands},userId:"",userIdType:"guid"}),
       signal:AbortSignal.timeout(15000),cache:"no-store",
     });
     if (!response.ok) throw new Error();
