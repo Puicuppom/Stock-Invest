@@ -1559,7 +1559,9 @@ function updateProfitSummary() {
 }
 
 function updateSummary(totalValue, totalTarget) {
-    document.getElementById('total-value').textContent = fmtUsd(totalValue);
+    const totalEl = document.getElementById('total-value');
+    totalEl.textContent = fmtUsd(totalValue);
+    revealOnce(totalEl, 'hero');
     const thbEl = document.getElementById('total-value-thb');
     if (thbEl) {
         thbEl.innerHTML = thbDual(totalValue);
@@ -2155,8 +2157,26 @@ function renderAndCalculate() {
     }
 
     visible.forEach(item => appendAssetCard(list, item));
-    // เปิดหน้าครั้งแรก: แถวค่อย ๆ ไล่ขึ้นมา (ไม่เล่นซ้ำตอนรีเฟรชราคา)
-    if (!window.__rowsIn) { window.__rowsIn = true; list.classList.add('rows-in'); setTimeout(() => list.classList.remove('rows-in'), 1600); }
+    revealOnce(list, 'rows');
+}
+
+/* เปิดหน้าครั้งแรก: รอราคาครบก่อนค่อยเฟดขึ้นครั้งเดียว (กันกระพริบ 2 รอบ / ตัวเลขกระโดด) */
+const __revealT0 = Date.now();
+function pricesReady() {
+    try { return computeProfitSummary().pending === 0; } catch { return true; }
+}
+function revealOnce(el, key) {
+    if (!el || (window.__revealed ||= {})[key]) return;
+    if (pricesReady() || Date.now() - __revealT0 > 5000) {
+        window.__revealed[key] = true;
+        el.classList.remove('reveal-wait');
+        el.classList.add('reveal-in');
+        setTimeout(() => el.classList.remove('reveal-in'), 2400);
+    } else {
+        el.classList.add('reveal-wait');
+        clearTimeout(el.__revealTimer);
+        el.__revealTimer = setTimeout(() => revealOnce(el, key), 5200 - (Date.now() - __revealT0));
+    }
 }
 
 function updateAsset(index, field, val) {
