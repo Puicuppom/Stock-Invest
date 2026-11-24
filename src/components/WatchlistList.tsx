@@ -10,9 +10,6 @@ import { trendLean, LEAN_GLYPH, LEAN_SHORT } from "@/lib/trend";
 import type { WatchlistQuotes, WatchlistSignals, WatchlistSrTags } from "@/hooks/useSrWatchlistTags";
 import type { WatchlistItem } from "@/lib/types";
 
-/** ลำดับที่เห็นในรายการล่าสุด (ใช้ปัดดูหุ้นตัวถัดไปในหน้าวิเคราะห์) */
-export const watchlistOrder: { ids: string[] } = { ids: [] };
-
 const fmtPrice = (n: number) => n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 /** กราฟเส้นจิ๋ว 1 เดือน (เขียว = ขึ้น · แดง = ลง) */
 function Spark({ values }: { values?: number[] }) {
@@ -96,7 +93,6 @@ export default function WatchlistList({ items, signals, quotes, onRefresh, refre
   // หุ้นในพอร์ตขึ้นก่อนเสมอ (ในกลุ่มยังเรียงตามที่เลือก)
   const heldSet = new Set(held);
   if (heldSet.size) sorted.sort((a, b) => Number(heldSet.has(watchlistId(b))) - Number(heldSet.has(watchlistId(a))));
-  watchlistOrder.ids = sorted.map(watchlistId);
   const shown = q ? sorted.filter(it => it.symbol.toUpperCase().includes(q) || (signals[watchlistId(it)]?.name ?? "").toUpperCase().includes(q)) : sorted;
   return (
     <section className="wl">

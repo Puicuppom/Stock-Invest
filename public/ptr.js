@@ -95,37 +95,5 @@
   };
   document.addEventListener('touchend', end, { passive: true });
 
-  /* ── ปัดซ้าย/ขวา = เปลี่ยนแท็บหลัก (ทำงานทั้งหน้าหลักและในกรอบหน้าปรับพอร์ต) ── */
-  var SW_SKIP = '.hero, .wl-row, .asset-card, .cr-swipe-wrap, .chart-shell, .overlay.open, .sheet, input, textarea, select, [data-no-swipe], .app-navigation';
-  var sw = null;
-  var scrollsX = function (n) {
-    for (; n && n !== document.body && n.nodeType === 1; n = n.parentElement) {
-      var ox = getComputedStyle(n).overflowX;
-      if ((ox === 'auto' || ox === 'scroll') && n.scrollWidth > n.clientWidth + 2) return true;
-    }
-    return false;
-  };
-  document.addEventListener('touchstart', function (e) {
-    sw = null;
-    if (e.touches.length !== 1) return;
-    var t = e.target;
-    if (t.closest && t.closest(SW_SKIP)) return;
-    if (scrollsX(t)) return;
-    sw = { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now() };
-  }, { passive: true });
-  document.addEventListener('touchend', function (e) {
-    if (!sw || pulling || busy) { sw = null; return; }
-    var p = e.changedTouches[0], dx = p.clientX - sw.x, dy = p.clientY - sw.y, dt = Date.now() - sw.t;
-    sw = null;
-    if (Math.abs(dx) < 80 || Math.abs(dx) < Math.abs(dy) * 2 || dt > 700) return;
-    var sel = window.getSelection && String(window.getSelection());
-    if (sel) return;
-    // หน้าวิเคราะห์หุ้น: ปัด = หุ้นตัวถัดไป (เปลี่ยนแท็บหลักใช้แถบล่าง)
-    if (window.__swipeStock && window.__swipeStock(dx < 0 ? 'left' : 'right')) return;
-    var go = null;
-    try { go = (window.top && window.top.__swipeNav) || window.__swipeNav; } catch (_) { go = window.__swipeNav; }
-    try { navigator.vibrate && navigator.vibrate(8); } catch (_) { /* ignore */ }
-    if (go) go(dx < 0 ? 'left' : 'right');
-  }, { passive: true });
-  document.addEventListener('touchcancel', function () { pulling = false; hide(); }, { passive: true });
+  /* ปัดซ้าย/ขวา: ใช้เฉพาะเปลี่ยนพอร์ต (บนการ์ดมูลค่าพอร์ต) · เปลี่ยนแท็บใช้กดแถบล่าง */
 })();
