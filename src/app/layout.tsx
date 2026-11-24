@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "../../public/design-system.css";
 import "./globals.css";
 import RegisterSW from "@/components/RegisterSW";
+import Script from "next/script";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -44,6 +45,7 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased ui2`}>
         {children}
         <RegisterSW />
+        <Script src="/ptr.js" strategy="afterInteractive" />
       </body>
     </html>
   );

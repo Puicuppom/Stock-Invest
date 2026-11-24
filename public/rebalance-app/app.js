@@ -550,7 +550,7 @@ function showToast(msg, kind = '') {
     el.textContent = msg;
     el.className = 'toast show' + (kind ? ' ' + kind : '');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => { el.className = 'toast'; }, 2600);
+    toastTimer = setTimeout(() => { el.className = 'toast'; }, kind === 'error' ? 6500 : 2600);
 }
 
 async function refreshAll() {
@@ -3704,9 +3704,13 @@ function b64ToBytes(b64) {
     const s = atob((b64 + '='.repeat((4 - b64.length % 4) % 4)).replace(/-/g, '+').replace(/_/g, '/'));
     return Uint8Array.from(s, c => c.charCodeAt(0));
 }
+/* ทำงานแจ้งเตือนผ่านหน้าหลัก (ไม่ใช่ในกรอบ iframe) — Android บางเครื่องไม่เด้งขออนุญาตจากใน iframe ทำให้ค้าง */
+const PUSH_WIN = (() => { try { return window.top && window.top.navigator ? window.top : window; } catch { return window; } })();
+const withTimeout = (p, ms, label) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(label)), ms))]);
 async function pushRegistration() {
-    const reg = await navigator.serviceWorker.register('/sw.js');
-    await navigator.serviceWorker.ready;
+    const sw = PUSH_WIN.navigator.serviceWorker;
+    const reg = await withTimeout(sw.register('/sw.js'), 15000, 'ลงทะเบียน service worker ไม่ทัน');
+    await withTimeout(sw.ready, 15000, 'service worker ยังไม่พร้อม ลองปิดแอปแล้วเปิดใหม่');
     return reg;
 }
 function readPushPrefs() {
@@ -3736,20 +3740,20 @@ function renderPush(state) {
     opts.hidden = !on;
     if (testRow) testRow.hidden = !on;
     if (logRow) logRow.hidden = !on;
-    if (!(isIOS() && !isStandalone()) && Notification.permission !== 'denied') hint.textContent = on ? 'เปิดอยู่บนเครื่องนี้' : 'ปิดอยู่ · แตะสวิตช์เพื่อเปิด';
+    if (!(isIOS() && !isStandalone()) && PUSH_WIN.Notification.permission !== 'denied') hint.textContent = on ? 'เปิดอยู่บนเครื่องนี้' : 'ปิดอยู่ · แตะสวิตช์เพื่อเปิด';
     if (state?.prefs) document.querySelectorAll('#push-opts input[data-pref]').forEach(i => { i.checked = state.prefs[i.dataset.pref] !== false; });
-    if (Notification.permission === 'denied') hint.textContent = 'ถูกบล็อกไว้ · เปิดสิทธิ์แจ้งเตือนของเว็บนี้ในตั้งค่าเบราว์เซอร์';
+    if (PUSH_WIN.Notification.permission === 'denied') hint.textContent = 'ถูกบล็อกไว้ · เปิดสิทธิ์แจ้งเตือนของเว็บนี้ในตั้งค่าเบราว์เซอร์';
 }
 async function refreshPushState() {
     if (!pushSupported()) return renderPush(null);
     try {
-        const reg = await navigator.serviceWorker.getRegistration('/');
+        const reg = await PUSH_WIN.navigator.serviceWorker.getRegistration('/');
         const sub = reg && await reg.pushManager.getSubscription();
         if (!sub) return renderPush({ subscribed: false });
         const res = await fetch('/api/push/subscribe?check=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ endpoint: sub.endpoint }) });
         const st = res.ok ? await res.json() : { subscribed: false };
         // เคยเปิดไว้ แต่เซิร์ฟเวอร์ลืม (การสมัครหมดอายุ/ถูกล้าง) → สมัครใหม่ให้เองเงียบ ๆ
-        if (!st.subscribed && Notification.permission === 'granted' && localStorage.getItem('pushWanted') !== '0') {
+        if (!st.subscribed && PUSH_WIN.Notification.permission === 'granted' && localStorage.getItem('pushWanted') !== '0') {
             let prefs = PUSH_PREFS_DEFAULT;
             try { prefs = { ...PUSH_PREFS_DEFAULT, ...JSON.parse(localStorage.getItem('pushPrefs') || '{}') }; } catch { /* ignore */ }
             const r2 = await fetch('/api/push/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscription: sub.toJSON(), prefs }) });
@@ -3772,11 +3776,11 @@ async function togglePush() {
             showToast('ปิดแจ้งเตือนแล้ว');
             return renderPush({ subscribed: false });
         }
-        const perm = await Notification.requestPermission();
-        if (perm !== 'granted') { showToast('ยังไม่ได้อนุญาตแจ้งเตือน', 'error'); return renderPush({ subscribed: false }); }
+        const perm = await withTimeout(PUSH_WIN.Notification.requestPermission(), 30000, 'ไม่มีหน้าต่างขออนุญาตเด้งขึ้นมา · ดูไอคอนกระดิ่งที่แถบที่อยู่ หรือเปิดสิทธิ์แจ้งเตือนในตั้งค่าแอป');
+        if (perm !== 'granted') { showToast(perm === 'denied' ? 'ถูกบล็อกไว้ · เปิดสิทธิ์แจ้งเตือนในตั้งค่าเบราว์เซอร์/แอป' : 'ยังไม่ได้อนุญาตแจ้งเตือน', 'error'); return renderPush({ subscribed: false }); }
         const { publicKey } = await (await fetch('/api/push/key')).json();
         if (!publicKey) throw new Error('no key');
-        const sub = existing || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(publicKey) });
+        const sub = existing || await withTimeout(reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(publicKey) }), 20000, 'สมัครกับบริการแจ้งเตือนของเครื่องไม่ทัน');
         const res = await fetch('/api/push/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscription: sub.toJSON(), prefs: readPushPrefs() }) });
         if (!res.ok) throw new Error('save');
         try { localStorage.setItem('pushWanted', '1'); localStorage.setItem('pushPrefs', JSON.stringify(readPushPrefs())); } catch { /* ignore */ }
@@ -3791,7 +3795,7 @@ async function togglePush() {
 }
 async function savePushPrefs() {
     try {
-        const reg = await navigator.serviceWorker.getRegistration('/');
+        const reg = await PUSH_WIN.navigator.serviceWorker.getRegistration('/');
         const sub = reg && await reg.pushManager.getSubscription();
         try { localStorage.setItem('pushPrefs', JSON.stringify(readPushPrefs())); } catch { /* ignore */ }
         if (!sub) return;
