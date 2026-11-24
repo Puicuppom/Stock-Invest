@@ -104,7 +104,7 @@ export default function WatchlistList({ items, signals, quotes, onRefresh, refre
             <option value="up">บวกมากสุด</option>
             <option value="down">ลบมากสุด</option>
           </select>
-          <button type="button" className={`wl-refresh${refreshing ? " spin" : ""}`} onClick={onRefresh} disabled={refreshing} aria-label="อัปเดตราคา" title="อัปเดตราคา">↻</button>
+          <button type="button" className={`wl-refresh${refreshing ? " spin" : ""}`} onClick={onRefresh} disabled={refreshing} aria-label="อัปเดตราคา" title="อัปเดตราคา"><svg className="rf-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66" /><path d="M20 4v5h-5" /></svg></button>
         </div>
       </div>
       {/* เวลาอัปเดตแจ้งเป็นป๊อปอัปตอนดึงรีเฟรชแทน · ค้างบนหน้าเฉพาะตอนซิงค์มีปัญหา */}

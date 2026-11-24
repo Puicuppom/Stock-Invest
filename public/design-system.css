@@ -139,3 +139,23 @@ html body .wl-search-mkt button[aria-pressed="true"], html body.rb2 .cur-seg but
   background: var(--lucky-grad) !important; color: #2a0f05 !important;
   box-shadow: 0 4px 12px -4px rgba(240, 149, 74, .65) !important;
 }
+
+/* ปุ่มรีเฟรช: เด่นและเหมือนกันทุกหน้า (ขอบเรืองทองแดง · ไอคอนหมุนตอนโหลด) */
+@keyframes rf-spin { to { transform: rotate(360deg); } }
+html body .wl-refresh, html body .dash-refresh, html body.rb2 #btn-refresh {
+  width: 40px !important; height: 40px !important; min-height: 0 !important; padding: 0 !important;
+  display: grid !important; place-items: center; flex: none; border-radius: 12px !important; cursor: pointer;
+  color: #ffd9b8 !important; opacity: 1 !important; animation: none !important;
+  background: linear-gradient(135deg, rgba(248, 183, 122, .24), rgba(236, 111, 154, .14)) !important;
+  border: 1px solid rgba(240, 149, 74, .6) !important;
+  box-shadow: 0 6px 16px -8px rgba(240, 149, 74, .9), inset 0 1px 0 rgba(255, 255, 255, .07) !important;
+  transition: transform .15s var(--ease-out), box-shadow .25s, background .25s !important;
+}
+html body .wl-refresh:hover, html body .dash-refresh:hover, html body.rb2 #btn-refresh:hover {
+  background: linear-gradient(135deg, rgba(248, 183, 122, .34), rgba(236, 111, 154, .22)) !important;
+  box-shadow: 0 8px 20px -8px rgba(236, 111, 154, .9), inset 0 1px 0 rgba(255, 255, 255, .1) !important;
+}
+html body .wl-refresh:active, html body .dash-refresh:active, html body.rb2 #btn-refresh:active { transform: scale(.93); }
+.rf-ico { width: 20px; height: 20px; display: block; transition: transform .4s var(--ease-out); }
+html body .wl-refresh:hover .rf-ico, html body .dash-refresh:hover .rf-ico, html body.rb2 #btn-refresh:hover .rf-ico { transform: rotate(60deg); }
+html body .wl-refresh.spin .rf-ico, html body .dash-refresh.is-loading .rf-ico, html body.rb2 #btn-refresh.spinning .rf-ico { animation: rf-spin .8s linear infinite; }
