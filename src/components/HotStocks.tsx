@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import AppNavigation from "./AppNavigation";
 import StockLogo from "./StockLogo";
+import { StarIcon } from "./Icons";
 import { useWatchlist } from "@/hooks/useWatchlist";
 import type { HotSection } from "@/app/api/hot/route";
 
@@ -65,7 +66,7 @@ export default function HotStocks() {
                   <span className="hot-name"><b>{it.symbol}</b><small>{it.name}</small></span>
                   <span className="hot-price"><b>{market === "TH" ? "฿" : "$"}{fmt(it.price)}</b><em className={up ? "up" : "down"}>{up ? "+" : ""}{it.changePercent.toFixed(2)}%</em></span>
                 </a>
-                <button type="button" className={`hot-star${saved ? " on" : ""}`} aria-pressed={saved} aria-label={saved ? "เอาออกจาก Watchlist" : "เพิ่ม Watchlist"} onClick={() => toggle(it.symbol)}>{saved ? "★" : "☆"}</button>
+                <button type="button" className={`star-btn hot-star${saved ? " on" : ""}`} aria-pressed={saved} aria-label={saved ? "เอาออกจาก Watchlist" : "เพิ่ม Watchlist"} onClick={() => toggle(it.symbol)}><StarIcon filled={saved} size={20} /></button>
                 {it.news && <a className="hot-news" href={it.news.link} target="_blank" rel="noopener noreferrer" title={it.news.title} lang={it.news.titleTh ? "th" : "en"}>{it.news.titleTh || it.news.title}<small> · {ago(it.news.time)}</small></a>}
               </li>
             );
