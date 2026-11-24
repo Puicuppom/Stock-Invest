@@ -291,7 +291,27 @@ function sortPortfolioByGroup() {
     });
 }
 
-let priceCache = {};
+/* ราคาล่าสุดจำไว้ในเครื่อง → เปิดหน้าแล้วเห็นตัวเลขทันที แล้วค่อยอัปเดตเป็นราคาสด */
+const PRICE_CACHE_KEY = 'priceCache:v1';
+let priceCache = (() => {
+    try {
+        const raw = JSON.parse(localStorage.getItem(PRICE_CACHE_KEY) || '{}') || {};
+        const out = {}, old = Date.now() - 7 * 864e5;
+        for (const [k, v] of Object.entries(raw)) if (v && v.price > 0 && (v.at || 0) > old) out[k] = { ...v, error: false };
+        return out;
+    } catch { return {}; }
+})();
+let priceSaveTimer = 0;
+function savePriceCache() {
+    clearTimeout(priceSaveTimer);
+    priceSaveTimer = setTimeout(() => {
+        try {
+            const out = {};
+            for (const [k, v] of Object.entries(priceCache)) if (v && v.price > 0) out[k] = v;
+            localStorage.setItem(PRICE_CACHE_KEY, JSON.stringify(out));
+        } catch { /* เต็ม/ปิดไว้ → ข้าม */ }
+    }, 400);
+}
 const PLAN_CACHE_KEY = 'planBucketCache:v1';
 let planCache = (() => { try { return JSON.parse(localStorage.getItem(PLAN_CACHE_KEY) || '{}') || {}; } catch { return {}; } })();
 let priceRefetch = false;
@@ -384,6 +404,7 @@ async function fetchPrices(fullRender = false, force = false) {
 
     if (IS_FUND_PF) {
         await fetchFundNavs(symbols);
+        savePriceCache();
         priceFetching = false;
         await fxPromise;
         priceRefetch = false;
@@ -429,6 +450,7 @@ async function fetchPrices(fullRender = false, force = false) {
     priceFetching = false;
     // ราคาจากเส้นทางวิเคราะห์อาจแคชไว้ ~15 นาที → ทับด้วยราคาสดทันที
     await fetchLiveQuotes(false);
+    savePriceCache();
     syncAssetValues();
     await fxPromise;
 
@@ -482,7 +504,7 @@ async function fetchLiveQuotes(render = true) {
             priceCache[s] = { ...(priceCache[s] || {}), price: q.price, ext: q.ext || null, changePercent: Number.isFinite(q.changePercent) ? q.changePercent : null, marketState: q.marketState || null, at: Date.now(), error: false };
             n++;
         }
-        if (n) lastLiveAt = Date.now();
+        if (n) { lastLiveAt = Date.now(); savePriceCache(); }
     } catch {
         /* ใช้ราคาเดิม */
     } finally {
@@ -933,6 +955,7 @@ async function loadUsdThbRate() {
         const data = await res.json();
         if (res.ok && data.price > 0) {
             usdThbMid = data.price;
+            try { localStorage.setItem('fxMid:v1', String(data.price)); } catch { /* ignore */ }
             applyFxMode();
             renderFxRate();
             if (document.querySelector('.asset-card')) {
@@ -2063,19 +2086,19 @@ function logoImg(asset) {
     const sym = String(asset.name || '').toUpperCase().replace(/[^A-Z0-9.\-]/g, '');
     if (!sym) return '';
     const ok = logoSeenSet().has(sym) ? ' ok' : '';
-    return `<img class="asset-logo${ok}" src="https://financialmodelingprep.com/image-stock/${encodeURIComponent(sym)}.png" alt="" loading="lazy" referrerpolicy="no-referrer" onload="this.classList.add('ok');logoMarkSeen('${sym}')" onerror="this.remove()">`;
+    return `<img class="asset-logo${ok}" src="/api/logo/${encodeURIComponent(sym)}" alt="" loading="lazy" referrerpolicy="no-referrer" onload="this.classList.add('ok');logoMarkSeen('${sym}')" onerror="this.remove()">`;
 }
 /* จำโลโก้ที่เคยโหลดแล้ว (ใช้ร่วมกับหน้าวิเคราะห์) → ครั้งต่อไปโชว์ทันที ไม่เห็นวงส้มแวบ */
 let _logoSeen = null;
 function logoSeenSet() {
-    if (!_logoSeen) { try { _logoSeen = new Set(JSON.parse(localStorage.getItem('logoSeen') || '[]')); } catch { _logoSeen = new Set(); } }
+    if (!_logoSeen) { try { _logoSeen = new Set(JSON.parse(localStorage.getItem('logoSeen2') || '[]')); } catch { _logoSeen = new Set(); } }
     return _logoSeen;
 }
 function logoMarkSeen(sym) {
     const s = logoSeenSet();
     if (s.has(sym)) return;
     s.add(sym);
-    try { localStorage.setItem('logoSeen', JSON.stringify([...s].slice(-400))); } catch { /* ignore */ }
+    try { localStorage.setItem('logoSeen2', JSON.stringify([...s].slice(-400))); } catch { /* ignore */ }
 }
 
 /* แถวกระชับ: แตะเพื่อเปิดรายละเอียด (จำว่าตัวไหนเปิดอยู่ระหว่างคำนวณใหม่) */
@@ -3081,6 +3104,10 @@ document.addEventListener('visibilitychange', () => {
 });
 
 async function bootstrap() {
+    // เรทเงินบาทล่าสุดที่จำไว้ → ยอดบาทขึ้นทันทีระหว่างรอเรทสด
+    let fxSaved = 0;
+    try { fxSaved = Number(localStorage.getItem('fxMid:v1')); } catch { /* ignore */ }
+    if (!(usdThbMid > 0) && fxSaved > 0) { usdThbMid = fxSaved; applyFxMode(); }
     updateCurrencyButton();
     updateFxModeButtons();
     renderPortfolioSwitcher();

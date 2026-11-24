@@ -2,7 +2,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 /* จำว่าโลโก้ตัวไหนเคยโหลดสำเร็จแล้ว (แชร์กับหน้าปรับพอร์ต) → ครั้งต่อไปโชว์ทันที ไม่ต้องเฟด */
-const KEY = "logoSeen";
+const KEY = "logoSeen2";
 let seen: Set<string> | null = null;
 function getSeen(): Set<string> {
   if (!seen) {
@@ -37,7 +37,7 @@ export default function StockLogo({ symbol, size = 28, className = "" }: { symbo
     <img
       ref={ref}
       className={`stock-logo ${className}${loaded ? " is-loaded" : ""}`}
-      src={`https://financialmodelingprep.com/image-stock/${encodeURIComponent(sym)}.png`}
+      src={`/api/logo/${encodeURIComponent(sym)}`}
       alt=""
       width={size}
       height={size}

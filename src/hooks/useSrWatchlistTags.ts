@@ -78,6 +78,14 @@ async function fetchStock(item: WatchlistItem): Promise<StockData | null> {
 export type WatchlistQuotes = Record<string, LiveQuote>;
 
 const QUOTE_POLL_MS = 30 * 1000;
+
+const CACHE_KEYS = { quotes: "wlQuotes:v1", signals: "wlSignals:v1", tags: "wlTags:v1" } as const;
+const saveTimers: Record<string, number> = {};
+function saveLater(key: string, value: object) {
+  if (!Object.keys(value).length) return;
+  window.clearTimeout(saveTimers[key]);
+  saveTimers[key] = window.setTimeout(() => { try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* เต็ม → ข้าม */ } }, 800);
+}
 const CONCURRENCY = 4;
 
 async function fetchQuotes(items: WatchlistItem[]): Promise<WatchlistQuotes | null> {
@@ -108,9 +116,22 @@ export function useSrWatchlistTags({
   const [updatedAt, setUpdatedAt] = useState<number | null>(null);
   const [tick, setTick] = useState(0);
 
+  // เปิดหน้า: ใช้ราคา/สัญญาณล่าสุดที่จำไว้ในเครื่องก่อน (เห็นตัวเลขทันที) แล้วค่อยอัปเดตเป็นของสด
+  useEffect(() => {
+    const read = <T,>(k: string): T | null => { try { return JSON.parse(localStorage.getItem(k) || "null") as T | null; } catch { return null; } };
+    const q = read<WatchlistQuotes>(CACHE_KEYS.quotes), sg = read<WatchlistSignals>(CACHE_KEYS.signals), tg = read<WatchlistSrTags>(CACHE_KEYS.tags);
+    if (q) setQuotes(prev => ({ ...q, ...prev }));
+    if (sg) setSignals(prev => ({ ...sg, ...prev }));
+    if (tg) setTags(prev => ({ ...tg, ...prev }));
+  }, []);
+  useEffect(() => { saveLater(CACHE_KEYS.quotes, quotes); }, [quotes]);
+  useEffect(() => { saveLater(CACHE_KEYS.signals, signals); }, [signals]);
+  useEffect(() => { saveLater(CACHE_KEYS.tags, tags); }, [tags]);
+
   // ราคาเร็ว
   useEffect(() => {
-    if (!loaded || items.length === 0) { setQuotes({}); return; }
+    if (!loaded) return;
+    if (items.length === 0) { setQuotes({}); return; }
     let alive = true;
     const run = async () => {
       if (document.visibilityState !== "visible") return;
@@ -129,7 +150,8 @@ export function useSrWatchlistTags({
 
   // สัญญาณจากการวิเคราะห์เต็ม
   useEffect(() => {
-    if (!loaded || items.length === 0) {
+    if (!loaded) return;
+    if (items.length === 0) {
       setTags({});
       setSignals({});
       return;

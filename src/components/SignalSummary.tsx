@@ -43,7 +43,8 @@ export default function SignalSummary(props: Props) {
   const vol = analyzeVolume(data);
   const dip = analyzeDip(data);
   const dipSelected = dip?.checks.find(c => c.label === openDip) ?? null;
-  const eventWarn = eventBadges(data.events, data.market).filter(b => b.tone === "warn" || (b.kind === "earnings" && b.days < 0));
+  // XD แสดงที่ป้ายหัวหุ้นแล้ว → ที่นี่เตือนเฉพาะช่วงงบ (ราคาเหวี่ยง)
+  const eventWarn = eventBadges(data.events, data.market).filter(b => b.kind === "earnings" && (b.tone === "warn" || b.days < 0));
   const volMax = vol ? Math.max(...vol.bars.map(b => b.volume), vol.avg20) : 0;
   const fv = data.fairValue;
   // ใช้เป้านักวิเคราะห์ (เฉลี่ย) แทนราคายุติธรรม
