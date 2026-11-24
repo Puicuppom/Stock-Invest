@@ -50,11 +50,11 @@
   --border: #334155;
   --text: #f8fafc;
   --muted: #94a3b8;
-  --accent: #38bdf8;
-  --accent-2: #818cf8;
+  --accent: #e6b450;
+  --accent-2: #f5d48a;
   --danger: #f87171;
   --success: #4ade80;
-  --warning: #fbbf24;
+  --warning: #fb923c;
   /* compact type scale */
   --t-label: 0.625rem;
   --t-meta: 0.6875rem;
@@ -675,9 +675,9 @@ select {
 }
 
 .market-quick-us {
-  border-color: #38bdf8;
-  background: #0c4a6e;
-  box-shadow: 0 0 0 1px #38bdf8;
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface));
+  box-shadow: 0 0 0 1px var(--accent);
 }
 
 .market-quick-bkk {
@@ -705,7 +705,7 @@ select {
   font-size: 0.78rem;
   font-weight: 700;
   font-family: var(--font-geist-mono), ui-monospace, monospace;
-  color: #38bdf8;
+  color: var(--accent);
 }
 
 .field-label {
@@ -2017,7 +2017,7 @@ body.ui2 .fab { position: fixed; right: max(12px, calc((100vw - 720px) / 2 + 16p
 /* กระเป๋า = หุ้นที่มีในพอร์ต (มุมซ้ายบนของโลโก้ · ไม่ใช้ดาวเพราะซ้ำกับปุ่ม Watchlist) */
 .wl-logo:has(.wl-star) { overflow: visible; }
 .wl-logo:has(.wl-star) .wl-logo-img, .wl-logo:has(.wl-star) .wl-logo-text { border-radius: 50%; overflow: hidden; }
-.wl-star { position: absolute; top: -5px; left: -5px; width: 18px; height: 18px; display: grid; place-items: center; border-radius: 50%; background: var(--accent); color: #fff; font-size: 11px; font-style: normal; line-height: 1; box-shadow: 0 0 0 2px var(--bg); z-index: 1; }
+.wl-star { position: absolute; top: -5px; left: -5px; width: 18px; height: 18px; display: grid; place-items: center; border-radius: 50%; background: var(--accent); color: #2b1d00; font-size: 11px; font-style: normal; line-height: 1; box-shadow: 0 0 0 2px var(--bg); z-index: 1; }
 
 /* ── หุ้นเด่นวันนี้ ── */
 .hot-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 6px 0 10px; }

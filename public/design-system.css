@@ -8,11 +8,13 @@
   --ui-border: #334155;
   --ui-text: #f8fafc;
   --ui-muted: #94a3b8;
-  --ui-accent: #38bdf8;
-  --ui-selected: #0c2940;
+  /* ฮวงจุ้ย: เจ้าของเกิดปีมะแม 2534 ธาตุทอง (辛未) → สีทองเสริมธาตุตัวเอง · เลี่ยงสีฟ้า (ธาตุน้ำ ดึงพลังทอง)
+     เกิดวันพุธ → เขียวเป็นสีประจำวัน (ใช้กับกำไร) · ไม่ใช้สีชมพู (กาลกิณีวันพุธ) */
+  --ui-accent: #e6b450;
+  --ui-selected: #2b2410;
   --ui-success: #4ade80;
   --ui-danger: #f87171;
-  --ui-warning: #fbbf24;
+  --ui-warning: #fb923c;
   --ui-radius: 14px;
   --ui-control-radius: 10px;
   --ui-font: "IBM Plex Sans Thai", -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans Thai", sans-serif;

@@ -2,7 +2,15 @@ import { NextResponse } from "next/server";
 import { isCash, loadPortfolios } from "@/lib/portfolio-summary";
 
 /** หุ้นที่ถืออยู่ในหน้าปรับพอร์ต (เฉพาะชื่อ ไม่ส่งจำนวน/ต้นทุน) → ให้ Watchlist ดันขึ้นบนสุด */
+// จำไว้ 2 นาทีต่อเครื่องเซิร์ฟเวอร์ ไม่ต้องอ่านพอร์ตจากคลาวด์ทุกครั้งที่ Watchlist ซิงค์ (ทุก 30 วิ)
+let heldCache: { at: number; v: { symbol: string; market: string }[] } | null = null;
 async function heldSymbols() {
+  if (heldCache && Date.now() - heldCache.at < 120_000) return heldCache.v;
+  const v = await heldSymbolsFresh();
+  heldCache = { at: Date.now(), v };
+  return v;
+}
+async function heldSymbolsFresh() {
   try {
     const { pfs } = await loadPortfolios();
     const out = new Set<string>();

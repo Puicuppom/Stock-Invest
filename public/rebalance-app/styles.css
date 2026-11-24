@@ -1410,7 +1410,7 @@ select option, select optgroup { background-color: var(--ui-surface); color: var
 
 /* FAB วงกลม "+" มุมขวาล่าง เหมือนหน้า Watchlist */
 .fab-wrap { left: auto; right: calc(16px + env(safe-area-inset-right, 0px)); transform: none; width: auto; max-width: none; padding: 0; z-index: 50; }
-.fab { width: 56px; height: 56px; padding: 0; border-radius: 999px; background: linear-gradient(135deg, #38bdf8, #818cf8); color: #fff; font-size: 32px; font-weight: 400; line-height: 1; box-shadow: 0 10px 30px rgba(56,189,248,.35); }
+.fab { width: 56px; height: 56px; padding: 0; border-radius: 999px; background: linear-gradient(135deg, #f5d48a, #e6b450); color: #fff; font-size: 32px; font-weight: 400; line-height: 1; box-shadow: 0 10px 30px rgba(56,189,248,.35); }
 
 /* ปุ่มย้ายพอร์ต (ปัดซ้าย) + แผ่นเลือกพอร์ตปลายทาง */
 .row-actions .ra-move { background: color-mix(in srgb, #a78bfa 80%, #000); }
