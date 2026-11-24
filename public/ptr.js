@@ -3,7 +3,7 @@
 (function () {
   if (window.__ptr) return;
   window.__ptr = true;
-  if (!('ontouchstart' in window)) return;
+  var TOUCH = 'ontouchstart' in window;
 
   var TARGETS = ['.dash-refresh', '.wl-refresh', '#btn-refresh', '[data-ptr-refresh]'];
   var BUSY = '.spin, .spinning, .is-loading, [disabled], [aria-busy="true"]';
@@ -21,7 +21,6 @@
     '.ptr.ready svg{color:#ec6f9a}' +
     '.ptr.load svg{animation:ptr-spin .8s linear infinite}' +
     '@keyframes ptr-spin{to{transform:rotate(360deg)}}' +
-    '@media (hover:none) and (pointer:coarse){.dash-refresh,.wl-refresh,#btn-refresh{display:none!important}}' +
     '.ptr-toast{position:fixed;left:50%;top:calc(64px + env(safe-area-inset-top,0px));z-index:2001;transform:translate(-50%,-8px);max-width:calc(100% - 32px);opacity:0;pointer-events:none;' +
     'padding:10px 16px;border-radius:999px;font-size:13px;font-weight:600;color:#ffd9b8;white-space:nowrap;' +
     'background:color-mix(in srgb,var(--ui-surface,#15111f) 92%,transparent);border:1px solid rgba(240,149,74,.45);box-shadow:0 10px 24px -8px rgba(0,0,0,.7);' +
@@ -82,7 +81,7 @@
     svg.style.transform = '';
   };
 
-  document.addEventListener('touchstart', function (e) {
+  if (TOUCH) document.addEventListener('touchstart', function (e) {
     touchEl = e.target;
     if (busy || e.touches.length !== 1 || !top()) return;
     if (e.target.closest && e.target.closest(SKIP)) return;
@@ -90,7 +89,7 @@
     dist = 0; pulling = true; decided = false;
   }, { passive: true });
 
-  document.addEventListener('touchmove', function (e) {
+  if (TOUCH) document.addEventListener('touchmove', function (e) {
     if (!pulling) return;
     var dy = e.touches[0].clientY - startY, dx = e.touches[0].clientX - startX;
     if (!decided) {
@@ -127,7 +126,21 @@
     };
     setTimeout(wait, 150);
   };
-  document.addEventListener('touchend', end, { passive: true });
+  if (TOUCH) document.addEventListener('touchend', end, { passive: true });
+  if (TOUCH) document.addEventListener('touchcancel', function () { pulling = false; hide(); }, { passive: true });
+
+  // กดปุ่ม ↻ เอง (Watchlist / หน้าหุ้น) → แจ้งผลเป็นป๊อปอัปเหมือนดึงรีเฟรช · หน้าปรับพอร์ตแจ้งเองอยู่แล้ว
+  document.addEventListener('click', function (e) {
+    if (!e.isTrusted || busy) return;
+    var b = e.target.closest && e.target.closest('.dash-refresh, .wl-refresh');
+    if (!b) return;
+    var t0 = Date.now();
+    var wait = function () {
+      if ((b.isConnected && b.matches(BUSY) && Date.now() - t0 < 15000) || Date.now() - t0 < 600) return setTimeout(wait, 120);
+      toast('✓ อัปเดตแล้ว · ' + hhmm());
+    };
+    setTimeout(wait, 150);
+  }, true);
 
   /* ปัดซ้าย/ขวา: ใช้เฉพาะเปลี่ยนพอร์ต (บนการ์ดมูลค่าพอร์ต) · เปลี่ยนแท็บใช้กดแถบล่าง */
 })();
