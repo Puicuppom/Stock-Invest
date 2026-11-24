@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
       const q = bySym.get(x.resolved.toUpperCase());
       if (q) out[x.id] = q;
     }
-    return NextResponse.json({ quotes: out, at: Date.now() }, { headers: { "Cache-Control": "public, s-maxage=4, stale-while-revalidate=8" } });
+    return NextResponse.json({ quotes: out, at: Date.now() }, { headers: { "Cache-Control": "public, s-maxage=4" } });
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "quote failed" }, { status: 502 });
   }
