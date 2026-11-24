@@ -122,3 +122,20 @@ html body [role="tab"][aria-selected="true"] {
   background: linear-gradient(180deg, rgba(240, 149, 74, .20), rgba(236, 111, 154, .08)) !important;
   box-shadow: inset 0 0 0 1px rgba(240, 149, 74, .38) !important;
 }
+
+/* ปุ่มสลับ (US/ไทย · USD/THB · Dime/ตลาด): หน้าตาเดียวกันทุกหน้า */
+html body .wl-search-mkt, html body.rb2 .cur-seg {
+  display: inline-flex !important; align-items: center; flex: none; gap: 2px !important; padding: 3px !important;
+  border-radius: 999px !important; background: color-mix(in srgb, var(--ui-text) 6%, transparent) !important;
+  border: 1px solid var(--ui-border);
+}
+html body .wl-search-mkt button, html body.rb2 .cur-seg button {
+  height: 28px !important; min-width: 46px; padding: 0 12px !important; border: 0 !important; border-radius: 999px !important;
+  background: transparent !important; color: var(--ui-muted) !important; box-shadow: none !important;
+  font: inherit; font-size: 12px !important; font-weight: 700 !important; letter-spacing: .2px; cursor: pointer;
+  transition: background .25s var(--ease-out), color .2s, box-shadow .25s;
+}
+html body .wl-search-mkt button[aria-pressed="true"], html body.rb2 .cur-seg button.on {
+  background: var(--lucky-grad) !important; color: #2a0f05 !important;
+  box-shadow: 0 4px 12px -4px rgba(240, 149, 74, .65) !important;
+}

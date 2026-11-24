@@ -21,7 +21,12 @@
     '.ptr.ready svg{color:#ec6f9a}' +
     '.ptr.load svg{animation:ptr-spin .8s linear infinite}' +
     '@keyframes ptr-spin{to{transform:rotate(360deg)}}' +
-    '@media (hover:none) and (pointer:coarse){.dash-refresh,.wl-refresh,#btn-refresh{display:none!important}}';
+    '@media (hover:none) and (pointer:coarse){.dash-refresh,.wl-refresh,#btn-refresh{display:none!important}}' +
+    '.ptr-toast{position:fixed;left:50%;top:calc(64px + env(safe-area-inset-top,0px));z-index:2001;transform:translate(-50%,-8px);max-width:calc(100% - 32px);opacity:0;pointer-events:none;' +
+    'padding:10px 16px;border-radius:999px;font-size:13px;font-weight:600;color:#ffd9b8;white-space:nowrap;' +
+    'background:color-mix(in srgb,var(--ui-surface,#15111f) 92%,transparent);border:1px solid rgba(240,149,74,.45);box-shadow:0 10px 24px -8px rgba(0,0,0,.7);' +
+    '-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:opacity .25s,transform .3s cubic-bezier(.16,1,.3,1)}' +
+    '.ptr-toast.show{opacity:1;transform:translate(-50%,0)}';
   document.head.appendChild(css);
 
   var el = document.createElement('div');
@@ -31,8 +36,34 @@
   document.body.appendChild(el);
   var svg = el.firstChild;
 
+  var toastEl = null, toastT = 0;
+  var toast = function (msg) {
+    if (!toastEl) { toastEl = document.createElement('div'); toastEl.className = 'ptr-toast'; toastEl.setAttribute('role', 'status'); document.body.appendChild(toastEl); }
+    toastEl.textContent = msg;
+    requestAnimationFrame(function () { toastEl.classList.add('show'); });
+    clearTimeout(toastT);
+    toastT = setTimeout(function () { toastEl.classList.remove('show'); }, 2200);
+  };
+  var hhmm = function () { return new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }); };
+  try { if (sessionStorage.getItem('ptrToast')) { sessionStorage.removeItem('ptrToast'); setTimeout(function () { toast('✓ อัปเดตแล้ว · ' + hhmm()); }, 400); } } catch (_) { /* ignore */ }
+
   var startY = 0, startX = 0, dist = 0, pulling = false, busy = false, decided = false;
-  var top = function () { return (document.scrollingElement || document.documentElement).scrollTop <= 0; };
+  // บนสุดจริง = หน้าและทุกกรอบที่เลื่อนได้รอบนิ้ว อยู่บนสุดหมด และหน้าไม่ได้กำลังไหลอยู่
+  var lastScroll = 0;
+  window.addEventListener('scroll', function () { lastScroll = Date.now(); }, { capture: true, passive: true });
+  var atTop = function (n) {
+    if ((document.scrollingElement || document.documentElement).scrollTop > 0) return false;
+    for (; n && n.nodeType === 1 && n !== document.documentElement; n = n.parentElement) {
+      if (n.scrollTop > 0) {
+        var oy = getComputedStyle(n).overflowY;
+        if (oy === 'auto' || oy === 'scroll' || oy === 'overlay') return false;
+      }
+    }
+    try { if (window.top !== window && window.parent.scrollY > 0) return false; } catch (_) { /* ignore */ }
+    return true;
+  };
+  var touchEl = null;
+  var top = function () { return atTop(touchEl) && Date.now() - lastScroll > 300; };
   var target = function () {
     for (var i = 0; i < TARGETS.length; i++) { var b = document.querySelector(TARGETS[i]); if (b) return b; }
     return null;
@@ -52,6 +83,7 @@
   };
 
   document.addEventListener('touchstart', function (e) {
+    touchEl = e.target;
     if (busy || e.touches.length !== 1 || !top()) return;
     if (e.target.closest && e.target.closest(SKIP)) return;
     startY = e.touches[0].clientY; startX = e.touches[0].clientX;
@@ -89,7 +121,9 @@
       var still = b && b.isConnected && b.matches(BUSY);
       if ((still && Date.now() - t0 < 15000) || Date.now() - t0 < 700) return setTimeout(wait, 120);
       busy = false; hide();
-      if (!b && !window.__ptrHandled) location.reload();
+      if (!b && !window.__ptrHandled) { try { sessionStorage.setItem('ptrToast', '1'); } catch (_) { /* ignore */ } location.reload(); return; }
+      // หน้าปรับพอร์ตแจ้งผลเองอยู่แล้ว (จำนวนตัวที่อัปเดต)
+      if (b && b.id !== 'btn-refresh') toast('✓ อัปเดตแล้ว · ' + hhmm());
     };
     setTimeout(wait, 150);
   };
