@@ -113,7 +113,7 @@ export default function WatchlistList({ items, signals, quotes, onRefresh, refre
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true" className="search-ico"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.6-3.6" /></svg>
         <input type="search" inputMode="search" autoCapitalize="characters" autoComplete="off" spellCheck={false} placeholder="ค้นหาหุ้น เช่น NVDA, PTT" value={query} onChange={e => setQuery(e.target.value)} aria-label="ค้นหาหุ้น" />
         <span className="wl-search-mkt" role="group" aria-label="ตลาด">
-          {(["US", "TH"] as const).map(m => <button key={m} type="button" aria-pressed={qMarket === m} onClick={() => pickMarket(m)}>{m === "US" ? "US" : "ไทย"}</button>)}
+          {(["US", "TH"] as const).map(m => <button key={m} type="button" aria-pressed={qMarket === m} onClick={() => pickMarket(m)}>{m === "US" ? "USD" : "THB"}</button>)}
         </span>
       </form>
       {q && found && (

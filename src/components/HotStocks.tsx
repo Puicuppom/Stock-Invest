@@ -45,7 +45,7 @@ export default function HotStocks() {
       <div className="hot-head">
         <h1>หุ้นเด่นวันนี้</h1>
         <span className="wl-search-mkt" role="group" aria-label="ตลาด">
-          {(["US", "TH"] as const).map(m => <button key={m} type="button" aria-pressed={market === m} onClick={() => pickMarket(m)}>{m === "US" ? "US" : "ไทย"}</button>)}
+          {(["US", "TH"] as const).map(m => <button key={m} type="button" aria-pressed={market === m} onClick={() => pickMarket(m)}>{m === "US" ? "USD" : "THB"}</button>)}
         </span>
       </div>
       {data && <div className="hot-tabs" role="tablist">

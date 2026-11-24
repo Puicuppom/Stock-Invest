@@ -65,7 +65,7 @@ export default function AddStockFab({ open, onOpenChange, isSaved, onToggle, onO
                 autoFocus autoComplete="off" autoCapitalize="characters" spellCheck={false} aria-label="สัญลักษณ์หุ้น"
               />
               <span className="wl-search-mkt" role="group" aria-label="ตลาด">
-                {(["US", "TH"] as const).map(m => <button key={m} type="button" aria-pressed={market === m} onClick={() => setMarket(m)}>{m === "US" ? "US" : "ไทย"}</button>)}
+                {(["US", "TH"] as const).map(m => <button key={m} type="button" aria-pressed={market === m} onClick={() => setMarket(m)}>{m === "US" ? "USD" : "THB"}</button>)}
               </span>
             </form>
             {hint && <p className="add2-hint">{hint}</p>}
