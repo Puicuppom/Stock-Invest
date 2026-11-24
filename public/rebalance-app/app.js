@@ -496,7 +496,7 @@ async function fetchLiveQuotes(render = true) {
     try {
         const items = symbols.map(s => /\.BK$/i.test(s) ? `${encodeURIComponent(s)}:TH` : `${encodeURIComponent(s)}:US`).join(',');
         const res = await fetch(`/api/quotes?items=${items}`, { cache: 'no-store' });
-        if (!res.ok) return 0;
+        if (!res.ok) { livePauseUntil = Date.now() + 30000; return 0; }
         const { quotes } = await res.json();
         for (const s of symbols) {
             const q = quotes?.[`${s}::${/\.BK$/i.test(s) ? 'TH' : 'US'}`];
@@ -507,6 +507,7 @@ async function fetchLiveQuotes(render = true) {
         if (n) { lastLiveAt = Date.now(); savePriceCache(); }
     } catch {
         /* ใช้ราคาเดิม */
+        livePauseUntil = Date.now() + 30000;
     } finally {
         liveFetching = false;
     }
@@ -521,7 +522,7 @@ async function fetchLiveQuotes(render = true) {
 
 function updatePriceStamp() {
     const btn = document.getElementById('btn-refresh');
-    if (btn && lastLiveAt) btn.title = `ราคา ณ ${new Date(lastLiveAt).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} · อัปเดตเองทุก 30 วิ`;
+    if (btn && lastLiveAt) btn.title = `ราคา ณ ${new Date(lastLiveAt).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} · อัปเดตเองทุก 5 วิ`;
 }
 
 /* ราคาในแผ่นซื้อ/ขาย: ไม่ทับค่าที่ผู้ใช้พิมพ์เอง */
@@ -532,9 +533,11 @@ function refreshAssetSheetPrices() {
     if (p > 0) input.value = formatInputVal(p, IS_FUND_PF ? 4 : 2);
 }
 
+// ราคาสดทุก 5 วิ ขณะเปิดหน้าอยู่ · ดึงไม่สำเร็จ (Yahoo จำกัดการดึง) → พัก 30 วิ
+var livePauseUntil = 0;
 setInterval(() => {
-    if (document.visibilityState === 'visible') fetchLiveQuotes();
-}, 30000);
+    if (document.visibilityState === 'visible' && Date.now() >= livePauseUntil) fetchLiveQuotes();
+}, 5000);
 // แนวรับ/ต้านและมูลค่ายุติธรรม เปลี่ยนช้า → ดึงเต็มทุก 10 นาที
 setInterval(() => {
     if (document.visibilityState === 'visible') fetchPrices(false, true);

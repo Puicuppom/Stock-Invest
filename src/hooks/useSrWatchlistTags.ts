@@ -81,7 +81,9 @@ async function fetchStock(item: WatchlistItem): Promise<StockData | null> {
 
 export type WatchlistQuotes = Record<string, LiveQuote>;
 
-const QUOTE_POLL_MS = 30 * 1000;
+const QUOTE_POLL_MS = 5 * 1000;
+/** ดึงไม่สำเร็จ (เช่น Yahoo จำกัดการดึง) → พัก 30 วิ แล้วค่อยกลับมาถี่ตามเดิม */
+const QUOTE_BACKOFF_MS = 30 * 1000;
 
 const CACHE_KEYS = { quotes: "wlQuotes:v1", signals: "wlSignals:v1", tags: "wlTags:v1" } as const;
 const saveTimers: Record<string, number> = {};
@@ -137,20 +139,26 @@ export function useSrWatchlistTags({
     if (!loaded) return;
     if (items.length === 0) { setQuotes({}); return; }
     let alive = true;
-    const run = async () => {
-      if (document.visibilityState !== "visible") return;
-      setRefreshing(true);
+    let inflight = false, pauseUntil = 0;
+    // silent = อัปเดตอัตโนมัติเบื้องหลัง (ไม่หมุนปุ่ม) · ไม่ silent = เปิดหน้า/กดรีเฟรชเอง
+    const run = async (silent = false) => {
+      if (document.visibilityState !== "visible" || inflight) return;
+      if (silent && Date.now() < pauseUntil) return;
+      inflight = true;
+      if (!silent) setRefreshing(true);
       const q = await fetchQuotes(items);
+      inflight = false;
       if (!alive) return;
-      setRefreshing(false);
+      if (!silent) setRefreshing(false);
+      pauseUntil = q ? 0 : Date.now() + QUOTE_BACKOFF_MS;
       if (q) {
         setQuotes(prev => ({ ...prev, ...q })); setUpdatedAt(Date.now());
         if (!announcedOpen && Object.keys(q).length) { announcedOpen = true; appToast(`✓ อัปเดตราคาล่าสุด · ${nowHHMM()}`); }
       }
     };
     run();
-    const timer = window.setInterval(run, QUOTE_POLL_MS);
-    const onVisible = () => { if (document.visibilityState === "visible") run(); };
+    const timer = window.setInterval(() => run(true), QUOTE_POLL_MS);
+    const onVisible = () => { if (document.visibilityState === "visible") run(true); };
     document.addEventListener("visibilitychange", onVisible);
     return () => { alive = false; window.clearInterval(timer); document.removeEventListener("visibilitychange", onVisible); };
   }, [items, loaded, tick]);
