@@ -3284,6 +3284,10 @@ function renderAvgCalc(asset) {
                     <button type="button" data-m="target" class="${avgCalcMode === 'target' ? 'on' : ''}" onclick="setAvgCalcMode('target')">ทุนเป้าหมาย</button>
                 </div>
             </div>
+            <div class="avg-now">
+                <span>ทุนตอนนี้ <b>${sign}${fmt(asset.avgCost, IS_FUND_PF ? 4 : 2)}</b></span>
+                <span>${fmtShares(asset.shares)} ${UNIT} · รวม <b>${sign}${fmt(asset.shares * asset.avgCost, 2)}</b></span>
+            </div>
             <div class="asset-sheet-field">
                 <label id="avg-in-label">${avgCalcMode === 'amount' ? `เติมเงิน (${sign})` : `อยากให้ทุนเหลือ (${sign}/${UNIT})`}</label>
                 <input type="text" inputmode="decimal" id="avg-in" value="${avgCalcInput[avgCalcMode]}" placeholder="${avgCalcMode === 'amount' ? '100' : formatInputVal(asset.avgCost * 0.95, IS_FUND_PF ? 4 : 2)}" autocomplete="off" oninput="avgCalcInput[avgCalcMode]=this.value;updateAvgCalc()">
