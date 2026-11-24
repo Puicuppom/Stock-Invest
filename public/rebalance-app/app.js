@@ -3782,8 +3782,10 @@ async function togglePush() {
         try { localStorage.setItem('pushWanted', '1'); localStorage.setItem('pushPrefs', JSON.stringify(readPushPrefs())); } catch { /* ignore */ }
         showToast('เปิดแจ้งเตือนแล้ว · ลองกด "ส่งทดสอบ"');
         renderPush({ subscribed: true, prefs: readPushPrefs() });
-    } catch {
-        showToast('เปิดแจ้งเตือนไม่สำเร็จ', 'error');
+    } catch (e) {
+        // บอกสาเหตุจริง จะได้แก้ถูกจุด
+        const msg = String(e && (e.message || e.name) || e).slice(0, 80);
+        showToast(`เปิดแจ้งเตือนไม่สำเร็จ · ${msg}`, 'error');
         renderPush({ subscribed: false });
     } finally { btn.disabled = false; }
 }
