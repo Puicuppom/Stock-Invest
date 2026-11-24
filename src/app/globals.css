@@ -481,7 +481,7 @@ select {
 }
 
 .chart-legend-ema20::before {
-  background: #38bdf8;
+  background: #e2e8f0;
 }
 
 .chart-legend-ema50::before {
@@ -697,7 +697,7 @@ select {
 }
 
 .market-quick-us .market-quick-sub {
-  color: #bae6fd;
+  color: #cbd5e1;
 }
 
 .market-quick-code {
@@ -1164,7 +1164,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 button.dash-jump { font-family: inherit; cursor: pointer; }
 button.dash-jump:hover { filter: brightness(1.15); }
 button.dash-jump:active { transform: scale(0.95); }
-@keyframes ssFlash { 0%,100% { box-shadow: 0 0 0 0 transparent; } 25%,60% { box-shadow: 0 0 0 2px var(--accent, #60a5fa); } }
+@keyframes ssFlash { 0%,100% { box-shadow: 0 0 0 0 transparent; } 25%,60% { box-shadow: 0 0 0 2px var(--accent, #f0954a); } }
 .ss-flash { animation: ssFlash 1.5s ease; border-radius: 10px; }
 
 /* volume row */
@@ -1714,8 +1714,8 @@ button.scr-card:disabled { opacity: .45; cursor: default; }
 .pl-profiles button[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); box-shadow: 0 0 0 1px var(--accent) inset; }
 .pl-bar { display: flex; height: 12px; border-radius: 999px; overflow: hidden; gap: 2px; background: var(--surface-2); }
 .pl-bar i { display: block; min-width: 4px; }
-.pl-c-core { background: #38bdf8; } .pl-c-income { background: var(--accent); } .pl-c-quality { background: #22c55e; }
-.pl-c-dip { background: #f472b6; } .pl-c-small { background: #a78bfa; } .pl-c-cash { background: #94a3b8; }
+.pl-c-core { background: #e2e8f0; } .pl-c-income { background: var(--accent); } .pl-c-quality { background: #22c55e; }
+.pl-c-dip { background: #f472b6; } .pl-c-small { background: #a78bfa; } .pl-c-cash { background: #64748b; }
 .pl-tools { display: flex; align-items: center; gap: 8px; }
 .pl-amount { flex: 1; display: flex; align-items: center; gap: 6px; min-width: 0; height: 38px; padding: 0 10px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); font-size: 0.75rem; color: var(--muted); white-space: nowrap; }
 .pl-amount input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--text); font: inherit; font-size: 0.85rem; font-weight: 700; outline: none; text-align: right; }

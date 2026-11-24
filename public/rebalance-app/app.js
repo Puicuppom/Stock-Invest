@@ -81,12 +81,12 @@ function getActivePortfolioName() {
 
 /* กลุ่มอัตโนมัติ + สไตล์พอร์ต (สำเนาของ src/lib/portfolio-plan.ts) */
 const PLAN_BUCKETS = {
-    core: { icon: '📦', name: 'ETF', color: '#38bdf8' },
-    income: { icon: '💰', name: 'หุ้นปันผล', color: '#f59e0b' },
+    core: { icon: '📦', name: 'ETF', color: '#e2e8f0' },
+    income: { icon: '💰', name: 'หุ้นปันผล', color: '#f0954a' },
     quality: { icon: '🚀', name: 'หุ้นเติบโต', color: '#22c55e' },
     dip: { icon: '🏷️', name: 'หุ้นลดราคา', color: '#ec4899' },
     small: { icon: '💎', name: 'หุ้นขนาดเล็ก', color: '#a78bfa' },
-    cash: { icon: '💵', name: 'เงินสด', color: '#94a3b8' }
+    cash: { icon: '💵', name: 'เงินสด', color: '#64748b' }
 };
 const PLAN_PROFILE_DEFAULTS = {
     safe: { name: 'มั่นคง', mix: { core: 55, income: 25, quality: 10, cash: 10 } },
@@ -1137,7 +1137,7 @@ function updateGroupTargetSum() {
     const text = `รวม ${fmtPct(sum)}` + (ok ? ' ✓' : ' ⚠');
     if (el) {
         el.textContent = text;
-        el.style.color = ok ? 'var(--green)' : '#b7791f';
+        el.style.color = ok ? 'var(--green)' : '#fb923c';
     }
     if (meta) meta.textContent = portfolioGroups.map(g => fmtPct(getTargetByGroup(g.id))).join(' · ');
 }

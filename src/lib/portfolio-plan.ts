@@ -14,12 +14,12 @@ export const PROFILE_MIX: Record<Profile, Partial<Record<BucketKey, number>>> = 
 
 /** ชื่อ/สีของกลุ่ม — ชุดเดียวกับหน้าปรับพอร์ต */
 export const BUCKET_META: Record<BucketKey, { name: string; color: string }> = {
-  core: { name: "ETF", color: "#38bdf8" },
-  income: { name: "หุ้นปันผล", color: "#f59e0b" },
+  core: { name: "ETF", color: "#e2e8f0" },
+  income: { name: "หุ้นปันผล", color: "#f0954a" },
   quality: { name: "หุ้นเติบโต", color: "#22c55e" },
   dip: { name: "หุ้นลดราคา", color: "#ec4899" },
   small: { name: "หุ้นขนาดเล็ก", color: "#a78bfa" },
-  cash: { name: "เงินสด", color: "#94a3b8" },
+  cash: { name: "เงินสด", color: "#64748b" },
 };
 export const PROFILE_NAME: Record<Profile, string> = { safe: "มั่นคง", balanced: "สมดุล", growth: "เติบโต" };
 

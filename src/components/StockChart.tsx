@@ -39,7 +39,7 @@ const CHART_COLORS = {
   pivot: "#f0954a",
   resistance: "#f87171",
   support: "#4ade80",
-  ema20: "#38bdf8",
+  ema20: "#e2e8f0",
   ema50: "#a78bfa",
   sma200: "#fb923c",
 };
