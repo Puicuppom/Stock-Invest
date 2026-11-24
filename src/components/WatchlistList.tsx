@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { attachRowGestures } from "@/lib/row-gestures";
 import StockLogo from "./StockLogo";
-import { StockFoundCard, useStockLookup } from "./StockLookup";
+import { StockFoundCard, useStockLookupAll } from "./StockLookup";
 import RevIcon from "./RevIcon";
 import { displaySymbol, normalizeInput } from "@/lib/symbol";
 import { watchlistId } from "@/lib/watchlist-id";
@@ -49,18 +49,15 @@ export default function WatchlistList({ items, signals, quotes, onRefresh, refre
 }) {
   // ค้นหา: พิมพ์เพื่อกรองรายการ · Enter เพื่อเปิดหุ้นตัวไหนก็ได้
   const [query, setQuery] = useState("");
-  const [qMarket, setQMarket] = useState<"US" | "TH">("US");
-  useEffect(() => { try { if (localStorage.getItem("wlSearchMkt") === "TH") setQMarket("TH"); } catch { /* ignore */ } }, []);
-  const pickMarket = (m: "US" | "TH") => { setQMarket(m); try { localStorage.setItem("wlSearchMkt", m); } catch { /* ignore */ } };
   const q = query.trim().toUpperCase();
+  // ผลค้นหาสด: หาทั้งหุ้น US และหุ้นไทยพร้อมกัน ไม่ต้องเลือกตลาด
+  const results = useStockLookupAll(query);
   const submitSearch = () => {
     if (!q) return;
-    const th = q.endsWith(".BK") || qMarket === "TH";
-    onSearch(q.replace(/\.BK$/, ""), th ? "TH" : "US");
+    const first = results?.find(f => f.state === "found");
+    onSearch(q.replace(/\.BK$/, ""), first ? first.market : q.endsWith(".BK") ? "TH" : "US");
     setQuery("");
   };
-  // ผลค้นหาสด (ใช้ร่วมกับหน้าต่างเพิ่มหุ้น)
-  const found = useStockLookup(query, qMarket);
   const inList = (sym: string, m: "TH" | "US") => items.some(it => watchlistId(it) === watchlistId({ symbol: sym, market: m }));
 
   // เรียง: manual = ลำดับที่จัดเอง · up/down = % เปลี่ยนแปลงวันนี้
@@ -112,15 +109,14 @@ export default function WatchlistList({ items, signals, quotes, onRefresh, refre
       <form className="wl-search" role="search" onSubmit={e => { e.preventDefault(); submitSearch(); }}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true" className="search-ico"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.6-3.6" /></svg>
         <input type="search" inputMode="search" autoCapitalize="characters" autoComplete="off" spellCheck={false} placeholder="ค้นหาหุ้น เช่น NVDA, PTT" value={query} onChange={e => setQuery(e.target.value)} aria-label="ค้นหาหุ้น" />
-        <span className="wl-search-mkt" role="group" aria-label="ตลาด">
-          {(["US", "TH"] as const).map(m => <button key={m} type="button" aria-pressed={qMarket === m} onClick={() => pickMarket(m)}>{m === "US" ? "USD" : "THB"}</button>)}
-        </span>
       </form>
-      {q && found && (
+      {q && results && (
         <div className="wl-found" aria-live="polite">
-          <StockFoundCard found={found} saved={inList(found.symbol, found.market)}
-            onOpen={(sym, m) => { onSearch(sym, m); setQuery(""); }}
-            onToggle={onToggleStock} onSwitchMarket={pickMarket} />
+          {results.map(f => (
+            <StockFoundCard key={f.key + f.state} found={f} saved={inList(f.symbol, f.market)}
+              onOpen={(sym, m) => { onSearch(sym, m); setQuery(""); }}
+              onToggle={onToggleStock} />
+          ))}
         </div>
       )}
       {items.length > 1 && !q && <p className="wl-hint">{sort === "manual" ? "กดค้างแล้วลากเพื่อจัดเรียง · ปัดซ้ายเพื่อลบ" : "ปัดซ้ายเพื่อลบ · เลือก “จัดเอง” เพื่อลากจัดเรียง"}</p>}

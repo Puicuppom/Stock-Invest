@@ -2096,3 +2096,8 @@ html[data-swipe="right"] :is(.app-shell > :not(.app-navigation), .rebalance-fram
 .star-btn.hot-star.on { cursor: pointer; }
 .star-btn.hot-star { border: 1px solid var(--ui-border); background: var(--ui-surface); color: var(--ui-muted); }
 .star-btn.hot-star.on { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, var(--ui-border)); background: color-mix(in srgb, var(--accent) 12%, var(--ui-surface)); }
+/* ป้ายตลาดในผลค้นหา (ค้นทั้ง US และไทยพร้อมกัน) */
+.mkt-tag { font-style: normal; display: inline-block; margin-right: 6px; padding: 1px 7px; border-radius: 999px; font-size: 10.5px; font-weight: 700; vertical-align: 1px; }
+.mkt-tag.mkt-US { color: #ffd9b8; background: rgba(240, 149, 74, .16); border: 1px solid rgba(240, 149, 74, .4); }
+.mkt-tag.mkt-TH { color: #f9c6dd; background: rgba(236, 111, 154, .14); border: 1px solid rgba(236, 111, 154, .4); }
+.wl-found > .wl-found-list + .wl-found-list { margin-top: 8px; }

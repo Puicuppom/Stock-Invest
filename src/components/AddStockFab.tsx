@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useKeyboardAwareModal } from "@/hooks/useKeyboardAwareModal";
 import { normalizeInput } from "@/lib/symbol";
-import { StockFoundCard, useStockLookup } from "./StockLookup";
+import { StockFoundCard, useStockLookupAll } from "./StockLookup";
 
 type Mkt = "TH" | "US";
 interface AddStockFabProps {
@@ -19,17 +19,17 @@ interface AddStockFabProps {
   onOpen: (symbol: string, market: Mkt) => void;
 }
 
-/** ปุ่ม + และหน้าต่างเพิ่มหุ้น: พิมพ์ → เลือก US/ไทย → ขึ้นการ์ดผลค้นหาเหมือนช่องค้นหา */
+/** ปุ่ม + และหน้าต่างเพิ่มหุ้น: พิมพ์ → หาทั้งหุ้น US และไทยพร้อมกัน → ขึ้นการ์ดผลค้นหาเหมือนช่องค้นหา */
 export default function AddStockFab({ open, onOpenChange, isSaved, onToggle, onOpen }: AddStockFabProps) {
   const [symbol, setSymbol] = useState("");
-  const [market, setMarket] = useState<Mkt>("US");
   const [portalReady, setPortalReady] = useState(false);
 
   useEffect(() => { setPortalReady(true); }, []);
   useEffect(() => { if (!open) setSymbol(""); }, [open]);
 
   const normalized = normalizeInput(symbol);
-  const found = useStockLookup(normalized, market);
+  const results = useStockLookupAll(normalized);
+  const firstFound = results?.find(f => f.state === "found") ?? null;
   const { panelRef, offsetY } = useKeyboardAwareModal(open);
   const hint =
     normalized === "META" ? "Meta/Facebook อยู่ตลาด US" :
@@ -57,21 +57,18 @@ export default function AddStockFab({ open, onOpenChange, isSaved, onToggle, onO
               <h2 id="add-stock-title">เพิ่มหุ้น / ETF</h2>
               <button type="button" className="add2-close" onClick={() => onOpenChange(false)} aria-label="ปิด">×</button>
             </div>
-            <form className="wl-search add2-search" onSubmit={e => { e.preventDefault(); if (found?.state === "found" && !isSaved(found.symbol, found.market)) onToggle(found.symbol, found.market); }}>
+            <form className="wl-search add2-search" onSubmit={e => { e.preventDefault(); if (firstFound && !isSaved(firstFound.symbol, firstFound.market)) onToggle(firstFound.symbol, firstFound.market); }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true" className="search-ico"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.6-3.6" /></svg>
               <input
                 id="symbol-input" type="search" inputMode="search" placeholder="เช่น META, GLD, PTT"
                 value={symbol} onChange={e => setSymbol(e.target.value)}
                 autoFocus autoComplete="off" autoCapitalize="characters" spellCheck={false} aria-label="สัญลักษณ์หุ้น"
               />
-              <span className="wl-search-mkt" role="group" aria-label="ตลาด">
-                {(["US", "TH"] as const).map(m => <button key={m} type="button" aria-pressed={market === m} onClick={() => setMarket(m)}>{m === "US" ? "USD" : "THB"}</button>)}
-              </span>
             </form>
             {hint && <p className="add2-hint">{hint}</p>}
             <div className="wl-found add2-result" aria-live="polite">
-              {found
-                ? <StockFoundCard found={found} saved={isSaved(found.symbol, found.market)} onOpen={onOpen} onToggle={onToggle} onSwitchMarket={setMarket} />
+              {results
+                ? results.map(f => <StockFoundCard key={f.key + f.state} found={f} saved={isSaved(f.symbol, f.market)} onOpen={onOpen} onToggle={onToggle} />)
                 : <p className="add2-empty">พิมพ์ชื่อย่อหุ้น แล้วกด ☆ เพื่อเพิ่ม · แตะการ์ดเพื่อดูข้อมูล</p>}
             </div>
           </div>

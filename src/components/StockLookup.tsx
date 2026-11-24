@@ -4,7 +4,7 @@ import StockLogo from "./StockLogo";
 import { StarIcon } from "./Icons";
 
 type Mkt = "TH" | "US";
-export type Found = { key: string; state: "loading" | "found" | "none"; symbol: string; market: Mkt; name?: string | null; price?: number; changePercent?: number };
+export type Found = { key: string; state: "loading" | "found" | "none"; symbol: string; market: Mkt; name?: string | null; price?: number; changePercent?: number; both?: boolean };
 
 /** ค้นหาสด: พิมพ์แล้วหยุด 0.35 วิ → เช็กว่ามีหุ้นตัวนี้ไหม พร้อมชื่อ/ราคา/% วันนี้ */
 export function useStockLookup(input: string, market: Mkt): Found | null {
@@ -33,6 +33,35 @@ export function useStockLookup(input: string, market: Mkt): Found | null {
   return found && found.key === key ? found : null;
 }
 
+/** ค้นหาทั้งตลาด US และไทยพร้อมกัน (คำขอเดียว) → คืนทุกตัวที่เจอ · ลงท้าย .BK = เฉพาะไทย */
+export function useStockLookupAll(input: string): Found[] | null {
+  const q = input.trim().toUpperCase();
+  const sym = q.replace(/\.BK$/, "");
+  const onlyTh = q.endsWith(".BK");
+  const key = sym ? `${sym}::${onlyTh ? "TH" : "ALL"}` : "";
+  const [res, setRes] = useState<{ key: string; list: Found[] } | null>(null);
+  useEffect(() => {
+    if (!key || !/^[A-Z0-9.\-^=&/]{1,15}$/.test(sym)) { setRes(null); return; }
+    setRes({ key, list: [{ key, state: "loading", symbol: sym, market: onlyTh ? "TH" : "US" }] });
+    const ctrl = new AbortController();
+    const t = window.setTimeout(async () => {
+      const mkts: Mkt[] = onlyTh ? ["TH"] : ["US", "TH"];
+      try {
+        const r = await fetch(`/api/quotes?items=${mkts.map(m => `${encodeURIComponent(sym)}:${m}`).join(",")}`, { signal: ctrl.signal, cache: "no-store" });
+        const j = r.ok ? await r.json() : null;
+        const list: Found[] = mkts.flatMap(m => {
+          const hit = j?.quotes?.[`${sym}::${m}`];
+          return hit && hit.price > 0 ? [{ key: `${sym}::${m}`, state: "found" as const, symbol: sym, market: m, name: hit.name, price: hit.price, changePercent: hit.changePercent }] : [];
+        });
+        setRes({ key, list: list.length ? list : [{ key, state: "none", symbol: sym, market: onlyTh ? "TH" : "US", both: !onlyTh }] });
+      } catch { if (!ctrl.signal.aborted) setRes({ key, list: [{ key, state: "none", symbol: sym, market: "US", both: !onlyTh }] }); }
+    }, 350);
+    return () => { ctrl.abort(); window.clearTimeout(t); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+  return res && res.key === key ? res.list : null;
+}
+
 /** การ์ดผลค้นหา: แตะ = เปิดหน้าข้อมูล · ดาว = เพิ่ม/เอาออกจาก Watchlist */
 export function StockFoundCard({ found, saved, onOpen, onToggle, onSwitchMarket }: {
   found: Found;
@@ -42,6 +71,7 @@ export function StockFoundCard({ found, saved, onOpen, onToggle, onSwitchMarket 
   onSwitchMarket?: (market: Mkt) => void;
 }) {
   if (found.state === "loading") return <p className="wl-found-msg">กำลังค้นหา {found.symbol}…</p>;
+  if (found.state === "none" && found.both) return <p className="wl-found-msg">ไม่พบ <b>{found.symbol}</b> ทั้งหุ้น US และหุ้นไทย · ลองเช็กตัวย่ออีกครั้ง</p>;
   if (found.state === "none") {
     const other: Mkt = found.market === "US" ? "TH" : "US";
     return (
@@ -61,7 +91,7 @@ export function StockFoundCard({ found, saved, onOpen, onToggle, onSwitchMarket 
               <StockLogo symbol={found.market === "TH" ? `${found.symbol}.BK` : found.symbol} size={40} className="wl-logo-img" />
             </span>
             <span className="wl-name">
-              <span className="wl-line1"><b>{found.symbol}</b><small>{found.name ?? (found.market === "TH" ? "SET" : "US")}</small></span>
+              <span className="wl-line1"><b>{found.symbol}</b><small><i className={`mkt-tag mkt-${found.market}`}>{found.market === "TH" ? "หุ้นไทย" : "หุ้น US"}</i>{found.name ?? ""}</small></span>
             </span>
             <span className="wl-price"><b>{found.market === "TH" ? "฿" : "$"}{found.price!.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b></span>
             <span className={`wl-chg ${up ? "up" : "down"}`}>{up ? "+" : ""}{(found.changePercent ?? 0).toFixed(2)}%</span>
