@@ -1066,14 +1066,14 @@ input, select, textarea { color: var(--ui-text); background: var(--ui-raised); b
     z-index: 400;
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
-.toast.warn { border-color: var(--ui-warning, #fbbf24); }
+.toast.warn { border-color: var(--ui-warning, #a78bfa); }
 .toast.error { border-color: var(--red); color: var(--red); }
 
 /* ── กำไร/ขาดทุนรวม ── */
 .summary-pl.gain .summary-value { color: var(--green); }
 .summary-pl.loss .summary-value { color: var(--red); }
 .summary-pl #pl-amount { font-weight: 600; color: var(--ui-text); }
-.summary-pl .pl-note { color: var(--ui-warning, #fbbf24); }
+.summary-pl .pl-note { color: var(--ui-warning, #a78bfa); }
 @media (max-width: 560px) {
     .summary { flex-wrap: wrap; }
     .summary-item { flex: 1 1 calc(50% - 6px); }
@@ -1174,11 +1174,11 @@ input, select, textarea { color: var(--ui-text); background: var(--ui-raised); b
 .lv-label { font-size: 11px; font-weight: 600; color: var(--ui-muted); }
 .lv-price { font-weight: 700; font-size: 14px; }
 .lv-buy .lv-price { color: var(--green); }
-.lv-sell .lv-price { color: var(--ui-warning, #fbbf24); }
+.lv-sell .lv-price { color: var(--ui-warning, #a78bfa); }
 .lv-price.muted { color: var(--ui-muted); }
 .lv-note { font-size: 11px; color: var(--ui-muted); }
 .lv-tag { font-size: 11px; font-weight: 600; color: var(--ui-accent); }
-.lv-warn { font-size: 11px; font-weight: 600; color: var(--ui-warning, #fbbf24); }
+.lv-warn { font-size: 11px; font-weight: 600; color: var(--ui-warning, #a78bfa); }
 .lv-sell .lv-price { color: var(--red); }
 
 /* ── ดอลลาร์ / บาท แยกให้อ่านง่าย ── */
@@ -1410,7 +1410,7 @@ select option, select optgroup { background-color: var(--ui-surface); color: var
 
 /* FAB วงกลม "+" มุมขวาล่าง เหมือนหน้า Watchlist */
 .fab-wrap { left: auto; right: calc(16px + env(safe-area-inset-right, 0px)); transform: none; width: auto; max-width: none; padding: 0; z-index: 50; }
-.fab { width: 56px; height: 56px; padding: 0; border-radius: 999px; background: linear-gradient(135deg, #f5d48a, #e6b450); color: #fff; font-size: 32px; font-weight: 400; line-height: 1; box-shadow: 0 10px 30px rgba(56,189,248,.35); }
+.fab { width: 56px; height: 56px; padding: 0; border-radius: 999px; background: linear-gradient(135deg, #f8b77a, #f0954a); color: #fff; font-size: 32px; font-weight: 400; line-height: 1; box-shadow: 0 10px 30px rgba(56,189,248,.35); }
 
 /* ปุ่มย้ายพอร์ต (ปัดซ้าย) + แผ่นเลือกพอร์ตปลายทาง */
 .row-actions .ra-move { background: color-mix(in srgb, #a78bfa 80%, #000); }
@@ -1907,9 +1907,9 @@ html:root { font-size: 16px; }
 .rc-sym small { font-size: 11px; color: var(--ui-muted); }
 .rc-cell { display: block; min-width: 0; }
 .rc-cell input { width: 100%; box-sizing: border-box; padding: 8px 9px; border-radius: 9px; border: 1px solid var(--ui-border); background: color-mix(in srgb, var(--ui-bg, #060b16) 70%, transparent); color: var(--ui-text); font: inherit; font-size: 14px; font-variant-numeric: tabular-nums; }
-.rc-cell.chg input { border-color: var(--ui-warning, #fbbf24); background: color-mix(in srgb, var(--ui-warning, #fbbf24) 8%, transparent); }
+.rc-cell.chg input { border-color: var(--ui-warning, #a78bfa); background: color-mix(in srgb, var(--ui-warning, #a78bfa) 8%, transparent); }
 .rc-cell.bad input { border-color: var(--ui-danger, #f87171); }
-.rc-was { display: block; min-height: 0; font-size: 11px; margin-top: 2px; color: var(--ui-warning, #fbbf24); font-variant-numeric: tabular-nums; }
+.rc-was { display: block; min-height: 0; font-size: 11px; margin-top: 2px; color: var(--ui-warning, #a78bfa); font-variant-numeric: tabular-nums; }
 .rc-was:empty { display: none; }
 .rc-cell.bad .rc-was { color: var(--ui-danger, #f87171); }
 .rc-dash { padding: 8px 4px; color: var(--ui-muted); }
@@ -1920,7 +1920,7 @@ html:root { font-size: 16px; }
 .rc-btns .pri { background: var(--ui-accent); color: #04121d; border: 0; }
 .rc-btns .pri:disabled { opacity: .45; cursor: default; }
 .rb2 .rc-sheet .rc-cell input { margin: 0; height: auto; border: 1px solid var(--ui-border); background: color-mix(in srgb, var(--ui-bg, #060b16) 70%, transparent); }
-.rb2 .rc-sheet .rc-cell.chg input { border-color: var(--ui-warning, #fbbf24); background: color-mix(in srgb, var(--ui-warning, #fbbf24) 8%, transparent); }
+.rb2 .rc-sheet .rc-cell.chg input { border-color: var(--ui-warning, #a78bfa); background: color-mix(in srgb, var(--ui-warning, #a78bfa) 8%, transparent); }
 .rb2 .rc-sheet .rc-cell.bad input { border-color: var(--ui-danger, #f87171); }
 .rb2 .rc-sheet .rc-was { margin: 3px 0 0; padding: 0; line-height: 1.3; }
 .rb2 .rc-sheet .rc-row { padding: 7px 2px; }

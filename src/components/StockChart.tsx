@@ -36,7 +36,7 @@ const CHART_COLORS = {
   grid: "#1e293b",
   up: "#22c55e",
   down: "#ef4444",
-  pivot: "#fbbf24",
+  pivot: "#f0954a",
   resistance: "#f87171",
   support: "#4ade80",
   ema20: "#38bdf8",
