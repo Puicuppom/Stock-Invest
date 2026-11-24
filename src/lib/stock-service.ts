@@ -126,7 +126,7 @@ export async function getStockData(
   );
 
 
-  if (daily.candles.length < 10) {
+  if (daily.candles.length < 2) {
     throw new Error("Stock not found");
   }
 
