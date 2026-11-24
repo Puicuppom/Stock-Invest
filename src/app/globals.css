@@ -2056,3 +2056,36 @@ body.ui2 .fab { position: fixed; right: max(12px, calc((100vw - 720px) / 2 + 16p
 .chart-shell.is-full .chart-full-btn { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); }
 body.chart-full-open { overflow: hidden; }
 body.chart-full-open .fab, body.chart-full-open .add-fab { display: none !important; }
+
+/* ───── เมนูหลัก: มือถืออยู่ล่าง (กดด้วยนิ้วโป้งถนัด) · คอมอยู่บน ───── */
+.app-navigation .nav-ico { display: none; width: 22px; height: 22px; }
+@media (max-width: 768px) {
+  html body .app-navigation {
+    position: fixed; left: 0; right: 0; bottom: 0; top: auto; z-index: 60;
+    margin: 0 !important; border-radius: 18px 18px 0 0; border: 0; border-top: 1px solid var(--ui-border, var(--border));
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+    background: color-mix(in srgb, var(--ui-surface, #15111f) 88%, transparent);
+    -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+    box-shadow: 0 -8px 24px -10px rgba(0, 0, 0, .6);
+  }
+  html body .app-navigation a {
+    flex-direction: column; gap: 3px; min-height: 54px; padding: 6px 4px; border: 0 !important;
+    font-size: 11px; font-weight: 600; color: var(--ui-muted, var(--muted)); background: transparent !important; box-shadow: none !important; border-radius: 14px;
+  }
+  .app-navigation .nav-ico { display: block; padding: 3px 14px; width: 52px; height: 30px; box-sizing: border-box; border-radius: 999px; transition: background .25s var(--ease-out, ease), color .25s, transform .25s var(--ease-out, ease); }
+  html body .app-navigation a[aria-current="page"] { color: #ffd9b8; }
+  html body .app-navigation a[aria-current="page"] .nav-ico {
+    color: #2a0f05; background: var(--lucky-grad, #f0954a); transform: translateY(-1px);
+    box-shadow: 0 6px 16px -6px rgba(240, 149, 74, .7);
+  }
+  .app-shell { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important; }
+  .rebalance-shell { padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px)) !important; }
+  body.ui2 .fab { bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important; }
+  body.chart-full-open .app-navigation { display: none; }
+}
+
+/* ปัดเปลี่ยนแท็บ: หน้าใหม่เลื่อนเข้ามาจากด้านที่ปัด */
+@keyframes swipe-in-left { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+@keyframes swipe-in-right { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
+html[data-swipe="left"] :is(.app-shell > :not(.app-navigation), .rebalance-frame) { animation: swipe-in-left .35s var(--ease-out, ease) both; }
+html[data-swipe="right"] :is(.app-shell > :not(.app-navigation), .rebalance-frame) { animation: swipe-in-right .35s var(--ease-out, ease) both; }
