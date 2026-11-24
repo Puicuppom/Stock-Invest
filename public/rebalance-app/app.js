@@ -1650,6 +1650,14 @@ function openAssetSheet(index, mode = 'settings') {
     document.getElementById('asset-overlay').classList.add('open');
 }
 
+/* ลากคลุมข้อความในช่องพิมพ์แล้วปล่อยนิ้ว/เมาส์นอกกล่อง = ไม่ใช่การกดพื้นหลัง → อย่าปิดแผ่น */
+let pressStartTarget = null;
+document.addEventListener('pointerdown', e => { pressStartTarget = e.target; }, true);
+document.addEventListener('click', e => {
+    const t = e.target;
+    if (t && t.classList && t.classList.contains('overlay') && pressStartTarget !== t) { e.stopPropagation(); e.preventDefault(); }
+}, true);
+
 function closeAssetSheet(e) {
     if (e && e.target !== document.getElementById('asset-overlay')) return;
     document.getElementById('asset-overlay').classList.remove('open');
