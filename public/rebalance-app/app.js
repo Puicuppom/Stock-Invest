@@ -2060,7 +2060,20 @@ function logoImg(asset) {
     if (isCashAsset(asset) || IS_FUND_PF) return '';
     const sym = String(asset.name || '').toUpperCase().replace(/[^A-Z0-9.\-]/g, '');
     if (!sym) return '';
-    return `<img class="asset-logo" src="https://financialmodelingprep.com/image-stock/${encodeURIComponent(sym)}.png" alt="" loading="lazy" referrerpolicy="no-referrer" onload="this.classList.add('ok')" onerror="this.remove()">`;
+    const ok = logoSeenSet().has(sym) ? ' ok' : '';
+    return `<img class="asset-logo${ok}" src="https://financialmodelingprep.com/image-stock/${encodeURIComponent(sym)}.png" alt="" loading="lazy" referrerpolicy="no-referrer" onload="this.classList.add('ok');logoMarkSeen('${sym}')" onerror="this.remove()">`;
+}
+/* จำโลโก้ที่เคยโหลดแล้ว (ใช้ร่วมกับหน้าวิเคราะห์) → ครั้งต่อไปโชว์ทันที ไม่เห็นวงส้มแวบ */
+let _logoSeen = null;
+function logoSeenSet() {
+    if (!_logoSeen) { try { _logoSeen = new Set(JSON.parse(localStorage.getItem('logoSeen') || '[]')); } catch { _logoSeen = new Set(); } }
+    return _logoSeen;
+}
+function logoMarkSeen(sym) {
+    const s = logoSeenSet();
+    if (s.has(sym)) return;
+    s.add(sym);
+    try { localStorage.setItem('logoSeen', JSON.stringify([...s].slice(-400))); } catch { /* ignore */ }
 }
 
 /* แถวกระชับ: แตะเพื่อเปิดรายละเอียด (จำว่าตัวไหนเปิดอยู่ระหว่างคำนวณใหม่) */
