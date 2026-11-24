@@ -1986,3 +1986,6 @@ html:root { font-size: 16px; }
 .avg-box .avg-hint { margin: 8px 2px 0; font-size: 11.5px; color: var(--ui-muted, var(--muted)); }
 .avg-box .avg-use { width: 100%; margin-top: 10px; padding: 9px; border-radius: 12px; border: 1px dashed var(--ui-border, var(--border)); background: transparent; color: var(--ui-accent, var(--accent)); font: inherit; font-size: 13px; cursor: pointer; }
 
+
+/* ตั้งค่า: ไม่บีบกล่องรายการให้เตี้ยจนโดนตัด → ให้เลื่อนดูทั้งหน้าแทน */
+.rb2 .settings-body > * { flex-shrink: 0; }
