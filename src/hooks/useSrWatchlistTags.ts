@@ -8,6 +8,10 @@ import { reversalTag, type ReversalTag } from "@/lib/reversal";
 import { eventBadges, type EventBadge } from "@/lib/events";
 import { analyzeDip, type DipKind } from "@/lib/dip";
 import { analyzeEtfDip } from "@/lib/etf";
+import { appToast, nowHHMM } from "@/lib/app-toast";
+
+/** แจ้งครั้งเดียวต่อการเปิดเว็บ เมื่อราคาสดชุดแรกมาถึง */
+let announcedOpen = false;
 
 const POLL_MS = 3 * 60 * 1000;
 
@@ -139,7 +143,10 @@ export function useSrWatchlistTags({
       const q = await fetchQuotes(items);
       if (!alive) return;
       setRefreshing(false);
-      if (q) { setQuotes(prev => ({ ...prev, ...q })); setUpdatedAt(Date.now()); }
+      if (q) {
+        setQuotes(prev => ({ ...prev, ...q })); setUpdatedAt(Date.now());
+        if (!announcedOpen && Object.keys(q).length) { announcedOpen = true; appToast(`✓ อัปเดตราคาล่าสุด · ${nowHHMM()}`); }
+      }
     };
     run();
     const timer = window.setInterval(run, QUOTE_POLL_MS);

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import AppNavigation from "./AppNavigation";
 import StockLogo from "./StockLogo";
 import { StarIcon } from "./Icons";
+import { appToast, nowHHMM } from "@/lib/app-toast";
 import { useWatchlist } from "@/hooks/useWatchlist";
 import type { HotSection } from "@/app/api/hot/route";
 
@@ -27,6 +28,7 @@ export default function HotStocks() {
       if (!alive) return;
       if (j.error || !Array.isArray(j.sections)) { setError("โหลดไม่สำเร็จ ลองใหม่อีกครั้ง"); return; }
       setData(j);
+      appToast(`✓ อัปเดตหุ้นเด่นล่าสุด · ${nowHHMM()}`);
       setTab(t => (j.sections.some((s: HotSection) => s.id === t) ? t : j.sections[0]?.id ?? "gain"));
     }).catch(() => alive && setError("โหลดไม่สำเร็จ ลองใหม่อีกครั้ง"));
     return () => { alive = false; };

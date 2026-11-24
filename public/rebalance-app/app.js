@@ -3112,7 +3112,13 @@ async function bootstrap() {
     updateFxModeButtons();
     renderPortfolioSwitcher();
     renderAndCalculate();
-    fetchPrices(true);
+    // เปิดหน้า: ราคาสดชุดแรกมาถึง → แจ้งเป็นป๊อปอัปครั้งเดียว
+    fetchPrices(true).then(r => {
+        if (!r || r.busy || !r.total) return;
+        const time = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+        if (r.failed === r.total) showToast('อัปเดตราคาไม่สำเร็จ · ใช้ราคาล่าสุดที่จำไว้', 'error');
+        else showToast(`✓ อัปเดตราคาล่าสุด · ${time}`);
+    }).catch(() => {});
     await initCloudSync();
     await syncPortfolioIndex();
     applyPortfolioRepair();

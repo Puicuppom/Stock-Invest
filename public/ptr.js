@@ -44,6 +44,8 @@
     toastT = setTimeout(function () { toastEl.classList.remove('show'); }, 2200);
   };
   var hhmm = function () { return new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }); };
+  window.__appToast = toast;
+  if (window.__pendingToast) { var pend = window.__pendingToast; window.__pendingToast = null; setTimeout(function () { toast(pend); }, 200); }
   try { if (sessionStorage.getItem('ptrToast')) { sessionStorage.removeItem('ptrToast'); setTimeout(function () { toast('✓ อัปเดตแล้ว · ' + hhmm()); }, 400); } } catch (_) { /* ignore */ }
 
   var startY = 0, startX = 0, dist = 0, pulling = false, busy = false, decided = false;
