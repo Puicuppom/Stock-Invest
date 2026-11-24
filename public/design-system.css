@@ -159,3 +159,39 @@ html body .wl-refresh:active, html body .dash-refresh:active, html body.rb2 #btn
 .rf-ico { width: 20px; height: 20px; display: block; transition: transform .4s var(--ease-out); }
 html body .wl-refresh:hover .rf-ico, html body .dash-refresh:hover .rf-ico, html body.rb2 #btn-refresh:hover .rf-ico { transform: rotate(60deg); }
 html body .wl-refresh.spin .rf-ico, html body .dash-refresh.is-loading .rf-ico, html body.rb2 #btn-refresh.spinning .rf-ico { animation: rf-spin .8s linear infinite; }
+
+/* ดร็อปดาวน์ (จัดเอง / เรียงตาม) + ปุ่มเลือกพอร์ต + ปุ่มตั้งค่า: สูงเท่ากัน มุมเท่ากัน ลูกศรทองแดงแบบเดียวกัน */
+html body .wl-sort, html body.rb2 #sort-select {
+  -webkit-appearance: none !important; appearance: none !important;
+  height: 40px !important; min-height: 0 !important; padding: 0 36px 0 14px !important;
+  border-radius: 12px !important; border: 1px solid var(--ui-border) !important;
+  background: var(--ui-surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f0954a' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center / 14px !important;
+  color: var(--ui-text) !important; font: inherit; font-size: 13px !important; font-weight: 600 !important; line-height: 38px;
+  cursor: pointer; box-shadow: none !important; transition: border-color .2s, background-color .2s;
+}
+html body .wl-sort:hover, html body .wl-sort:focus-visible, html body.rb2 #sort-select:hover, html body.rb2 #sort-select:focus-visible {
+  border-color: rgba(240, 149, 74, .55) !important; outline: none;
+}
+html body .wl-sort option, html body.rb2 #sort-select option { background: var(--ui-surface); color: var(--ui-text); }
+
+html body.rb2 .pf-switch {
+  height: 36px !important; padding: 0 30px 0 14px !important; border-radius: 999px !important; position: relative;
+  border: 1px solid var(--ui-border) !important; background: var(--ui-surface) !important;
+  color: var(--ui-text) !important; font-size: 13px !important; font-weight: 600 !important; text-decoration: none !important;
+}
+html body.rb2 .pf-switch:hover { border-color: rgba(240, 149, 74, .55) !important; }
+html body.rb2 .pf-switch-caret {
+  position: absolute; right: 11px; top: 50%; width: 13px; height: 13px; margin-top: -6.5px; font-size: 0 !important;
+  border: 0 !important; transform: none !important;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f0954a' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat center / 13px !important;
+}
+html body.rb2 #btn-settings {
+  width: 40px !important; height: 40px !important; min-height: 0 !important; padding: 0 !important;
+  display: grid !important; place-items: center; flex: none; border-radius: 12px !important;
+  border: 1px solid var(--ui-border) !important; background: var(--ui-surface) !important; color: var(--ui-muted) !important;
+  transition: color .2s, border-color .2s, transform .15s var(--ease-out);
+}
+html body.rb2 #btn-settings:hover { color: #ffd9b8 !important; border-color: rgba(240, 149, 74, .55) !important; }
+html body.rb2 #btn-settings:active { transform: scale(.93); }
+.st-ico { width: 20px; height: 20px; display: block; transition: transform .5s var(--ease-out); }
+html body.rb2 #btn-settings:hover .st-ico { transform: rotate(60deg); }
