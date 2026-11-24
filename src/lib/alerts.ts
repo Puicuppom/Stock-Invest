@@ -1,6 +1,9 @@
 import { getStockData } from "./stock-service";
 import { fetchCalendarEvents, daysUntil, thaiShortDate } from "./events";
 import { findSrHits } from "./sr-levels";
+import { computeTradePlan } from "./trade-plan";
+import { atrSeries } from "./indicators";
+import { completedCandles } from "./screener";
 import { cloudConfig } from "./cloud-store";
 import { loadPortfolios, isCash } from "./portfolio-summary";
 import { loadPushState, logNote, savePushState, sendToAll, type AlertPrefs, type Note } from "./push";
@@ -74,6 +77,18 @@ export async function runAlerts(opts: { dryRun?: boolean } = {}) {
     const pct = data.changePercent;
     if (Number.isFinite(pct) && Math.abs(pct) >= MOVE_PCT) alerts.push({ kind: "move", held: isHeld, key: `m:${id}:${day}:${pct > 0 ? "u" : "d"}`, url, tag: `m-${id}`,
       title: `${pct > 0 ? "🚀" : "⚠️"} ${it.symbol} ${pct > 0 ? "+" : ""}${pct.toFixed(2)}%`, body: `${pct > 0 ? "ขึ้น" : "ลง"}แรงในวันทำการล่าสุด · ราคา ${money(data.lastClose, it.market)}${isHeld ? " · หุ้นในพอร์ต" : ""}` });
+    // จุดตัดขาดทุน / จุดขาย ตามแผนที่เห็นในแอปเมื่อวาน (คิดจากราคาปิดก่อนหน้า) → วันนี้ราคาผ่านเส้นนั้นแล้วหรือยัง
+    const done = completedCandles(data);
+    const prevClose = data.candles?.[data.candles.length - 2]?.close;
+    if (prevClose && prevClose > 0 && done.length > 20) {
+      const atr = atrSeries(done).at(-1) ?? null;
+      const prev = computeTradePlan(data.pivot, data.zones, prevClose, "swing", 1, data.fairValue, false, atr != null && Number.isFinite(atr) ? atr : null);
+      const px = data.lastClose;
+      if (prev.stopLoss != null && px < prev.stopLoss && prevClose >= prev.stopLoss) alerts.push({ kind: "plan", held: isHeld, key: `b:${id}:${prev.stopLoss.toFixed(2)}:${day}`, url, tag: `b-${id}`,
+        title: `⛔ ${it.symbol} หลุดจุดตัดขาดทุน ${money(prev.stopLoss, it.market)}`, body: `ราคา ${money(px, it.market)}${isHeld ? " · หุ้นในพอร์ต · พิจารณาลดความเสี่ยง" : " · แนวรับเดิมไม่อยู่แล้ว รอฐานใหม่"}` });
+      if (isHeld && prev.sellPrice != null && px >= prev.sellPrice && prevClose < prev.sellPrice) alerts.push({ kind: "plan", held: isHeld, key: `t:${id}:${prev.sellPrice.toFixed(2)}:${day}`, url, tag: `t-${id}`,
+        title: `💸 ${it.symbol} ถึงจุดขาย ${money(prev.sellPrice, it.market)}`, body: `ราคา ${money(px, it.market)} · ชนแนวต้าน · หุ้นในพอร์ต พิจารณาทยอยขายทำกำไร` });
+    }
     const hits = findSrHits(data.pivot, data.zones, data.lastClose, "swing", SR_TOL).filter(h => h.kind === "support");
     const h = hits[0];
     if (h) alerts.push({ kind: "sr", held: isHeld, key: `s:${id}:${h.level.price.toFixed(2)}:${day}`, url, tag: `s-${id}`,

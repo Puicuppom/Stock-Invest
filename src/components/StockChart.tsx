@@ -77,6 +77,37 @@ export default function StockChart({
   const areaRef = useRef<ISeriesApi<"Area"> | null>(null);
   // แท่งเทียน / กราฟเส้น (จำค่าที่เลือกไว้)
   const [chartType, setChartType] = useState<"candle" | "line">("candle");
+  // ดูเต็มจอ: ใช้ Fullscreen API ถ้าเครื่องรองรับ (Android/คอม) · iPhone ใช้ขยายเต็มหน้าแทน
+  const shellRef = useRef<HTMLDivElement>(null);
+  const [full, setFull] = useState(false);
+  const toggleFull = useCallback(async () => {
+    const el = shellRef.current;
+    if (!el) return;
+    if (full) {
+      if (document.fullscreenElement) await document.exitFullscreen().catch(() => {});
+      setFull(false);
+      return;
+    }
+    setFull(true);
+    if (el.requestFullscreen) {
+      try {
+        await el.requestFullscreen({ navigationUI: "hide" });
+        const o = screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> };
+        await o?.lock?.("landscape").catch(() => {});
+      } catch { /* ไม่รองรับ → ใช้ขยายเต็มหน้า */ }
+    }
+  }, [full]);
+  useEffect(() => {
+    const onFs = () => { if (!document.fullscreenElement) setFull(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setFull(false); };
+    document.addEventListener("fullscreenchange", onFs);
+    window.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("fullscreenchange", onFs); window.removeEventListener("keydown", onKey); };
+  }, []);
+  useEffect(() => {
+    document.body.classList.toggle("chart-full-open", full);
+    return () => document.body.classList.remove("chart-full-open");
+  }, [full]);
   useEffect(() => { try { if (localStorage.getItem("chartType") === "line") setChartType("line"); } catch { /* ignore */ } }, []);
   const changeChartType = (t: "candle" | "line") => { setChartType(t); try { localStorage.setItem("chartType", t); } catch { /* ignore */ } };
   const maSeriesRef = useRef<
@@ -344,7 +375,7 @@ export default function StockChart({
   const intervalLabel = chartFetchConfig(timeRange).label;
 
   return (
-    <div className="chart-shell">
+    <div ref={shellRef} className={`chart-shell${full ? " is-full" : ""}`}>
       <div className="chart-top-bar">
         <div className="chart-legend">
           {activeMaPeriods.map((period) => (
@@ -362,6 +393,11 @@ export default function StockChart({
           </button>
         </span>
         <span className="chart-interval-badge">{intervalLabel}</span>
+        <button type="button" className="chart-full-btn" onClick={toggleFull} aria-label={full ? "ออกจากเต็มจอ" : "ดูเต็มจอ"} title={full ? "ออกจากเต็มจอ" : "ดูเต็มจอ"}>
+          {full
+            ? <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M6 2v4H2M10 2v4h4M6 14v-4H2M10 14v-4h4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            : <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+        </button>
       </div>
       <div className="chart-period-extremes" aria-live="polite">
         <span>{timeRange === "MAX" ? "10Y" : timeRange}</span>

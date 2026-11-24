@@ -20,8 +20,8 @@ export function vapidKeys() {
   return keys;
 }
 
-export type AlertPrefs = { earnings: boolean; xd: boolean; sr: boolean; move: boolean };
-export const DEFAULT_PREFS: AlertPrefs = { earnings: true, xd: true, sr: true, move: true };
+export type AlertPrefs = { earnings: boolean; xd: boolean; sr: boolean; move: boolean; plan: boolean };
+export const DEFAULT_PREFS: AlertPrefs = { earnings: true, xd: true, sr: true, move: true, plan: true };
 export type PushSub = { endpoint: string; keys: { p256dh: string; auth: string }; prefs: AlertPrefs; ua?: string; at: number };
 export type LogItem = { t: number; title: string; body: string; url?: string; kind?: string };
 export type PushState = { subs: PushSub[]; sent: Record<string, number>; log: LogItem[] };

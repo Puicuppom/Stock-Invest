@@ -2044,3 +2044,15 @@ body.ui2 .fab { position: fixed; right: max(12px, calc((100vw - 720px) / 2 + 16p
 .hot-msg { color: var(--muted); }
 .hot-foot { margin: 10px 2px 24px; font-size: 0.72rem; color: var(--muted); }
 .hot-foot a { color: var(--accent); }
+
+/* กราฟ: มือถือสูงขึ้น + ปุ่มดูเต็มจอ */
+.chart-full-btn { flex-shrink: 0; display: grid; place-items: center; width: 30px; height: 26px; padding: 0; border-radius: 8px; border: 1px solid var(--border); background: color-mix(in srgb, var(--surface) 82%, transparent); color: var(--muted); cursor: pointer; }
+.chart-full-btn:hover { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 50%, var(--border)); }
+@media (max-width: 540px) {
+  .chart-section { min-height: 0; }
+  .chart-shell { height: min(64vh, 560px); min-height: 400px; }
+}
+.chart-shell.is-full { position: fixed; inset: 0; z-index: 1000; height: 100vh; height: 100dvh; min-height: 0; border-radius: 0; border: 0; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); animation: ui-fade .2s ease-out both; }
+.chart-shell.is-full .chart-full-btn { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); }
+body.chart-full-open { overflow: hidden; }
+body.chart-full-open .fab, body.chart-full-open .add-fab { display: none !important; }

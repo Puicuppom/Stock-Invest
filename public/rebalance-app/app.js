@@ -3692,7 +3692,7 @@ function renderProfileSheet() {
 }
 
 /* ── แจ้งเตือนมือถือ (Web Push) ── */
-const PUSH_PREFS_DEFAULT = { earnings: true, xd: true, sr: true, move: true };
+const PUSH_PREFS_DEFAULT = { earnings: true, xd: true, sr: true, move: true, plan: true };
 function pushSupported() {
     return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 }
@@ -3747,7 +3747,15 @@ async function refreshPushState() {
         const sub = reg && await reg.pushManager.getSubscription();
         if (!sub) return renderPush({ subscribed: false });
         const res = await fetch('/api/push/subscribe?check=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ endpoint: sub.endpoint }) });
-        renderPush(res.ok ? await res.json() : { subscribed: false });
+        const st = res.ok ? await res.json() : { subscribed: false };
+        // เคยเปิดไว้ แต่เซิร์ฟเวอร์ลืม (การสมัครหมดอายุ/ถูกล้าง) → สมัครใหม่ให้เองเงียบ ๆ
+        if (!st.subscribed && Notification.permission === 'granted' && localStorage.getItem('pushWanted') !== '0') {
+            let prefs = PUSH_PREFS_DEFAULT;
+            try { prefs = { ...PUSH_PREFS_DEFAULT, ...JSON.parse(localStorage.getItem('pushPrefs') || '{}') }; } catch { /* ignore */ }
+            const r2 = await fetch('/api/push/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscription: sub.toJSON(), prefs }) });
+            if (r2.ok) return renderPush({ subscribed: true, prefs });
+        }
+        renderPush(st);
     } catch { renderPush({ subscribed: false }); }
 }
 async function togglePush() {
@@ -3760,6 +3768,7 @@ async function togglePush() {
         if (btn.classList.contains('on') && existing) {
             await fetch('/api/push/subscribe', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ endpoint: existing.endpoint }) });
             await existing.unsubscribe();
+            try { localStorage.setItem('pushWanted', '0'); } catch { /* ignore */ }
             showToast('ปิดแจ้งเตือนแล้ว');
             return renderPush({ subscribed: false });
         }
@@ -3770,6 +3779,7 @@ async function togglePush() {
         const sub = existing || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(publicKey) });
         const res = await fetch('/api/push/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscription: sub.toJSON(), prefs: readPushPrefs() }) });
         if (!res.ok) throw new Error('save');
+        try { localStorage.setItem('pushWanted', '1'); localStorage.setItem('pushPrefs', JSON.stringify(readPushPrefs())); } catch { /* ignore */ }
         showToast('เปิดแจ้งเตือนแล้ว · ลองกด "ส่งทดสอบ"');
         renderPush({ subscribed: true, prefs: readPushPrefs() });
     } catch {
@@ -3781,6 +3791,7 @@ async function savePushPrefs() {
     try {
         const reg = await navigator.serviceWorker.getRegistration('/');
         const sub = reg && await reg.pushManager.getSubscription();
+        try { localStorage.setItem('pushPrefs', JSON.stringify(readPushPrefs())); } catch { /* ignore */ }
         if (!sub) return;
         await fetch('/api/push/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscription: sub.toJSON(), prefs: readPushPrefs() }) });
     } catch { /* ignore */ }

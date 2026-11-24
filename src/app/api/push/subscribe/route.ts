@@ -9,7 +9,7 @@ const validSub = (s: unknown): s is { endpoint: string; keys: { p256dh: string; 
     && typeof x.keys?.p256dh === "string" && typeof x.keys?.auth === "string";
 };
 const cleanPrefs = (p: Partial<AlertPrefs> | undefined): AlertPrefs => ({
-  earnings: p?.earnings !== false, xd: p?.xd !== false, sr: p?.sr !== false, move: p?.move !== false,
+  earnings: p?.earnings !== false, xd: p?.xd !== false, sr: p?.sr !== false, move: p?.move !== false, plan: p?.plan !== false,
 });
 
 /** ดูสถานะของเครื่องนี้: POST {endpoint} ?check=1 · สมัคร/อัปเดต: POST {subscription, prefs} · ยกเลิก: DELETE {endpoint} */
