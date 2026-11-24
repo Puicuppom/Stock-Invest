@@ -109,7 +109,7 @@ export default function WatchlistList({ items, signals, quotes, onRefresh, refre
       </div>
       {(syncStatus || updatedAt) && <p className="wl-sync">{updatedAt ? `ราคา ณ ${new Date(updatedAt).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit", second: "2-digit" })} · อัปเดตเองทุก 30 วิ` : ""}{syncStatus && updatedAt ? " · " : ""}{syncStatus}</p>}
       <form className="wl-search" role="search" onSubmit={e => { e.preventDefault(); submitSearch(); }}>
-        <span aria-hidden="true">🔍</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true" className="search-ico"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.6-3.6" /></svg>
         <input type="search" inputMode="search" autoCapitalize="characters" autoComplete="off" spellCheck={false} placeholder="ค้นหาหุ้น เช่น NVDA, PTT" value={query} onChange={e => setQuery(e.target.value)} aria-label="ค้นหาหุ้น" />
         <span className="wl-search-mkt" role="group" aria-label="ตลาด">
           {(["US", "TH"] as const).map(m => <button key={m} type="button" aria-pressed={qMarket === m} onClick={() => pickMarket(m)}>{m === "US" ? "US" : "ไทย"}</button>)}

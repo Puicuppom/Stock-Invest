@@ -19,7 +19,7 @@ export const BUCKET_META: Record<BucketKey, { name: string; color: string }> = {
   quality: { name: "หุ้นเติบโต", color: "#22c55e" },
   dip: { name: "หุ้นลดราคา", color: "#ec4899" },
   small: { name: "หุ้นขนาดเล็ก", color: "#a78bfa" },
-  cash: { name: "เงินสด", color: "#64748b" },
+  cash: { name: "เงินสด", color: "#6f6585" },
 };
 export const PROFILE_NAME: Record<Profile, string> = { safe: "มั่นคง", balanced: "สมดุล", growth: "เติบโต" };
 

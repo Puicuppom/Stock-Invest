@@ -86,7 +86,7 @@ const PLAN_BUCKETS = {
     quality: { icon: '🚀', name: 'หุ้นเติบโต', color: '#22c55e' },
     dip: { icon: '🏷️', name: 'หุ้นลดราคา', color: '#ec4899' },
     small: { icon: '💎', name: 'หุ้นขนาดเล็ก', color: '#a78bfa' },
-    cash: { icon: '💵', name: 'เงินสด', color: '#64748b' }
+    cash: { icon: '💵', name: 'เงินสด', color: '#6f6585' }
 };
 const PLAN_PROFILE_DEFAULTS = {
     safe: { name: 'มั่นคง', mix: { core: 55, income: 25, quality: 10, cash: 10 } },
@@ -2060,7 +2060,7 @@ function logoImg(asset) {
     if (isCashAsset(asset) || IS_FUND_PF) return '';
     const sym = String(asset.name || '').toUpperCase().replace(/[^A-Z0-9.\-]/g, '');
     if (!sym) return '';
-    return `<img class="asset-logo" src="https://financialmodelingprep.com/image-stock/${encodeURIComponent(sym)}.png" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">`;
+    return `<img class="asset-logo" src="https://financialmodelingprep.com/image-stock/${encodeURIComponent(sym)}.png" alt="" loading="lazy" referrerpolicy="no-referrer" onload="this.classList.add('ok')" onerror="this.remove()">`;
 }
 
 /* แถวกระชับ: แตะเพื่อเปิดรายละเอียด (จำว่าตัวไหนเปิดอยู่ระหว่างคำนวณใหม่) */
@@ -2142,6 +2142,8 @@ function renderAndCalculate() {
     }
 
     visible.forEach(item => appendAssetCard(list, item));
+    // เปิดหน้าครั้งแรก: แถวค่อย ๆ ไล่ขึ้นมา (ไม่เล่นซ้ำตอนรีเฟรชราคา)
+    if (!window.__rowsIn) { window.__rowsIn = true; list.classList.add('rows-in'); setTimeout(() => list.classList.remove('rows-in'), 1600); }
 }
 
 function updateAsset(index, field, val) {

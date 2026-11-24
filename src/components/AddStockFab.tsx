@@ -58,7 +58,7 @@ export default function AddStockFab({ open, onOpenChange, isSaved, onToggle, onO
               <button type="button" className="add2-close" onClick={() => onOpenChange(false)} aria-label="ปิด">×</button>
             </div>
             <form className="wl-search add2-search" onSubmit={e => { e.preventDefault(); if (found?.state === "found" && !isSaved(found.symbol, found.market)) onToggle(found.symbol, found.market); }}>
-              <span aria-hidden="true">🔍</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true" className="search-ico"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.6-3.6" /></svg>
               <input
                 id="symbol-input" type="search" inputMode="search" placeholder="เช่น META, GLD, PTT"
                 value={symbol} onChange={e => setSymbol(e.target.value)}

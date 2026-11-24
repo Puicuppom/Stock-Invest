@@ -31,9 +31,9 @@ interface StockChartProps {
 }
 
 const CHART_COLORS = {
-  background: "#0f172a",
-  text: "#94a3b8",
-  grid: "#1e293b",
+  background: "#15111f",
+  text: "#a89fba",
+  grid: "#211b2e",
   up: "#22c55e",
   down: "#ef4444",
   pivot: "#f0954a",

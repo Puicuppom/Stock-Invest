@@ -2,12 +2,12 @@
 /* Shared visual tokens for the Next.js pages and the embedded portfolio. */
 :root {
   color-scheme: dark;
-  --ui-bg: #020617;
-  --ui-surface: #0f172a;
-  --ui-raised: #1e293b;
-  --ui-border: #334155;
+  --ui-bg: #0b0913;
+  --ui-surface: #15111f;
+  --ui-raised: #211b2e;
+  --ui-border: #362c48;
   --ui-text: #f8fafc;
-  --ui-muted: #94a3b8;
+  --ui-muted: #a89fba;
   /* ฮวงจุ้ย: เจ้าของเกิดปีมะแม 2534 ธาตุทอง (辛未) · เกิดตี 4 ก่อนพระอาทิตย์ขึ้น → นับเป็นคนเกิดวันอังคาร
      ศรี (โชคลาภ) = ส้ม → สีหลัก · เดช (อำนาจ) = ม่วง → สีเตือน · กาลกิณี = เหลือง/ครีม → ไม่ใช้
      เขียว = กำไร (ธาตุไม้ = ทรัพย์ของธาตุทอง) · เลี่ยงฟ้าเป็นสีหลัก (ธาตุน้ำ ดึงพลังทอง) */
@@ -24,3 +24,102 @@
 /* เลื่อนด้วย touchpad / นิ้ว / ล้อเมาส์ได้ตามปกติ แต่ไม่แสดงแถบเลื่อนด้านข้าง (ทุกหน้า รวมหน้าปรับพอร์ต) */
 html, body, * { scrollbar-width: none; -ms-overflow-style: none; }
 ::-webkit-scrollbar { width: 0; height: 0; display: none; background: transparent; }
+
+/* ───────── สีมงคล + Animation (ใช้ร่วมทุกหน้า) ─────────
+   พื้นม่วงดำ (เดช) · ส้มทองแดง (ศรี) · ชมพู (บริวาร) · เงิน (ธาตุทอง) · เขียว = กำไร */
+:root {
+  --lucky-rose: #f472b6;
+  --lucky-violet: #a78bfa;
+  --lucky-silver: #e2e8f0;
+  --lucky-grad: linear-gradient(135deg, #f8b77a 0%, #f0954a 45%, #ec6f9a 100%);
+  --ease-out: cubic-bezier(.22, 1, .36, 1);
+}
+html {
+  background:
+    radial-gradient(900px 520px at 105% -8%, rgba(240, 149, 74, .13), transparent 62%),
+    radial-gradient(760px 520px at -12% 108%, rgba(167, 139, 250, .11), transparent 62%),
+    var(--ui-bg);
+  background-attachment: fixed;
+}
+body { background: transparent !important; }
+
+@keyframes ui-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes ui-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ui-sheet-up { from { opacity: 0; transform: translateY(28px) scale(.985); } to { opacity: 1; transform: none; } }
+@keyframes ui-glow { 0%, 100% { box-shadow: 0 8px 22px -6px rgba(240, 149, 74, .55), 0 0 0 0 rgba(236, 111, 154, 0); } 50% { box-shadow: 0 10px 28px -6px rgba(236, 111, 154, .6), 0 0 0 6px rgba(236, 111, 154, .10); } }
+@keyframes ui-sheen { from { background-position: 100% 0; } to { background-position: 0 0; } }
+
+/* หัวข้อหน้า: ตัวอักษรไล่สีทองแดง→ชมพู */
+.wl-head h1, .hot-head h1, .rb-title h1 {
+  background: var(--lucky-grad); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
+}
+.wl-head h1 small { -webkit-text-fill-color: var(--ui-muted); color: var(--ui-muted); }
+
+/* แถบเมนูบน: แท็บที่เลือกมีขอบเรืองทองแดง */
+.app-navigation a { transition: background .25s var(--ease-out), color .25s, box-shadow .25s; }
+html body .app-navigation a[aria-current="page"] {
+  color: #ffd9b8;
+  background: linear-gradient(180deg, rgba(240, 149, 74, .22), rgba(236, 111, 154, .10));
+  box-shadow: inset 0 0 0 1px rgba(240, 149, 74, .45), 0 4px 14px -6px rgba(240, 149, 74, .55);
+}
+
+/* ปุ่ม + ลอย: ไล่สีมงคล หายใจเบา ๆ */
+body.ui2 .fab, .rb2 .fab {
+  background: var(--lucky-grad) !important; color: #2a0f05 !important;
+  animation: ui-glow 3.6s ease-in-out infinite;
+  transition: transform .18s var(--ease-out);
+}
+body.ui2 .fab:hover, .rb2 .fab:hover { transform: translateY(-2px) rotate(90deg); }
+
+/* กดแล้วยุบนิดนึง */
+button, .app-navigation a, [role="button"] { transition: transform .14s var(--ease-out), background .2s, border-color .2s, color .2s, box-shadow .2s; }
+button:active:not(:disabled), .app-navigation a:active, [role="button"]:active { transform: scale(.97); }
+
+/* โลโก้หุ้น: ค่อย ๆ ปรากฏหลังโหลดเสร็จ (ระหว่างโหลดเห็นตัวย่อบนวงไล่สี) */
+.stock-logo { opacity: 0; transition: opacity .4s var(--ease-out); }
+.stock-logo.is-loaded { opacity: 1; }
+.wl-logo { background: var(--lucky-grad) !important; }
+.wl-logo-text { color: #2a0f05 !important; }
+.asset-logo { opacity: 0; transition: opacity .4s var(--ease-out); }
+.asset-logo.ok { opacity: 1; }
+
+/* การ์ดและแถว: ไล่ขึ้นมาตอนเปิด/สลับแท็บ */
+.stock-dashboard > *, .signal-summary, .fx-sum, .deep-card, .an-card, .company-card, .etf-card, .chart-section, .hc, .hot-tabs {
+  animation: ui-rise .5s var(--ease-out) both;
+}
+.stock-dashboard > *:nth-child(2) { animation-delay: .05s; } .stock-dashboard > *:nth-child(3) { animation-delay: .1s; }
+.stock-dashboard > *:nth-child(4) { animation-delay: .15s; } .stock-dashboard > *:nth-child(n+5) { animation-delay: .2s; }
+.sx-hero, .sx-tiles, .sx-plan, .sx-tags { animation: ui-rise .5s var(--ease-out) both; }
+.sx-tiles { animation-delay: .06s; } .sx-plan { animation-delay: .12s; } .sx-tags { animation-delay: .18s; }
+.wl-row, .hot-row { animation: ui-rise .45s var(--ease-out) both; }
+.wl-row:nth-child(2), .hot-row:nth-child(2) { animation-delay: .03s; } .wl-row:nth-child(3), .hot-row:nth-child(3) { animation-delay: .06s; }
+.wl-row:nth-child(4), .hot-row:nth-child(4) { animation-delay: .09s; } .wl-row:nth-child(5), .hot-row:nth-child(5) { animation-delay: .12s; }
+.wl-row:nth-child(6), .hot-row:nth-child(6) { animation-delay: .15s; } .wl-row:nth-child(7), .hot-row:nth-child(7) { animation-delay: .18s; }
+.wl-row:nth-child(n+8), .hot-row:nth-child(n+8) { animation-delay: .21s; }
+.wl-row.dragging, .wl-row[data-dragging] { animation: none; }
+
+/* หน้าปรับพอร์ต */
+.rb2 .hero { animation: ui-rise .55s var(--ease-out) both; }
+.rows-in > * { animation: ui-rise .45s var(--ease-out) both; }
+.rows-in > *:nth-child(2) { animation-delay: .04s; } .rows-in > *:nth-child(3) { animation-delay: .08s; } .rows-in > *:nth-child(4) { animation-delay: .12s; }
+.rows-in > *:nth-child(5) { animation-delay: .16s; } .rows-in > *:nth-child(6) { animation-delay: .2s; } .rows-in > *:nth-child(n+7) { animation-delay: .24s; }
+.overlay.open { animation: ui-fade .2s ease-out both; }
+.overlay.open .sheet { animation: ui-sheet-up .32s var(--ease-out) both; }
+
+/* ตัวเลขมูลค่าพอร์ต: ประกายวิ่งผ่านครั้งเดียวตอนเปิด */
+html .rb2 .hero-value {
+  background: linear-gradient(100deg, var(--ui-text) 40%, #ffd9b8 50%, var(--ui-text) 60%) 100% 0 / 250% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
+  animation: ui-sheen 1.8s .4s var(--ease-out) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; animation-delay: 0s !important; transition-duration: .01ms !important; }
+}
+
+/* แท็บย่อย (ภาพรวม/กราฟ/พื้นฐาน ฯลฯ): แท็บที่เลือกโทนทองแดงเหมือนเมนูบน */
+html body [role="tab"][aria-selected="true"] {
+  color: #ffd9b8 !important;
+  background: linear-gradient(180deg, rgba(240, 149, 74, .20), rgba(236, 111, 154, .08)) !important;
+  box-shadow: inset 0 0 0 1px rgba(240, 149, 74, .38) !important;
+}
