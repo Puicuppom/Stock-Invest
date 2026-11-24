@@ -12,7 +12,7 @@ import DeepCards from "./DeepCards";
 import EtfCard from "./EtfCard";
 import SignalSummary from "@/components/SignalSummary";
 import StockChart from "@/components/StockChart";
-import WatchlistList from "@/components/WatchlistList";
+import WatchlistList, { watchlistOrder } from "@/components/WatchlistList";
 import { useSrTagSettings } from "@/hooks/useSrTagSettings";
 import { reversalTag } from "@/lib/reversal";
 import { chipSignalOf, getCachedStock, putCachedStock, useSrWatchlistTags, type WatchlistSrTags } from "@/hooks/useSrWatchlistTags";
@@ -114,6 +114,31 @@ export default function StockApp() {
     else setView("list");
     window.scrollTo(0, 0);
   }, []);
+  // ปัดซ้าย/ขวาในหน้าวิเคราะห์ = หุ้นตัวถัดไป/ก่อนหน้า ตามลำดับใน Watchlist (ตัวจับท่าทางอยู่ใน /ptr.js)
+  const stockPos = useMemo(() => {
+    const inList = new Set(items.map(watchlistId));
+    const ids = watchlistOrder.ids.filter(id => inList.has(id));
+    for (const it of items) if (!ids.includes(watchlistId(it))) ids.push(watchlistId(it));
+    return { ids, i: activeItem && !previewItem ? ids.indexOf(watchlistId(activeItem)) : -1 };
+  }, [items, activeItem, previewItem]);
+  useEffect(() => {
+    const w = window as Window & { __swipeStock?: (dir: "left" | "right") => boolean };
+    if (view !== "detail") { delete w.__swipeStock; return; }
+    let t = 0;
+    w.__swipeStock = dir => {
+      const { ids, i } = stockPos;
+      if (i < 0 || ids.length < 2) return true;
+      const j = (i + (dir === "left" ? 1 : -1) + ids.length) % ids.length;
+      document.documentElement.dataset.swipe = dir;
+      window.clearTimeout(t);
+      t = window.setTimeout(() => { delete document.documentElement.dataset.swipe; }, 900);
+      setSelected(ids[j]);
+      window.scrollTo(0, 0);
+      try { navigator.vibrate?.(8); } catch { /* ignore */ }
+      return true;
+    };
+    return () => { delete w.__swipeStock; window.clearTimeout(t); };
+  }, [view, stockPos, setSelected]);
   const [liveTagCache, setLiveTagCache] = useState<WatchlistSrTags>({});
 
   const selectedData =
@@ -328,6 +353,7 @@ export default function StockApp() {
       {view === "detail" && (
         <div className="detail-bar">
           <button type="button" className="detail-back" onClick={backToList}>← Watchlist</button>
+          {stockPos.i >= 0 && stockPos.ids.length > 1 && <span className="detail-pos" title="ปัดซ้าย/ขวาเพื่อดูหุ้นตัวถัดไป">‹ {stockPos.i + 1}/{stockPos.ids.length} ›</span>}
           {activeItem && (() => {
             // ดาวแสดงตลอด: โปร่ง = ยังไม่อยู่ใน Watchlist · เต็ม = อยู่แล้ว (กดเพื่อเอาออก)
             const saved = items.some(it => watchlistId(it) === watchlistId(activeItem));

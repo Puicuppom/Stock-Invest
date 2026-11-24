@@ -3,7 +3,7 @@ import Link from "next/link";
 const ICONS = {
   stocks: <path d="M3 17l5-5 4 3 7-8M15 7h4v4" />,
   rebalance: <><circle cx="12" cy="12" r="8" /><path d="M12 4v8l6 4" /></>,
-  screener: <path d="M12 3c.9 3.6 3.6 6 3.6 9.6A3.6 3.6 0 0 1 12 16.2a3.6 3.6 0 0 1-3.6-3.6c0-1.6.8-2.8 1.6-3.8M8 18.5c1.1 1.6 2.4 2.5 4 2.5 3.9 0 6.5-3.1 6.5-7.2" />,
+  screener: <path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z" />,
 } as const;
 
 const TABS = [

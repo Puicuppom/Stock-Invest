@@ -1989,3 +1989,13 @@ html:root { font-size: 16px; }
 
 /* ตั้งค่า: ไม่บีบกล่องรายการให้เตี้ยจนโดนตัด → ให้เลื่อนดูทั้งหน้าแทน */
 .rb2 .settings-body > * { flex-shrink: 0; }
+
+/* ประเภทแจ้งเตือน: 2 คอลัมน์เท่ากัน · อันสุดท้าย (ยาว) เต็มแถว · สูงเท่ากันทุกปุ่ม */
+.rb2 .push-opts { padding: 2px 14px 14px; }
+.rb2 .push-types { gap: 8px; }
+.rb2 .push-types .chip-check:last-child:nth-child(odd) { grid-column: 1 / -1; }
+.rb2 .chip-check span { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 42px; padding: 8px 10px; border-radius: 12px; overflow: hidden; text-overflow: ellipsis; }
+.rb2 .chip-check input:checked + span { color: #ffd9b8; border-color: rgba(240, 149, 74, .55); background: linear-gradient(180deg, rgba(240, 149, 74, .16), rgba(236, 111, 154, .07)); }
+
+/* มือถือ (แถบเมนูอยู่ล่าง นอกกรอบนี้): ปุ่ม + เหนือขอบล่างกรอบ 12px = ตำแหน่งเดียวกับหน้าอื่น */
+@media (max-width: 760px) { .rb2 .fab-wrap { bottom: 12px !important; } }

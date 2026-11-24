@@ -3759,6 +3759,12 @@ async function refreshPushState() {
             const r2 = await fetch('/api/push/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscription: sub.toJSON(), prefs }) });
             if (r2.ok) return renderPush({ subscribed: true, prefs });
         }
+        // บั๊กเดิม: เปิดสวิตช์แล้วบันทึกว่าไม่รับสักประเภท → ถ้าผู้ใช้ไม่เคยแตะเลือกเอง ให้เปิดทุกประเภทกลับมา
+        if (st.subscribed && st.prefs && !Object.values(st.prefs).some(Boolean) && localStorage.getItem('pushPrefsTouched') !== '1') {
+            const prefs = { ...PUSH_PREFS_DEFAULT };
+            const r3 = await fetch('/api/push/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscription: sub.toJSON(), prefs }) });
+            if (r3.ok) { st.prefs = prefs; try { localStorage.setItem('pushPrefs', JSON.stringify(prefs)); } catch { /* ignore */ } }
+        }
         renderPush(st);
     } catch { renderPush({ subscribed: false }); }
 }
@@ -3793,8 +3799,9 @@ async function togglePush() {
         renderPush({ subscribed: false });
     } finally { btn.disabled = false; }
 }
-async function savePushPrefs() {
+async function savePushPrefs(byUser) {
     try {
+        if (byUser) { try { localStorage.setItem('pushPrefsTouched', '1'); } catch { /* ignore */ } }
         const reg = await PUSH_WIN.navigator.serviceWorker.getRegistration('/');
         const sub = reg && await reg.pushManager.getSubscription();
         try { localStorage.setItem('pushPrefs', JSON.stringify(readPushPrefs())); } catch { /* ignore */ }

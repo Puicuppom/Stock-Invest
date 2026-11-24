@@ -32,5 +32,47 @@
       "type": "image/svg+xml",
       "purpose": "any"
     }
+  ],
+  "id": "/",
+  "shortcuts": [
+    {
+      "name": "ปรับพอร์ต",
+      "short_name": "ปรับพอร์ต",
+      "description": "ดูและปรับสัดส่วนพอร์ต",
+      "url": "/rebalance",
+      "icons": [
+        {
+          "src": "/shortcut-rebalance.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "หุ้นเด่นวันนี้",
+      "short_name": "หุ้นเด่น",
+      "description": "หุ้นที่เป็นข่าว ขึ้นแรง ลงแรง",
+      "url": "/screener",
+      "icons": [
+        {
+          "src": "/shortcut-screener.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "วิเคราะห์หุ้น",
+      "short_name": "Watchlist",
+      "description": "รายการหุ้นที่ติดตาม",
+      "url": "/",
+      "icons": [
+        {
+          "src": "/shortcut-stocks.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
   ]
 }

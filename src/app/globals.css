@@ -2079,8 +2079,9 @@ body.chart-full-open .fab, body.chart-full-open .add-fab { display: none !import
     box-shadow: 0 6px 16px -6px rgba(240, 149, 74, .7);
   }
   .app-shell { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important; }
-  .rebalance-shell { padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px)) !important; }
-  body.ui2 .fab { bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important; }
+  /* แถบล่างสูง 76px → เนื้อหา/ปุ่ม + อยู่เหนือแถบพอดี · ปุ่ม + ทุกหน้า: เหนือแถบ 12px ชิดขวาเท่ากัน */
+  .rebalance-shell { padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important; }
+  body.ui2 .fab { bottom: calc(88px + env(safe-area-inset-bottom, 0px)) !important; }
   body.chart-full-open .app-navigation { display: none; }
 }
 
@@ -2089,3 +2090,4 @@ body.chart-full-open .fab, body.chart-full-open .add-fab { display: none !import
 @keyframes swipe-in-right { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
 html[data-swipe="left"] :is(.app-shell > :not(.app-navigation), .rebalance-frame) { animation: swipe-in-left .35s var(--ease-out, ease) both; }
 html[data-swipe="right"] :is(.app-shell > :not(.app-navigation), .rebalance-frame) { animation: swipe-in-right .35s var(--ease-out, ease) both; }
+.detail-pos { margin-left: 4px; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; color: var(--ui-muted, var(--muted)); background: color-mix(in srgb, var(--accent) 10%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent); font-variant-numeric: tabular-nums; }

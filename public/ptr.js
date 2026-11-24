@@ -80,6 +80,7 @@
     if (dist < TRIGGER) { hide(); return; }
     var b = target();
     busy = true;
+    try { navigator.vibrate && navigator.vibrate(10); } catch (_) { /* ignore */ }
     el.classList.add('load');
     el.style.transform = 'translateY(' + (TRIGGER * 0.6 - 36) + 'px)';
     var t0 = Date.now();
@@ -95,7 +96,7 @@
   document.addEventListener('touchend', end, { passive: true });
 
   /* ── ปัดซ้าย/ขวา = เปลี่ยนแท็บหลัก (ทำงานทั้งหน้าหลักและในกรอบหน้าปรับพอร์ต) ── */
-  var SW_SKIP = '.wl-row, .asset-card, .cr-swipe-wrap, .chart-shell, .overlay.open, .sheet, input, textarea, select, [data-no-swipe], .app-navigation';
+  var SW_SKIP = '.hero, .wl-row, .asset-card, .cr-swipe-wrap, .chart-shell, .overlay.open, .sheet, input, textarea, select, [data-no-swipe], .app-navigation';
   var sw = null;
   var scrollsX = function (n) {
     for (; n && n !== document.body && n.nodeType === 1; n = n.parentElement) {
@@ -119,8 +120,11 @@
     if (Math.abs(dx) < 80 || Math.abs(dx) < Math.abs(dy) * 2 || dt > 700) return;
     var sel = window.getSelection && String(window.getSelection());
     if (sel) return;
+    // หน้าวิเคราะห์หุ้น: ปัด = หุ้นตัวถัดไป (เปลี่ยนแท็บหลักใช้แถบล่าง)
+    if (window.__swipeStock && window.__swipeStock(dx < 0 ? 'left' : 'right')) return;
     var go = null;
     try { go = (window.top && window.top.__swipeNav) || window.__swipeNav; } catch (_) { go = window.__swipeNav; }
+    try { navigator.vibrate && navigator.vibrate(8); } catch (_) { /* ignore */ }
     if (go) go(dx < 0 ? 'left' : 'right');
   }, { passive: true });
   document.addEventListener('touchcancel', function () { pulling = false; hide(); }, { passive: true });
