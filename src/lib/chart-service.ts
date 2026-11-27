@@ -61,7 +61,10 @@ export async function fetchYahooCandles(
       "User-Agent":
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
     },
-    next: { revalidate },
+    // ไม่ใช้แคชข้อมูลของ Next: ถ้ารอบดึงใหม่ล้มเหลว (เช่น Yahoo จำกัด) มันจะเสิร์ฟของเก่าค้างได้เป็นวัน
+    // ภาระการดึงคุมด้วยแคช CDN ของ API (60–120 วิ) แทน
+    cache: "no-store",
+    signal: AbortSignal.timeout(10000),
   });
 
   if (!res.ok) {

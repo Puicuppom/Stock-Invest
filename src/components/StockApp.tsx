@@ -295,6 +295,34 @@ export default function StockApp() {
     [activeItem]
   );
 
+  // ราคาสดในหน้าหุ้น: ดึงทุก 5 วิ จากแหล่งเดียวกับ Watchlist (ข้อมูลวิเคราะห์ยังใช้ชุดเต็มด้านล่าง)
+  type LiveQ = { id: string; price: number; changePercent: number; ext: StockData["extended"] };
+  const [liveQ, setLiveQ] = useState<LiveQ | null>(null);
+  useEffect(() => {
+    if (view !== "detail" || !activeItem) { setLiveQ(null); return; }
+    const id = watchlistId(activeItem);
+    let alive = true, inflight = false, pauseUntil = 0;
+    const run = async () => {
+      if (document.visibilityState !== "visible" || inflight || Date.now() < pauseUntil) return;
+      inflight = true;
+      try {
+        const r = await fetch(`/api/quotes?items=${encodeURIComponent(activeItem.symbol)}:${activeItem.market}`, { cache: "no-store" });
+        const j = r.ok ? await r.json() : null;
+        const q = j?.quotes?.[id] ?? j?.quotes?.[id.toUpperCase()];
+        if (!alive) return;
+        if (q && q.price > 0) { setLiveQ({ id, price: q.price, changePercent: q.changePercent ?? 0, ext: q.ext ?? null }); pauseUntil = 0; }
+        else if (!r.ok) pauseUntil = Date.now() + 30000;
+      } catch { pauseUntil = Date.now() + 30000; }
+      finally { inflight = false; }
+    };
+    run();
+    const t = window.setInterval(run, 5000);
+    const onVis = () => { if (document.visibilityState === "visible") run(); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => { alive = false; window.clearInterval(t); document.removeEventListener("visibilitychange", onVis); };
+  }, [view, activeItem]);
+  const live = liveQ && activeItem && liveQ.id === watchlistId(activeItem) ? liveQ : null;
+
   useEffect(() => {
     if (!loaded || !activeItem) return;
     // แสดงข้อมูลที่ Watchlist โหลดไว้ทันที แล้วโหลดชุดเต็มตามมา
@@ -358,9 +386,9 @@ export default function StockApp() {
         <StockDashboard
           symbol={displaySymbol(selectedData.resolvedSymbol)}
           companyName={selectedData.longName}
-          currentPrice={selectedData.lastClose}
-          change={selectedData.change}
-          changePercent={selectedData.changePercent}
+          currentPrice={live ? live.price : selectedData.lastClose}
+          change={live ? live.price - live.price / (1 + live.changePercent / 100) : selectedData.change}
+          changePercent={live ? live.changePercent : selectedData.changePercent}
           market={selectedData.market}
           assetKind={selectedData.assetKind}
           fairValue={selectedData.fairValue}
@@ -371,7 +399,7 @@ export default function StockApp() {
           onRefresh={() => fetchStock(true)}
           trend={trend}
           events={selectedData.events}
-          extended={selectedData.extended}
+          extended={live ? live.ext : selectedData.extended}
           logoSymbol={selectedData.resolvedSymbol}
           rev={reversalTag(selectedData)}
           dip={(() => { const c = chipSignalOf(selectedData); return c.dipKind ? { kind: c.dipKind, label: c.dipLabel, short: c.dipShort ?? null, drawdown: c.dipDrawdown ?? null } : null; })()}
