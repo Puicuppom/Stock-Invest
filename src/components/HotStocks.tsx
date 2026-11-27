@@ -4,6 +4,7 @@ import AppNavigation from "./AppNavigation";
 import StockLogo from "./StockLogo";
 import { StarIcon } from "./Icons";
 import { appToast, nowHHMM } from "@/lib/app-toast";
+import { getPrices, publishPrices, subscribePrices } from "@/lib/live-prices";
 import { useWatchlist } from "@/hooks/useWatchlist";
 import type { HotSection } from "@/app/api/hot/route";
 
@@ -42,6 +43,8 @@ export default function HotStocks() {
   useEffect(() => {
     if (!liveKey) return;
     let alive = true, inflight = false, pauseUntil = 0;
+    setLive(prev => ({ ...Object.fromEntries(Object.entries(getPrices()).filter(([, v]) => Date.now() - v.at < 10 * 60 * 1000)), ...prev }));
+    const unsub = subscribePrices(ch => setLive(prev => ({ ...prev, ...ch })));
     const run = async () => {
       if (document.visibilityState !== "visible" || inflight || Date.now() < pauseUntil) return;
       inflight = true;
@@ -49,7 +52,7 @@ export default function HotStocks() {
         const r = await fetch(`/api/quotes?items=${encodeURIComponent(liveKey)}`, { cache: "no-store" });
         const j = r.ok ? await r.json() : null;
         if (!alive) return;
-        if (j?.quotes) setLive(prev => ({ ...prev, ...j.quotes }));
+        if (j?.quotes) { publishPrices(j.quotes); setLive(prev => ({ ...prev, ...j.quotes })); }
         else pauseUntil = Date.now() + 30000;
       } catch { pauseUntil = Date.now() + 30000; }
       finally { inflight = false; }
@@ -58,7 +61,7 @@ export default function HotStocks() {
     const t = window.setInterval(run, 5000);
     const onVis = () => { if (document.visibilityState === "visible") run(); };
     document.addEventListener("visibilitychange", onVis);
-    return () => { alive = false; window.clearInterval(t); document.removeEventListener("visibilitychange", onVis); };
+    return () => { alive = false; unsub(); window.clearInterval(t); document.removeEventListener("visibilitychange", onVis); };
   }, [liveKey]);
   const inList = (sym: string) => items.some(i => i.symbol === sym && i.market === market);
   const toggle = (sym: string) => {

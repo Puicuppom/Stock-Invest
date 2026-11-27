@@ -18,6 +18,7 @@ import { reversalTag } from "@/lib/reversal";
 import { chipSignalOf, getCachedStock, putCachedStock, useSrWatchlistTags, type WatchlistSrTags } from "@/hooks/useSrWatchlistTags";
 import { useWatchlist } from "@/hooks/useWatchlist";
 import { useSrMode } from "@/hooks/useSrMode";
+import { getPrices, priceKey, publishPrices, subscribePrices } from "@/lib/live-prices";
 import { findSrHits } from "@/lib/sr-levels";
 import { computeTradePlan } from "@/lib/trade-plan";
 import { analyzeTrend } from "@/lib/trend";
@@ -123,6 +124,12 @@ export default function StockApp() {
     if (view !== "detail" || !activeItem) { setLiveQ(null); return; }
     const id = watchlistId(activeItem);
     let alive = true, inflight = false, pauseUntil = 0;
+    // ราคากลางทั้งเว็บ: เปิดหน้ามาใช้ราคาล่าสุดที่หน้าอื่นดึงไว้ทันที และรับอัปเดตจากทุกหน้า
+    const take = (v?: { price: number; changePercent: number; ext?: StockData["extended"] | null; at: number }) => {
+      if (v && v.price > 0 && Date.now() - v.at < 10 * 60 * 1000) setLiveQ({ id, price: v.price, changePercent: v.changePercent ?? 0, ext: v.ext ?? null });
+    };
+    take(getPrices()[priceKey(id)]);
+    const unsub = subscribePrices(ch => take(ch[priceKey(id)]));
     const run = async () => {
       if (document.visibilityState !== "visible" || inflight || Date.now() < pauseUntil) return;
       inflight = true;
@@ -131,7 +138,7 @@ export default function StockApp() {
         const j = r.ok ? await r.json() : null;
         const q = j?.quotes?.[id] ?? j?.quotes?.[id.toUpperCase()];
         if (!alive) return;
-        if (q && q.price > 0) { setLiveQ({ id, price: q.price, changePercent: q.changePercent ?? 0, ext: q.ext ?? null }); pauseUntil = 0; }
+        if (q && q.price > 0) { publishPrices({ [id]: q }); setLiveQ({ id, price: q.price, changePercent: q.changePercent ?? 0, ext: q.ext ?? null }); pauseUntil = 0; }
         else if (!r.ok) pauseUntil = Date.now() + 30000;
       } catch { pauseUntil = Date.now() + 30000; }
       finally { inflight = false; }
@@ -140,7 +147,7 @@ export default function StockApp() {
     const t = window.setInterval(run, 5000);
     const onVis = () => { if (document.visibilityState === "visible") run(); };
     document.addEventListener("visibilitychange", onVis);
-    return () => { alive = false; window.clearInterval(t); document.removeEventListener("visibilitychange", onVis); };
+    return () => { alive = false; unsub(); window.clearInterval(t); document.removeEventListener("visibilitychange", onVis); };
   }, [view, activeItem]);
   const live = liveQ && activeItem && liveQ.id === watchlistId(activeItem) ? liveQ : null;
   const rawData =

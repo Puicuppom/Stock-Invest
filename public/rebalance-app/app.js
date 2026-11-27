@@ -498,6 +498,8 @@ async function fetchLiveQuotes(render = true) {
         const res = await fetch(`/api/quotes?items=${items}`, { cache: 'no-store' });
         if (!res.ok) { livePauseUntil = Date.now() + 30000; return 0; }
         const { quotes } = await res.json();
+        // ราคาชุดเดียวทั้งเว็บ: ส่งให้ Watchlist / หน้าหุ้น / หุ้นเด่น ด้วย
+        if (window.LivePrices && quotes) window.LivePrices.publish(quotes);
         for (const s of symbols) {
             const q = quotes?.[`${s}::${/\.BK$/i.test(s) ? 'TH' : 'US'}`];
             if (!q || !(q.price > 0)) continue;
@@ -518,6 +520,41 @@ async function fetchLiveQuotes(render = true) {
     }
     updatePriceStamp();
     return n;
+}
+
+/* รับราคาที่หน้าอื่นดึงมา (ราคาชุดเดียวทั้งเว็บ) → อัปเดตพอร์ตทันที ไม่ต้องรอรอบของตัวเอง */
+function applySharedPrices(map, render) {
+    if (IS_FUND_PF || !map) return 0;
+    let n = 0;
+    for (const a of myPortfolio) {
+        if (isCashAsset(a) || !a.name) continue;
+        const s = a.name, k = window.LivePrices.key(`${s}::${/\.BK$/i.test(s) ? 'TH' : 'US'}`), v = map[k];
+        if (!v || !(v.price > 0)) continue;
+        const cur = priceCache[s];
+        if (cur && cur.at && cur.at >= v.at && cur.price === v.price) continue;
+        if (cur && cur.at && cur.at > v.at) continue;
+        priceCache[s] = { ...(cur || {}), price: v.price, ext: v.ext || null, changePercent: Number.isFinite(v.changePercent) ? v.changePercent : null, marketState: v.marketState || null, at: v.at, error: false };
+        n++;
+    }
+    if (n) {
+        lastLiveAt = Math.max(lastLiveAt || 0, Date.now());
+        savePriceCache();
+        if (render) {
+            syncAssetValues();
+            if (!document.querySelector('.asset-card')) renderAndCalculate(); else recalculate();
+            refreshAssetSheetPrices();
+        }
+    }
+    return n;
+}
+if (window.LivePrices) {
+    applySharedPrices(window.LivePrices.all(), false);
+    let sharedT = 0, pendingShared = {};
+    window.LivePrices.subscribe(changed => {
+        Object.assign(pendingShared, changed);
+        clearTimeout(sharedT);
+        sharedT = setTimeout(() => { const m = pendingShared; pendingShared = {}; applySharedPrices(m, true); }, 120);
+    });
 }
 
 function updatePriceStamp() {

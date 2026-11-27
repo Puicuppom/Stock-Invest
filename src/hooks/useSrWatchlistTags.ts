@@ -9,6 +9,7 @@ import { eventBadges, type EventBadge } from "@/lib/events";
 import { analyzeDip, type DipKind } from "@/lib/dip";
 import { analyzeEtfDip } from "@/lib/etf";
 import { appToast, nowHHMM } from "@/lib/app-toast";
+import { getPrices, publishPrices, subscribePrices } from "@/lib/live-prices";
 
 /** แจ้งครั้งเดียวต่อการเปิดเว็บ เมื่อราคาสดชุดแรกมาถึง */
 let announcedOpen = false;
@@ -126,11 +127,15 @@ export function useSrWatchlistTags({
   useEffect(() => {
     const read = <T,>(k: string): T | null => { try { return JSON.parse(localStorage.getItem(k) || "null") as T | null; } catch { return null; } };
     const q = read<WatchlistQuotes>(CACHE_KEYS.quotes), sg = read<WatchlistSignals>(CACHE_KEYS.signals), tg = read<WatchlistSrTags>(CACHE_KEYS.tags);
-    if (q) setQuotes(prev => ({ ...q, ...prev }));
+    // ราคากลางทั้งเว็บ (ใหม่กว่า) ทับค่าที่จำไว้
+    const shared = getPrices() as unknown as WatchlistQuotes;
+    setQuotes(prev => ({ ...(q ?? {}), ...shared, ...prev }));
     if (sg) setSignals(prev => ({ ...sg, ...prev }));
     if (tg) setTags(prev => ({ ...tg, ...prev }));
   }, []);
   useEffect(() => { saveLater(CACHE_KEYS.quotes, quotes); }, [quotes]);
+  // หน้าอื่น (ปรับพอร์ต / หน้าหุ้น / หุ้นเด่น) ดึงราคามา → Watchlist ได้ราคาเดียวกันทันที
+  useEffect(() => subscribePrices(changed => setQuotes(prev => ({ ...prev, ...(changed as unknown as WatchlistQuotes) }))), []);
   useEffect(() => { saveLater(CACHE_KEYS.signals, signals); }, [signals]);
   useEffect(() => { saveLater(CACHE_KEYS.tags, tags); }, [tags]);
 
@@ -152,6 +157,7 @@ export function useSrWatchlistTags({
       if (!silent) setRefreshing(false);
       pauseUntil = q ? 0 : Date.now() + QUOTE_BACKOFF_MS;
       if (q) {
+        publishPrices(q);
         setQuotes(prev => ({ ...prev, ...q })); setUpdatedAt(Date.now());
         if (!announcedOpen && Object.keys(q).length) { announcedOpen = true; appToast(`✓ อัปเดตราคาล่าสุด · ${nowHHMM()}`); }
       }
