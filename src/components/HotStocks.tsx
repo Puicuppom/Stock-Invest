@@ -35,6 +35,31 @@ export default function HotStocks() {
   }, [market]);
   const pickMarket = (m: "US" | "TH") => { setMarket(m); try { localStorage.setItem("hotMkt", m); } catch { /* ignore */ } };
   const section = data?.sections.find(s => s.id === tab) ?? data?.sections[0];
+
+  // ราคาสดของรายการที่เปิดดูอยู่: ทุก 5 วิ แหล่งเดียวกับ Watchlist (รายชื่อหุ้นเด่นยังจัดใหม่ทุก ~10 นาที)
+  const [live, setLive] = useState<Record<string, { price: number; changePercent: number }>>({});
+  const liveKey = section ? section.items.map(it => `${it.symbol}:${market}`).join(",") : "";
+  useEffect(() => {
+    if (!liveKey) return;
+    let alive = true, inflight = false, pauseUntil = 0;
+    const run = async () => {
+      if (document.visibilityState !== "visible" || inflight || Date.now() < pauseUntil) return;
+      inflight = true;
+      try {
+        const r = await fetch(`/api/quotes?items=${encodeURIComponent(liveKey)}`, { cache: "no-store" });
+        const j = r.ok ? await r.json() : null;
+        if (!alive) return;
+        if (j?.quotes) setLive(prev => ({ ...prev, ...j.quotes }));
+        else pauseUntil = Date.now() + 30000;
+      } catch { pauseUntil = Date.now() + 30000; }
+      finally { inflight = false; }
+    };
+    run();
+    const t = window.setInterval(run, 5000);
+    const onVis = () => { if (document.visibilityState === "visible") run(); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => { alive = false; window.clearInterval(t); document.removeEventListener("visibilitychange", onVis); };
+  }, [liveKey]);
   const inList = (sym: string) => items.some(i => i.symbol === sym && i.market === market);
   const toggle = (sym: string) => {
     if (!loaded) return;
@@ -60,13 +85,15 @@ export default function HotStocks() {
         <ul className="hot-list">
           {section.items.map(it => {
             const saved = inList(it.symbol);
-            const up = it.changePercent >= 0;
+            const lq = live[`${it.symbol}::${market}`];
+            const price = lq?.price > 0 ? lq.price : it.price, pct = lq?.price > 0 ? lq.changePercent : it.changePercent;
+            const up = pct >= 0;
             return (
               <li key={it.symbol} className="hot-row">
                 <a className="hot-main" href={`/?open=${encodeURIComponent(it.symbol)}::${market}`}>
                   <span className="wl-logo hot-logo"><span className="wl-logo-text">{it.symbol.slice(0, 4)}</span><StockLogo symbol={market === "TH" ? `${it.symbol}.BK` : it.symbol} size={36} className="wl-logo-img" /></span>
                   <span className="hot-name"><b>{it.symbol}</b><small>{it.name}</small></span>
-                  <span className="hot-price"><b>{market === "TH" ? "฿" : "$"}{fmt(it.price)}</b><em className={up ? "up" : "down"}>{up ? "+" : ""}{it.changePercent.toFixed(2)}%</em></span>
+                  <span className="hot-price"><b>{market === "TH" ? "฿" : "$"}{fmt(price)}</b><em className={up ? "up" : "down"}>{up ? "+" : ""}{pct.toFixed(2)}%</em></span>
                 </a>
                 <button type="button" className={`star-btn hot-star${saved ? " on" : ""}`} aria-pressed={saved} aria-label={saved ? "เอาออกจาก Watchlist" : "เพิ่ม Watchlist"} onClick={() => toggle(it.symbol)}><StarIcon filled={saved} size={20} /></button>
                 {it.news && <a className="hot-news" href={it.news.link} target="_blank" rel="noopener noreferrer" title={it.news.title} lang={it.news.titleTh ? "th" : "en"}>{it.news.titleTh || it.news.title}<small> · {ago(it.news.time)}</small></a>}
